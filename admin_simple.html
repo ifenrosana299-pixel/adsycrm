@@ -254,10 +254,19 @@
             }
         }
 
-        function extractProduk(str) {
-            if (!str) return null;
-            const m = str.match(/\b(DIABCARE|URICARE|GASTRIC|STROCAV|DIALIVE)\b/i);
-            return m ? m[0].toUpperCase() : null;
+        function extractProduk(jumlahText) {
+            if (!jumlahText) return null;
+
+            // Try "NEW PRODUK" pattern
+            let match = jumlahText.match(/NEW\s+(.+)/i);
+            if (match) return match[1].trim().toUpperCase();
+
+            // Try "3 BOX PRODUK" pattern
+            match = jumlahText.match(/^\d+\s+\w+\s+(.+)/i);
+            if (match) return match[1].trim().toUpperCase();
+
+            // Fallback: return as-is
+            return jumlahText.trim().toUpperCase();
         }
 
         function norm(s) { return s ? s.trim().replace(/\s+/g, ' ') : ''; }
