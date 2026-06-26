@@ -1,0 +1,19 @@
+{
+  "routes": [
+    {
+      "src": "/api/config",
+      "dest": "/api/config.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ]
+}

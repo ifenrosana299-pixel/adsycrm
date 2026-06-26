@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Adsy - SPV</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-title">CRM Adsy</div>
+                <div class="sidebar-brand-sub">SPV Panel</div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item nav-active" onclick="spvShowSection('users', this)">
+                    <span class="nav-icon">👥</span>
+                    <span>Manajemen User</span>
+                </div>
+                <div class="nav-item" onclick="spvShowSection('assignments', this)">
+                    <span class="nav-icon">📊</span>
+                    <span>Assignment Overview</span>
+                </div>
+                <div class="nav-item" onclick="spvShowSection('stats', this)">
+                    <span class="nav-icon">📈</span>
+                    <span>Statistik CRM</span>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div>
+                    <div class="sidebar-username" id="spvUsername"></div>
+                    <span class="role-badge role-spv" style="margin-top: 4px; display: inline-block;">SPV</span>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary btn-small" style="margin-top: 8px; width: 100%;">Logout</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- SECTION: Manajemen User -->
+            <section id="sec-users" class="admin-section sec-active">
+                <div class="section-header">
+                    <div class="section-title">Manajemen User</div>
+                    <div class="section-sub">Tambah & kelola akun user CRM</div>
+                </div>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: #6B7280;" id="userCountLabel"></div>
+                        <button onclick="showAddUserModal()" class="btn btn-primary">+ Tambah User</button>
+                    </div>
+                    <div id="userList" class="user-list"></div>
+                </div>
+            </section>
+
+            <!-- SECTION: Assignment Overview -->
+            <section id="sec-assignments" class="admin-section">
+                <div class="section-header">
+                    <div class="section-title">Assignment Overview</div>
+                    <div class="section-sub">Daftar CS yang ditugaskan ke tiap CRM</div>
+                </div>
+                <div id="spvAssignmentList"></div>
+            </section>
+
+            <!-- SECTION: Statistik CRM -->
+            <section id="sec-stats" class="admin-section">
+                <div class="section-header">
+                    <div class="section-title">Statistik per CRM</div>
+                    <div class="section-sub">Ringkasan orderan berdasarkan CRM</div>
+                </div>
+                <div id="spvStatsGrid" class="stats-grid"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="font-size: 20px; font-weight: 800; color: #1E1B4B; margin-bottom: 24px;">Tambah User</h2>
+            <div style="display: grid; gap: 16px; margin-bottom: 24px;">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="newUsername" class="form-input" placeholder="Masukkan username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="newPassword" class="form-input" placeholder="Masukkan password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select id="newRole" class="form-select">
+                        <option value="admin">Admin Data</option>
+                        <option value="crm">CRM</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button onclick="addUser()" class="btn btn-success" style="flex: 1;">Tambah</button>
+                <button onclick="closeAddUserModal()" class="btn btn-secondary" style="flex: 1;">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/shared.js"></script>
+    <script>
+        // =====================
+        // NAVIGATION
+        // =====================
+        function spvShowSection(name, el) {
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('sec-active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('nav-active'));
+            document.getElementById('sec-' + name).classList.add('sec-active');
+            el.classList.add('nav-active');
+
+            if (name === 'stats') loadSPVStats();
+        }
+
+        // =====================
+        // USER MANAGEMENT
+        // =====================
+        function renderUserList() {
+            const list = document.getElementById('userList');
+            const label = document.getElementById('userCountLabel');
+            label.textContent = `${users.length} user terdaftar`;
+
+            if (!users.length) {
+                list.innerHTML = '<p style="color: #94A3B8; text-align: center; padding: 24px;">Belum ada user</p>';
+                return;
+            }
+
+            list.innerHTML = users.map(u => `
+                <div class="user-item">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #EDE9FE, #DDD6FE); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #5B21B6;">
+                            ${u.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: #1E1B4B;">${u.username}</div>
+                            <span class="role-badge role-${u.role}" style="margin-top: 3px; display: inline-block;">${u.role.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    ${u.role !== 'spv' ? `<button onclick="deleteUser(${u.id})" class="btn btn-danger btn-small">Hapus</button>` : '<span style="font-size: 11px; color: #A78BFA;">—</span>'}
+                </div>
+            `).join('');
+        }
+
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+        }
+
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.add('hidden');
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+        }
+
+        async function addUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            const role = document.getElementById('newRole').value;
+
+            if (!username || !password) return alert('Isi semua field!');
+
+            const { error } = await sbApp.from('users').insert({ username, password, role });
+            if (error) return alert('Username sudah ada atau terjadi error!');
+
+            await loadUsers();
+            renderUserList();
+            closeAddUserModal();
+            alert('✅ User berhasil ditambahkan!');
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Hapus user ini?')) return;
+            await sbApp.from('users').delete().eq('id', id);
+            await loadUsers();
+            renderUserList();
+        }
+
+        // =====================
+        // ASSIGNMENT OVERVIEW
+        // =====================
+        function renderSPVAssignmentList() {
+            const list = document.getElementById('spvAssignmentList');
+            const entries = Object.entries(assignments);
+
+            if (!entries.length) {
+                list.innerHTML = `
+                    <div class="card" style="text-align: center; padding: 48px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">📭</div>
+                        <div style="color: #94A3B8; font-size: 14px;">Belum ada assignment</div>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = entries.map(([crm, csList]) => `
+                <div class="card" style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #7C3AED, #5B21B6); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: white;">
+                            ${crm.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; color: #1E1B4B; font-size: 15px;">${crm}</div>
+                            <div style="font-size: 12px; color: #A78BFA;">${csList.length} CS ditugaskan</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${csList.map(s => `
+                            <span style="padding: 6px 14px; background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 8px; font-size: 12px; color: #5B21B6; font-weight: 600;">
+                                ${s}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================
+        // STATS
+        // =====================
+        async function loadSPVStats() {
+            const grid = document.getElementById('spvStatsGrid');
+            const crmUsers = Object.keys(assignments);
+
+            if (!crmUsers.length) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 48px; background: white; border-radius: 20px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">📭</div>
+                        <div style="color: #94A3B8; font-size: 14px;">Belum ada data assignment</div>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = crmUsers.map(() => `
+                <div class="stat-card" style="border-left: 4px solid #DDD6FE;">
+                    <div style="height: 16px; background: #F3F0FF; border-radius: 4px; margin-bottom: 10px; width: 60%;"></div>
+                    <div style="height: 12px; background: #F3F0FF; border-radius: 4px; margin-bottom: 6px;"></div>
+                    <div style="height: 12px; background: #F3F0FF; border-radius: 4px; margin-bottom: 6px; width: 70%;"></div>
+                    <div style="height: 12px; background: #F3F0FF; border-radius: 4px; width: 80%;"></div>
+                </div>
+            `).join('');
+
+            const colorMap = ['#7C3AED', '#059669', '#D97706', '#DC2626', '#0EA5E9', '#EC4899'];
+            let html = '';
+
+            for (let i = 0; i < crmUsers.length; i++) {
+                const crm = crmUsers[i];
+                const color = colorMap[i % colorMap.length];
+
+                let all = [], pg = 0, more = true;
+                while (more) {
+                    const { data } = await sbData.from('all_orderan')
+                        .select('jumlah, pembayaran')
+                        .in('cs', assignments[crm])
+                        .range(pg * 1000, (pg + 1) * 1000 - 1);
+                    if (data && data.length > 0) { all = all.concat(data); more = data.length === 1000; pg++; }
+                    else more = false;
+                }
+
+                const total = all.length;
+                const totalJumlah = all.reduce((s, o) => s + (parseInt(o.jumlah) || 0), 0);
+
+                html += `
+                    <div class="stat-card" style="border-left: 4px solid ${color};">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: ${color}20; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: ${color};">
+                                ${crm.charAt(0).toUpperCase()}
+                            </div>
+                            <div style="font-weight: 800; color: #1E1B4B; font-size: 14px;">${crm}</div>
+                        </div>
+                        <div style="display: grid; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 12px; color: #6B7280;">Total Orderan</span>
+                                <span style="font-size: 14px; font-weight: 800; color: ${color};">${total.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 12px; color: #6B7280;">Total Jumlah</span>
+                                <span style="font-size: 13px; font-weight: 700; color: #1E1B4B;">${totalJumlah.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 12px; color: #6B7280;">CS Aktif</span>
+                                <span style="font-size: 13px; font-weight: 700; color: #1E1B4B;">${(assignments[crm] || []).length}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        // =====================
+        // WINDOW ONLOAD
+        // =====================
+        window.onload = async function() {
+            await initSupabase();
+
+            const stored = sessionStorage.getItem('user');
+            if (!stored) { window.location.href = 'index.html'; return; }
+
+            currentUser = JSON.parse(stored);
+            if (currentUser.role !== 'spv') { window.location.href = 'index.html'; return; }
+
+            document.getElementById('spvUsername').textContent = currentUser.username;
+
+            await loadUsers();
+            await loadAssignments();
+            renderUserList();
+            renderSPVAssignmentList();
+        };
+    </script>
+</body>
+</html>

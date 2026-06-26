@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Adsy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ── RESET FOR CRM PAGE ── */
+        body { font-family: 'Inter', sans-serif; background: #F3F4F6; }
+
+        .crm-layout { display: flex; min-height: 100vh; }
+
+        /* ── SIDEBAR ── */
+        .crm-sidebar {
+            width: 272px;
+            background: #fff;
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .crm-brand {
+            padding: 22px 20px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .crm-brand-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .crm-brand-title { font-size: 16px; font-weight: 800; color: #1F2937; }
+        .crm-brand-sub   { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
+
+        /* Nav */
+        .crm-nav { flex: 1; padding: 12px 0; }
+        .crm-nav-label {
+            padding: 14px 20px 5px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #9CA3AF;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+        .crm-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px;
+            margin: 2px 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4B5563;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+        .crm-nav-item:hover { background: #F5F3FF; color: #5B21B6; }
+        .crm-nav-item.crm-active {
+            background: #EEF2FF;
+            color: #4F46E5;
+            font-weight: 600;
+            border-color: #C7D2FE;
+        }
+        .crm-nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+        /* Group header (collapsible) */
+        .crm-nav-group-hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 11px 16px;
+            margin: 2px 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4B5563;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .crm-nav-group-hdr:hover { background: #F9FAFB; color: #4F46E5; }
+        .crm-nav-group-hdr-left { display: flex; align-items: center; gap: 12px; }
+        .crm-nav-arrow { font-size: 10px; color: #9CA3AF; transition: transform 0.2s; }
+        .crm-nav-arrow.open { transform: rotate(180deg); }
+
+        .crm-nav-sub {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 16px 9px 46px;
+            margin: 1px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .crm-nav-sub:hover { background: #F5F3FF; color: #4F46E5; }
+        .crm-nav-sub.crm-active { background: #EEF2FF; color: #4F46E5; font-weight: 600; }
+
+        /* Footer */
+        .crm-sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #F3F4F6;
+        }
+        .crm-user-name { font-size: 13px; font-weight: 700; color: #1F2937; }
+        .crm-user-role { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+
+        /* ── MAIN ── */
+        .crm-main { margin-left: 272px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* Topbar */
+        .crm-topbar {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 12px rgba(79,70,229,0.3);
+        }
+        .crm-topbar-left { display: flex; align-items: center; gap: 14px; }
+        .crm-topbar-hamburger {
+            width: 32px; height: 32px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+            cursor: pointer; border-radius: 8px;
+        }
+        .crm-topbar-hamburger span { display: block; width: 18px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; }
+        .crm-topbar-right { display: flex; align-items: center; gap: 20px; }
+        .crm-topbar-username { font-size: 13px; font-weight: 700; color: white; letter-spacing: 0.05em; }
+        .crm-topbar-icon { font-size: 18px; cursor: pointer; }
+
+        /* Content area */
+        .crm-content { padding: 28px; flex: 1; }
+
+        /* Section */
+        .crm-section { display: none; }
+        .crm-section.crm-sec-active { display: block; }
+
+        /* Cards */
+        .crm-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+        .crm-card-title { font-size: 15px; font-weight: 700; color: #1F2937; margin-bottom: 16px; }
+
+        /* Stat cards */
+        .crm-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .crm-stat {
+            background: white;
+            border-radius: 14px;
+            padding: 20px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .crm-stat-label { font-size: 11px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+        .crm-stat-value { font-size: 30px; font-weight: 800; color: #111827; line-height: 1; }
+        .crm-stat-sub   { font-size: 12px; font-weight: 600; color: #10B981; margin-top: 6px; }
+        .crm-stat-icon  {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Banner */
+        .crm-banner {
+            border-radius: 16px;
+            padding: 28px 36px;
+            background: linear-gradient(135deg, #06B6D4, #0EA5E9, #3B82F6);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .crm-banner::before {
+            content: '';
+            position: absolute;
+            width: 200px; height: 200px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+            top: -60px; right: 140px;
+        }
+        .crm-banner-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .crm-banner-sub   { font-size: 14px; opacity: 0.88; }
+        .crm-banner-emoji { font-size: 64px; line-height: 1; }
+
+        /* Date pill */
+        .crm-date-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            user-select: none;
+        }
+
+        /* Page title */
+        .crm-page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .crm-page-title-icon {
+            width: 38px; height: 38px;
+            background: #EEF2FF;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .crm-page-title h2 { font-size: 20px; font-weight: 800; color: #1F2937; }
+
+        /* Table */
+        .crm-table-wrap { background: white; border-radius: 16px; overflow-x: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .crm-table thead { background: #F9FAFB; }
+        .crm-table th { padding: 13px 16px; text-align: left; font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; }
+        .crm-table td { padding: 13px 16px; border-bottom: 1px solid #F3F4F6; color: #374151; }
+        .crm-table tbody tr:hover { background: #FAFAFA; }
+        .crm-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Filters bar */
+        .crm-filters {
+            background: white;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .crm-form-group { display: flex; flex-direction: column; gap: 5px; }
+        .crm-form-label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.04em; }
+        .crm-input, .crm-select {
+            padding: 9px 13px;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            background: #F9FAFB;
+            color: #111827;
+            transition: border-color 0.15s;
+        }
+        .crm-input:focus, .crm-select:focus { border-color: #6366F1; background: white; }
+        .crm-input-wide { min-width: 220px; }
+
+        /* Buttons */
+        .crm-btn {
+            padding: 9px 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .crm-btn:active { transform: scale(0.97); }
+        .crm-btn-primary { background: #4F46E5; color: white; }
+        .crm-btn-primary:hover { background: #4338CA; }
+        .crm-btn-secondary { background: #F3F4F6; color: #374151; }
+        .crm-btn-secondary:hover { background: #E5E7EB; }
+        .crm-btn-danger  { background: #FEE2E2; color: #DC2626; }
+        .crm-btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+        /* Badge */
+        .crm-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+        /* Toolbar */
+        .crm-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+        .crm-toolbar-right { margin-left: auto; font-size: 13px; font-weight: 600; color: #6366F1; }
+
+        /* Pagination */
+        .crm-pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; }
+        .crm-pagination-info { font-size: 12px; color: #9CA3AF; margin-bottom: 10px; }
+
+        /* Coming soon */
+        .crm-coming-soon {
+            background: white;
+            border-radius: 16px;
+            padding: 72px 32px;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .crm-coming-soon-icon { font-size: 56px; margin-bottom: 16px; }
+        .crm-coming-soon-title { font-size: 18px; font-weight: 800; color: #1F2937; margin-bottom: 8px; }
+        .crm-coming-soon-sub   { font-size: 13px; color: #9CA3AF; }
+
+        /* Produk grid */
+        .crm-produk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .crm-produk-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border-top: 4px solid #6366F1;
+        }
+        .crm-produk-name { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 14px; }
+        .crm-produk-row  { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6B7280; }
+        .crm-produk-row strong { color: #111827; }
+        .crm-progress { height: 4px; background: #F3F4F6; border-radius: 4px; margin-top: 12px; }
+        .crm-progress-bar { height: 4px; border-radius: 4px; background: #10B981; }
+
+        /* Modal */
+        .crm-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .crm-modal.hidden { display: none !important; }
+        .crm-modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 520px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+        }
+        .crm-modal-title { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 4px; }
+        .crm-modal-sub   { font-size: 12px; color: #9CA3AF; margin-bottom: 22px; }
+    </style>
+</head>
+<body>
+<div class="crm-layout">
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <aside class="crm-sidebar">
+        <div class="crm-brand">
+            <div class="crm-brand-icon">🤖</div>
+            <div>
+                <div class="crm-brand-title">CRM Adsy</div>
+                <div class="crm-brand-sub">v2.0</div>
+            </div>
+        </div>
+
+        <nav class="crm-nav">
+            <!-- Dashboard -->
+            <div class="crm-nav-item crm-active" id="crmNavItem-dashboard" onclick="crmShow('dashboard', this)">
+                <span class="crm-nav-icon">🏠</span> Dashboard
+            </div>
+
+            <!-- Data Utama -->
+            <div class="crm-nav-label">Data Utama</div>
+            <div class="crm-nav-item" id="crmNavItem-pesanan" onclick="crmShow('pesanan', this)">
+                <span class="crm-nav-icon">📋</span> Pesanan
+            </div>
+            <div class="crm-nav-item" id="crmNavItem-produk" onclick="crmShow('produk', this)">
+                <span class="crm-nav-icon">🏷️</span> Produk
+            </div>
+
+            <!-- Pelanggan -->
+            <div class="crm-nav-label">Pelanggan</div>
+            <div class="crm-nav-item" id="crmNavItem-pelangganList" onclick="crmShow('pelangganList', this)">
+                <span class="crm-nav-icon">👥</span> Pelanggan
+            </div>
+
+            <!-- Pengelompokan collapsible -->
+            <div class="crm-nav-group-hdr" onclick="crmToggleGroup('pengelompokan')">
+                <div class="crm-nav-group-hdr-left">
+                    <span class="crm-nav-icon">🗂️</span> Pengelompokan
+                </div>
+                <span class="crm-nav-arrow" id="crmArrow-pengelompokan">▼</span>
+            </div>
+            <div id="crmGroup-pengelompokan" class="hidden">
+                <div class="crm-nav-sub" id="crmNavItem-pengelompokan" onclick="crmShow('pengelompokan', this)">
+                    <span>🏷️</span> Label
+                </div>
+                <div class="crm-nav-sub" id="crmNavItem-segmentasi" onclick="crmShow('segmentasi', this)">
+                    <span>📊</span> Segmentasi
+                </div>
+                <div class="crm-nav-sub" id="crmNavItem-grup" onclick="crmShow('grup', this)">
+                    <span>👨‍👩‍👧</span> Grup
+                </div>
+            </div>
+
+            <div class="crm-nav-item" id="crmNavItem-ultah" onclick="crmShow('ultah', this)">
+                <span class="crm-nav-icon">🎂</span> Ulang Tahun
+            </div>
+
+            <!-- Kirim Pesan -->
+            <div class="crm-nav-label">Komunikasi</div>
+            <div class="crm-nav-item" id="crmNavItem-kalender" onclick="crmShow('kalender', this)">
+                <span class="crm-nav-icon">📅</span> Kalender
+            </div>
+            <div class="crm-nav-item" id="crmNavItem-kirimPesan" onclick="crmShow('kirimPesan', this)">
+                <span class="crm-nav-icon">✉️</span> Kirim Pesan
+            </div>
+
+            <!-- Manajemen -->
+            <div class="crm-nav-label">Manajemen</div>
+            <div class="crm-nav-item" id="crmNavItem-task" onclick="crmShow('task', this)">
+                <span class="crm-nav-icon">✅</span> Task
+            </div>
+        </nav>
+
+        <div class="crm-sidebar-footer">
+            <div class="crm-user-name" id="crmUsername"></div>
+            <div class="crm-user-role">CRM Agent</div>
+            <button onclick="logout()" class="crm-btn crm-btn-secondary crm-btn-sm" style="width:100%;margin-top:10px;justify-content:center;">
+                Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ═══════════════ MAIN ═══════════════ -->
+    <div class="crm-main">
+
+        <!-- Topbar -->
+        <header class="crm-topbar">
+            <div class="crm-topbar-left">
+                <div class="crm-topbar-hamburger">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+            <div class="crm-topbar-right">
+                <button onclick="syncAll()" id="syncBtn" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                    🔄 <span id="syncBtnLabel">Sync Data</span>
+                </button>
+                <span class="crm-topbar-username" id="crmTopUsername"></span>
+                <span class="crm-topbar-icon" style="color:rgba(255,255,255,0.85);">👤</span>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="crm-content">
+
+            <!-- ═══ DASHBOARD ═══ -->
+            <section id="crmSec-dashboard" class="crm-section crm-sec-active">
+                <div class="crm-page-title">
+                    <div class="crm-page-title-icon">📦</div>
+                    <h2>Dashboard</h2>
+                </div>
+
+                <!-- Banner -->
+                <div class="crm-banner">
+                    <div>
+                        <div class="crm-banner-title">Kelola Pelanggan dengan Lebih Mudah</div>
+                        <div class="crm-banner-sub">Pantau orderan, pelanggan, dan statistik dalam satu tempat</div>
+                    </div>
+                    <div class="crm-banner-emoji">🚀</div>
+                </div>
+
+                <!-- Date pill -->
+                <button class="crm-date-pill" onclick="toggleDatePicker(this)">
+                    📅 <span id="datePickerLabel">Semua Tanggal</span> ▼
+                </button>
+                <!-- hidden inputs required oleh shared.js drpApplyToInputs -->
+                <input type="hidden" id="adminDateFrom">
+                <input type="hidden" id="adminDateTo">
+
+                <!-- Stats -->
+                <div class="crm-stats-row">
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Total Order</div>
+                            <div class="crm-stat-value" id="dashTotal">—</div>
+                            <div class="crm-stat-sub" id="dashPendingInfo">— pending</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Delivered</div>
+                            <div class="crm-stat-value" id="dashDelivered" style="color:#10B981;">—</div>
+                            <div class="crm-stat-sub" id="dashDeliveredPct">— %</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Cancelled</div>
+                            <div class="crm-stat-value" id="dashCancelled" style="color:#EF4444;">—</div>
+                            <div class="crm-stat-sub" id="dashCancelledPct" style="color:#EF4444;">— %</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">❌</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Pelanggan</div>
+                            <div class="crm-stat-value" id="dashPelanggan">—</div>
+                            <div class="crm-stat-sub">unik dari data</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">👥</div>
+                    </div>
+                </div>
+
+                <!-- Recent -->
+                <div class="crm-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div class="crm-card-title" style="margin-bottom:0;">Orderan Terbaru</div>
+                        <button onclick="crmShow('pesanan', document.getElementById('crmNavItem-pesanan'))" class="crm-btn crm-btn-secondary crm-btn-sm">Lihat Semua →</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="crm-table">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th><th>Nama</th><th>Produk</th><th>Status</th><th>CS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashRecentTbody">
+                                <tr><td colspan="5" style="text-align:center;padding:32px;color:#9CA3AF;">Memuat...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ PESANAN ═══ -->
+            <section id="crmSec-pesanan" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">📋</div>
+                        <h2>Pesanan</h2>
+                    </div>
+                    <button onclick="loadOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Stats -->
+                <div class="crm-stats-row">
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Total</div>
+                            <div class="crm-stat-value" id="statTotal">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Pending</div>
+                            <div class="crm-stat-value" id="statPending" style="color:#F59E0B;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">⏳</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Delivered</div>
+                            <div class="crm-stat-value" id="statDelivered" style="color:#10B981;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Cancelled</div>
+                            <div class="crm-stat-value" id="statCancelled" style="color:#EF4444;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">❌</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="crm-filters">
+                    <div class="crm-form-group" style="flex:2;min-width:220px;">
+                        <label class="crm-form-label">Cari</label>
+                        <input type="text" id="crmSearch" class="crm-input crm-input-wide" placeholder="🔍 Nama / HP / Resi..." onkeyup="filterOrders()">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Status</label>
+                        <select id="crmFilter" class="crm-select" onchange="filterOrders()">
+                            <option value="all">Semua</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">CS</label>
+                        <select id="filterCS" class="crm-select" onchange="applyFilters()">
+                            <option value="">Semua CS</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Produk</label>
+                        <select id="filterProduk" class="crm-select" onchange="applyFilters()">
+                            <option value="">Semua Produk</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Ekspedisi</label>
+                        <select id="filterEkspedisi" class="crm-select" onchange="applyFilters()">
+                            <option value="">Semua Ekspedisi</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Tgl Assign</label>
+                        <input type="date" id="filterTanggalAssign" class="crm-input" onchange="applyFilters()">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <button onclick="clearFilters()" class="crm-btn crm-btn-secondary">✖ Reset</button>
+                    </div>
+                </div>
+                <div id="filterInfo" style="margin:-10px 0 14px;font-size:12px;color:#6366F1;font-weight:600;"></div>
+
+                <!-- Toolbar -->
+                <div class="crm-toolbar">
+                    <button onclick="exportSelectedToCSV()" class="crm-btn crm-btn-primary crm-btn-sm">📥 Download CSV</button>
+                    <button onclick="selectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☑️ Pilih Semua</button>
+                    <button onclick="deselectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☐ Batal Pilih</button>
+                    <select id="rowsPerPage" class="crm-select" style="width:auto;" onchange="changeRowsPerPage()">
+                        <option value="20">20 / hal</option>
+                        <option value="50">50 / hal</option>
+                        <option value="100">100 / hal</option>
+                    </select>
+                    <span class="crm-toolbar-right" id="selectedCount">0 dipilih</span>
+                </div>
+
+                <div class="crm-pagination-info" id="paginationInfo"></div>
+
+                <div class="crm-table-wrap">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th>
+                                <th>Tanggal</th><th>Nama</th><th>No HP</th><th>Produk</th>
+                                <th>Kab/Kota</th><th>Provinsi</th><th>Pesanan</th>
+                                <th>Pembayaran</th><th>Resi</th><th>Status</th><th>CS</th><th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="crmTbody">
+                            <tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="crm-pagination" id="crmPagination"></div>
+            </section>
+
+            <!-- ═══ PRODUK ═══ -->
+            <section id="crmSec-produk" class="crm-section">
+                <div class="crm-page-title">
+                    <div class="crm-page-title-icon">🏷️</div>
+                    <h2>Produk</h2>
+                </div>
+                <div id="produkGrid" class="crm-produk-grid">
+                    <div class="crm-coming-soon" style="grid-column:1/-1;">
+                        <div class="crm-coming-soon-icon">🏷️</div>
+                        <div class="crm-coming-soon-title">Buka Pesanan terlebih dahulu</div>
+                        <div class="crm-coming-soon-sub">Data produk akan muncul setelah data orderan dimuat</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ PELANGGAN ═══ -->
+            <section id="crmSec-pelangganList" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">👥</div>
+                        <h2>Pelanggan</h2>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button onclick="showUploadModal()" class="crm-btn crm-btn-primary crm-btn-sm">📤 Upload CSV</button>
+                        <button onclick="loadPelanggan()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Filter bar -->
+                <div class="crm-filters" style="margin-bottom:16px;">
+                    <div class="crm-form-group" style="flex:2;min-width:200px;">
+                        <label class="crm-form-label">Cari</label>
+                        <input type="text" id="pelangganSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="renderPelangganTable()">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Status</label>
+                        <select id="pelangganTypeFilter" class="crm-select" onchange="renderPelangganTable()">
+                            <option value="">Semua</option>
+                            <option value="Aktif">🟢 Aktif</option>
+                            <option value="Pasif">🟡 Pasif</option>
+                            <option value="Jenuh">🟠 Jenuh</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">CS</label>
+                        <select id="pelangganCSFilter" class="crm-select" onchange="renderPelangganTable()">
+                            <option value="">Semua CS</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <button onclick="resetPelangganFilter()" class="crm-btn crm-btn-secondary">✖ Reset</button>
+                    </div>
+                </div>
+
+                <div id="pelangganCount" style="margin-bottom:10px;font-size:12px;color:#9CA3AF;"></div>
+
+                <div class="crm-table-wrap">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama</th>
+                                <th>No HP</th>
+                                <th>Kab/Kota</th>
+                                <th>Penyakit</th>
+                                <th>Status</th>
+                                <th>Interaksi</th>
+                                <th>Last FU</th>
+                                <th>Tgl Lahir</th>
+                                <th>CS</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pelangganTbody">
+                            <tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="crm-pagination" id="pelangganPagination"></div>
+            </section>
+
+            <!-- ═══ PENGELOMPOKAN ═══ -->
+            <section id="crmSec-pengelompokan" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">🏷️</div><h2>Label</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">🏷️</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur label & pengelompokan pelanggan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ SEGMENTASI ═══ -->
+            <section id="crmSec-segmentasi" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">📊</div><h2>Segmentasi</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">📊</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur segmentasi pelanggan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ GRUP ═══ -->
+            <section id="crmSec-grup" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">👨‍👩‍👧</div><h2>Grup</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">👨‍👩‍👧</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur grup pelanggan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ ULANG TAHUN ═══ -->
+            <section id="crmSec-ultah" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">🎂</div><h2>Ulang Tahun</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">🎂</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur pengingat ulang tahun pelanggan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ KALENDER ═══ -->
+            <section id="crmSec-kalender" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">📅</div><h2>Kalender</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">📅</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur kalender pesan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ KIRIM PESAN ═══ -->
+            <section id="crmSec-kirimPesan" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">✉️</div><h2>Kirim Pesan</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">✉️</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur broadcast & kirim pesan sedang dikembangkan</div></div>
+            </section>
+
+            <!-- ═══ TASK ═══ -->
+            <section id="crmSec-task" class="crm-section">
+                <div class="crm-page-title"><div class="crm-page-title-icon">✅</div><h2>Task</h2></div>
+                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">✅</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur manajemen task sedang dikembangkan</div></div>
+            </section>
+
+        </div><!-- /crm-content -->
+    </div><!-- /crm-main -->
+</div><!-- /crm-layout -->
+
+<!-- ═══ EDIT MODAL ═══ -->
+<div id="editModal" class="crm-modal hidden">
+    <div class="crm-modal-box">
+        <div class="crm-modal-title" id="editModalTitle">Edit Order</div>
+        <div class="crm-modal-sub">Update data orderan</div>
+        <div style="display:grid;gap:14px;margin-bottom:24px;">
+            <div>
+                <label class="crm-form-label">Resi</label>
+                <input type="text" id="editResi" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Status</label>
+                <select id="editStatus" class="crm-select" style="width:100%;margin-top:5px;">
+                    <option>Pending</option><option>Processing</option><option>Shipped</option>
+                    <option>Delivered</option><option>Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="crm-form-label">Team</label>
+                <input type="text" id="editTeam" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Update CRM</label>
+                <input type="text" id="editCRM" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Retur</label>
+                <input type="text" id="editRetur" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button onclick="updateOrder()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">💾 Simpan</button>
+            <button onclick="closeEditModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ UPLOAD MODAL ═══ -->
+<div id="uploadModal" class="crm-modal hidden">
+    <div class="crm-modal-box">
+        <div class="crm-modal-title">📤 Upload Data Pelanggan</div>
+        <div class="crm-modal-sub">Upload file CSV dari spreadsheet — data akan ditambahkan ke tabel pelanggan</div>
+
+        <div style="background:#F9FAFB;border:2px dashed #E5E7EB;border-radius:12px;padding:28px;text-align:center;margin-bottom:20px;">
+            <div style="font-size:32px;margin-bottom:8px;">📂</div>
+            <div style="font-size:13px;color:#6B7280;margin-bottom:12px;">Pilih file CSV dari komputer kamu</div>
+            <input type="file" id="uploadFileInput" accept=".csv" style="display:none;" onchange="document.getElementById('uploadFileName').textContent = this.files[0]?.name || ''">
+            <button onclick="document.getElementById('uploadFileInput').click()" class="crm-btn crm-btn-secondary">Pilih File CSV</button>
+            <div id="uploadFileName" style="margin-top:8px;font-size:12px;color:#4F46E5;font-weight:600;"></div>
+        </div>
+
+        <div style="background:#EEF2FF;border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#4F46E5;line-height:1.8;">
+            <strong>Tips sebelum upload:</strong><br>
+            • Buka file di Google Sheets<br>
+            • Edit → Find & Replace → ganti <code>#N/A</code>, <code>#REF!</code>, <code>#VALUE!</code> dengan kosong<br>
+            • File → Download → CSV
+        </div>
+
+        <div id="uploadStatus" style="margin-bottom:16px;font-size:13px;min-height:20px;"></div>
+
+        <div style="display:flex;gap:12px;">
+            <button onclick="processUpload()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">⬆️ Upload</button>
+            <button onclick="closeUploadModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ EDIT PELANGGAN MODAL ═══ -->
+<div id="editPelangganModal" class="crm-modal hidden">
+    <div class="crm-modal-box" style="max-width:620px;">
+        <div class="crm-modal-title">✏️ Edit Pelanggan</div>
+        <div class="crm-modal-sub" id="editPelangganSub"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+            <div>
+                <label class="crm-form-label">Type</label>
+                <select id="epType" class="crm-select" style="width:100%;margin-top:5px;">
+                    <option value="">— Pilih —</option>
+                    <option value="🟢 Aktif">🟢 Aktif</option>
+                    <option value="🟡 Pasif">🟡 Pasif</option>
+                    <option value="🟠 Jenuh">🟠 Jenuh</option>
+                </select>
+            </div>
+            <div>
+                <label class="crm-form-label">Interaksi Terakhir</label>
+                <select id="epInteraksi" class="crm-select" style="width:100%;margin-top:5px;">
+                    <option value="">— Pilih —</option>
+                    <option value="RESPON BAIK">RESPON BAIK</option>
+                    <option value="READ">READ</option>
+                    <option value="CENTANG 2">CENTANG 2</option>
+                    <option value="NO RESPON">NO RESPON</option>
+                </select>
+            </div>
+            <div>
+                <label class="crm-form-label">Penyakit</label>
+                <input type="text" id="epPenyakit" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Tgl Lahir</label>
+                <input type="date" id="epTglLahir" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Usia</label>
+                <input type="text" id="epUsia" class="crm-input" style="width:100%;margin-top:5px;" placeholder="misal: 45">
+            </div>
+            <div>
+                <label class="crm-form-label">Jenis Kelamin</label>
+                <select id="epJK" class="crm-select" style="width:100%;margin-top:5px;">
+                    <option value="">— Pilih —</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+            <div>
+                <label class="crm-form-label">Pekerjaan</label>
+                <input type="text" id="epPekerjaan" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div>
+                <label class="crm-form-label">Last Follow-Up</label>
+                <input type="date" id="epLastFU" class="crm-input" style="width:100%;margin-top:5px;">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label class="crm-form-label">Perkembangan</label>
+                <textarea id="epPerkembangan" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
+            </div>
+            <div style="grid-column:1/-1;">
+                <label class="crm-form-label">Catatan</label>
+                <textarea id="epCatatan" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button onclick="savePelanggan()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">💾 Simpan</button>
+            <button onclick="closeEditPelangganModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Batal</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/shared.js"></script>
+<script>
+    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task'];
+
+    // norm() dan normEq() sudah tersedia dari js/shared.js
+
+    // ── NAVIGATION ──
+    function crmShow(name, el) {
+        CRM_SECTIONS.forEach(s => {
+            const sec = document.getElementById('crmSec-' + s);
+            if (sec) sec.classList.remove('crm-sec-active');
+        });
+        document.querySelectorAll('.crm-nav-item, .crm-nav-sub').forEach(n => n.classList.remove('crm-active'));
+
+        const sec = document.getElementById('crmSec-' + name);
+        if (sec) sec.classList.add('crm-sec-active');
+        if (el) el.classList.add('crm-active');
+
+        if (name === 'produk') renderProdukGrid();
+        if (name === 'pelangganList') loadPelanggan();
+        if (name === 'dashboard') renderDashboard();
+    }
+
+    function crmToggleGroup(name) {
+        const group = document.getElementById('crmGroup-' + name);
+        const arrow = document.getElementById('crmArrow-' + name);
+        const isHidden = group.classList.contains('hidden');
+        group.classList.toggle('hidden');
+        arrow.classList.toggle('open', isHidden);
+    }
+
+    // Format tanggal: "2024-01-10" → "10 Januari 2024"
+    const IDN_MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    function fmtTanggal(str) {
+        if (!str) return '—';
+        const d = new Date(str + 'T00:00:00');
+        if (isNaN(d)) return str;
+        return `${d.getDate()} ${IDN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    function fmtTanggalShort(str) {
+        if (!str) return '—';
+        const d = new Date(str + 'T00:00:00');
+        if (isNaN(d)) return str;
+        const s = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return `${d.getDate()} ${s[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    // ── DASHBOARD ──
+    function renderDashboard() {
+        // Filter by date picker jika diset
+        const from = document.getElementById('adminDateFrom')?.value;
+        const to   = document.getElementById('adminDateTo')?.value;
+        const display = (from && to) ? orders.filter(o => {
+            const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
+            return d && d >= from && d <= to;
+        }) : orders;
+
+        const total     = display.length;
+        const pending   = display.filter(o => o.status === 'Pending').length;
+        const delivered = display.filter(o => o.status === 'Delivered').length;
+        const cancelled = display.filter(o => o.status === 'Cancelled').length;
+        const uniqueCustomers = new Set(display.map(o => o.hp || o.nama).filter(Boolean)).size;
+
+        document.getElementById('dashTotal').textContent       = total;
+        document.getElementById('dashPendingInfo').textContent = `${pending} pending`;
+        document.getElementById('dashDelivered').textContent   = delivered;
+        document.getElementById('dashDeliveredPct').textContent= total ? `${Math.round(delivered/total*100)}% dari total` : '0%';
+        document.getElementById('dashCancelled').textContent   = cancelled;
+        document.getElementById('dashCancelledPct').textContent= total ? `${Math.round(cancelled/total*100)}% dari total` : '0%';
+        document.getElementById('dashPelanggan').textContent   = uniqueCustomers;
+
+        // Recent 10
+        const recent = [...display].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,10);
+        const tb = document.getElementById('dashRecentTbody');
+        if (!recent.length) {
+            tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#9CA3AF;">Belum ada data</td></tr>';
+            return;
+        }
+        tb.innerHTML = recent.map(o => {
+            const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime() + 7*3600*1000).toISOString().slice(0,10) : null;
+            const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
+            const produk = extractProduk(o.jumlah) || '-';
+            const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status] || '#9CA3AF';
+            return `<tr>
+                <td style="font-size:12px;color:#9CA3AF;white-space:nowrap;">${tgl}</td>
+                <td style="font-weight:600;">${escapeHtml(o.nama||'-')}</td>
+                <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
+                <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
+                <td style="font-size:12px;color:#6B7280;">${escapeHtml(o.cs||'-')}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ── PRODUK ──
+    function renderProdukGrid() {
+        const grid = document.getElementById('produkGrid');
+        if (!orders.length) {
+            grid.innerHTML = '<div class="crm-coming-soon" style="grid-column:1/-1;"><div class="crm-coming-soon-icon">🏷️</div><div class="crm-coming-soon-title">Belum ada data</div><div class="crm-coming-soon-sub">Buka Pesanan terlebih dahulu</div></div>';
+            return;
+        }
+        const pm = {};
+        orders.forEach(o => {
+            const p = extractProduk(o.jumlah) || 'Lainnya';
+            if (!pm[p]) pm[p] = { total:0, pending:0, delivered:0, cancelled:0 };
+            pm[p].total++;
+            if (o.status === 'Pending')   pm[p].pending++;
+            if (o.status === 'Delivered') pm[p].delivered++;
+            if (o.status === 'Cancelled') pm[p].cancelled++;
+        });
+        const colors = ['#4F46E5','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899'];
+        const entries = Object.entries(pm).sort((a,b) => b[1].total - a[1].total);
+        grid.innerHTML = entries.map(([name, s], i) => {
+            const c = colors[i % colors.length];
+            const pct = s.total ? Math.round(s.delivered/s.total*100) : 0;
+            return `<div class="crm-produk-card" style="border-top-color:${c};cursor:pointer;transition:box-shadow 0.15s,transform 0.15s;"
+                onclick="filterByProduk('${escapeHtml(name)}')"
+                onmouseenter="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'"
+                onmouseleave="this.style.boxShadow='';this.style.transform=''">
+                <div class="crm-produk-name">${escapeHtml(name)}</div>
+                <div class="crm-produk-row"><span>Total</span><strong style="color:${c};">${s.total}</strong></div>
+                <div class="crm-produk-row"><span>Pending</span><strong style="color:#F59E0B;">${s.pending}</strong></div>
+                <div class="crm-produk-row"><span>Delivered</span><strong style="color:#10B981;">${s.delivered}</strong></div>
+                <div class="crm-produk-row"><span>Cancelled</span><strong style="color:#EF4444;">${s.cancelled}</strong></div>
+                <div class="crm-progress"><div class="crm-progress-bar" style="width:${pct}%;background:${c};"></div></div>
+                <div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px;">${pct}% delivered</div>
+                <div style="margin-top:12px;text-align:center;font-size:11px;font-weight:700;color:${c};">Lihat Pesanan →</div>
+            </div>`;
+        }).join('');
+    }
+
+    function filterByProduk(produkName) {
+        // Pindah ke section Pesanan
+        const navEl = document.getElementById('crmNavItem-pesanan');
+        crmShow('pesanan', navEl);
+        // Set filter produk
+        const sel = document.getElementById('filterProduk');
+        if (sel) {
+            // Cari option yang normEq dengan produkName
+            const opt = Array.from(sel.options).find(o => normEq(o.value, produkName));
+            sel.value = opt ? opt.value : produkName;
+        }
+        applyFilters();
+    }
+
+    // ── PELANGGAN ──
+    let crmCustomers = [];
+    let filteredCustomers = [];
+    let pelangganPage = 1;
+    const pelangganPageSize = 50;
+
+    async function loadPelanggan() {
+        const tb = document.getElementById('pelangganTbody');
+        tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
+
+        const assignedCS = assignments[currentUser.username] || [];
+        if (!assignedCS.length) {
+            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;">
+                <div style="color:#EF4444;font-weight:700;margin-bottom:8px;">Belum ada assignment CS</div>
+                <div style="color:#9CA3AF;font-size:12px;">Username: <code>${currentUser.username}</code> belum di-assign oleh admin</div>
+            </td></tr>`;
+            return;
+        }
+
+        if (!orders.length) {
+            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Klik Sync Data terlebih dahulu.</td></tr>`;
+            return;
+        }
+
+        // ── 1. Derive unique pelanggan dari orders (source of truth: crm_customer_orders) ──
+        const seen = new Set();
+        const baseList = [];
+        orders.forEach(o => {
+            const key = (o.hp || o.nama || '') + '|' + (o.cs || '');
+            if (key && !key.startsWith('|') && !seen.has(key)) {
+                seen.add(key);
+                baseList.push({
+                    nama:    o.nama      || null,
+                    no_hp:   o.hp        || null,
+                    kab:     o.kabupaten || null,
+                    prov:    o.provinsi  || null,
+                    nama_cs: o.cs        || null,
+                    crm:     currentUser.username,
+                });
+            }
+        });
+
+        // ── 2. Pastikan semua pelanggan dari orders ada di crm_customers (insert only, skip duplikat) ──
+        const batchSize = 100;
+        for (let i = 0; i < baseList.length; i += batchSize) {
+            await sbApp.from('crm_customers')
+                .upsert(baseList.slice(i, i + batchSize), {
+                    onConflict: 'no_hp,nama_cs',
+                    ignoreDuplicates: true
+                });
+        }
+
+        // ── 3. Fetch profile CRM (type, penyakit, interaksi, dll) dari crm_customers ──
+        const orFilter = assignedCS.map(cs => `nama_cs.ilike.${cs.replace(/[,()]/g, '')}`).join(',');
+        let profileData = [], pg = 0, more = true;
+        while (more) {
+            const { data, error } = await sbApp.from('crm_customers')
+                .select('*').or(orFilter)
+                .range(pg * 1000, (pg + 1) * 1000 - 1);
+            if (error) {
+                tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#EF4444;">${error.message}</td></tr>`;
+                return;
+            }
+            if (data && data.length > 0) { profileData = profileData.concat(data); more = data.length === 1000; pg++; }
+            else more = false;
+        }
+
+        // Build lookup: (no_hp|cs) → profile record
+        const profileMap = {};
+        profileData.forEach(p => {
+            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
+            profileMap[key] = p;
+        });
+
+        // ── 4. Merge: list dari orders + profile dari crm_customers ──
+        // Hanya tampilkan pelanggan yang ada di orders (bukan semua isi crm_customers)
+        const orderKeys = new Set(orders.map(o => (o.hp || o.nama || '') + '|' + (o.cs || '')));
+        const all = profileData.filter(p => {
+            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
+            return orderKeys.has(key);
+        });
+
+        if (!all.length) {
+            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data pelanggan</td></tr>`;
+            return;
+        }
+
+        crmCustomers = all;
+
+        const csSet = [...new Set(all.map(c => c.nama_cs).filter(Boolean))].sort();
+        document.getElementById('pelangganCSFilter').innerHTML =
+            '<option value="">Semua CS</option>' + csSet.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        renderPelangganTable();
+    }
+
+    function renderPelangganTable() {
+        const q    = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
+        const type = document.getElementById('pelangganTypeFilter')?.value || '';
+        const cs   = document.getElementById('pelangganCSFilter')?.value || '';
+
+        filteredCustomers = crmCustomers.filter(c => {
+            if (q && !(c.nama?.toLowerCase().includes(q) || c.no_hp?.includes(q))) return false;
+            if (type && !(c.type || '').includes(type)) return false;
+            if (cs   && !normEq(c.nama_cs, cs)) return false;
+            return true;
+        });
+
+        pelangganPage = 1;
+        document.getElementById('pelangganCount').textContent = `${filteredCustomers.length} pelanggan`;
+        renderPelangganPage();
+    }
+
+    function renderPelangganPage() {
+        const tb = document.getElementById('pelangganTbody');
+        const total = filteredCustomers.length;
+        const totalPages = Math.ceil(total / pelangganPageSize);
+        const start = (pelangganPage - 1) * pelangganPageSize;
+        const slice = filteredCustomers.slice(start, start + pelangganPageSize);
+
+        if (!slice.length) {
+            tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data</td></tr>';
+            document.getElementById('pelangganPagination').innerHTML = '';
+            return;
+        }
+
+        const typeColor = { 'Aktif':'#10B981', 'Pasif':'#F59E0B', 'Jenuh':'#EF4444' };
+        const typeEmoji = { 'Aktif':'🟢', 'Pasif':'🟡', 'Jenuh':'🟠' };
+
+        tb.innerHTML = slice.map((c, i) => {
+            const typeKey = Object.keys(typeEmoji).find(k => (c.type||'').includes(k)) || '';
+            const tc = typeColor[typeKey] || '#9CA3AF';
+            const interaksiColor = {
+                'RESPON BAIK':'#10B981', 'READ':'#F59E0B',
+                'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444'
+            }[c.interaksi_terakhir] || '#9CA3AF';
+
+            return `<tr>
+                <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
+                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(c.nama||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(c.no_hp||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(c.kab||'-')}</td>
+                <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||'')}">${escapeHtml(c.penyakit||'-')}</td>
+                <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
+                <td>${c.interaksi_terakhir ? `<span class="crm-badge" style="background:${interaksiColor}20;color:${interaksiColor};font-size:10px;">${escapeHtml(c.interaksi_terakhir)}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.last_fu||'—'}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.tgl_lahir||'—'}</td>
+                <td style="font-size:12px;color:#6B7280;">${escapeHtml(c.nama_cs||'-')}</td>
+                <td><button onclick="openPelangganDetail(${c.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
+            </tr>`;
+        }).join('');
+
+        // Pagination
+        const pg = document.getElementById('pelangganPagination');
+        pg.innerHTML = totalPages > 1 ? `
+            <button onclick="pelangganGoPage(${pelangganPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage===1?'disabled':''}>‹ Prev</button>
+            <span style="font-size:13px;color:#6B7280;">Hal ${pelangganPage} / ${totalPages}</span>
+            <button onclick="pelangganGoPage(${pelangganPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage===totalPages?'disabled':''}>Next ›</button>
+        ` : '';
+    }
+
+    function pelangganGoPage(pg) {
+        const total = Math.ceil(filteredCustomers.length / pelangganPageSize);
+        if (pg < 1 || pg > total) return;
+        pelangganPage = pg;
+        renderPelangganPage();
+    }
+
+    function resetPelangganFilter() {
+        document.getElementById('pelangganSearch').value = '';
+        document.getElementById('pelangganTypeFilter').value = '';
+        document.getElementById('pelangganCSFilter').value = '';
+        renderPelangganTable();
+    }
+
+    let editPelangganId = null;
+
+    function openPelangganDetail(id) {
+        const c = crmCustomers.find(x => x.id === id);
+        if (!c) return;
+        editPelangganId = id;
+        document.getElementById('editPelangganSub').textContent = `${c.nama || '-'} · ${c.no_hp || '-'} · ${c.kab || '-'}`;
+        document.getElementById('epType').value        = c.type || '';
+        document.getElementById('epInteraksi').value   = c.interaksi_terakhir || '';
+        document.getElementById('epPenyakit').value    = c.penyakit || '';
+        document.getElementById('epTglLahir').value    = c.tgl_lahir || '';
+        document.getElementById('epUsia').value        = c.usia || '';
+        document.getElementById('epJK').value          = c.jenis_kelamin || '';
+        document.getElementById('epPekerjaan').value   = c.pekerjaan || '';
+        document.getElementById('epLastFU').value      = c.last_fu || '';
+        document.getElementById('epPerkembangan').value= c.perkembangan || '';
+        document.getElementById('epCatatan').value     = c.catatan || '';
+        document.getElementById('editPelangganModal').classList.remove('hidden');
+    }
+
+    function closeEditPelangganModal() {
+        document.getElementById('editPelangganModal').classList.add('hidden');
+        editPelangganId = null;
+    }
+
+    async function savePelanggan() {
+        if (!editPelangganId) return;
+        const updates = {
+            type:               document.getElementById('epType').value || null,
+            interaksi_terakhir: document.getElementById('epInteraksi').value || null,
+            penyakit:           document.getElementById('epPenyakit').value || null,
+            tgl_lahir:          document.getElementById('epTglLahir').value || null,
+            usia:               document.getElementById('epUsia').value || null,
+            jenis_kelamin:      document.getElementById('epJK').value || null,
+            pekerjaan:          document.getElementById('epPekerjaan').value || null,
+            last_fu:            document.getElementById('epLastFU').value || null,
+            perkembangan:       document.getElementById('epPerkembangan').value || null,
+            catatan:            document.getElementById('epCatatan').value || null,
+        };
+        const { error } = await sbApp.from('crm_customers').update(updates).eq('id', editPelangganId);
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+
+        // Update local array
+        const idx = crmCustomers.findIndex(x => x.id === editPelangganId);
+        if (idx >= 0) crmCustomers[idx] = { ...crmCustomers[idx], ...updates };
+
+        closeEditPelangganModal();
+        renderPelangganTable();
+    }
+
+    // ── UPLOAD CSV ──
+    function showUploadModal() {
+        document.getElementById('uploadModal').classList.remove('hidden');
+    }
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.add('hidden');
+        document.getElementById('uploadFileInput').value = '';
+        document.getElementById('uploadStatus').innerHTML = '';
+    }
+
+    function parseIndonesianDate(str) {
+        if (!str || str.includes('#') || str === 'FALSE' || str === 'TRUE') return null;
+        str = str.trim();
+        const bulan = { 'Jan':'01','Feb':'02','Mar':'03','Apr':'04','Mei':'05','Mei':'05',
+            'Jun':'06','Jul':'07','Agu':'08','Agt':'08','Sep':'09','Okt':'10','Nov':'11','Des':'12' };
+        // "30 Des 2024"
+        let m = str.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+        if (m) {
+            const mo = bulan[m[2].substring(0,3)];
+            if (mo) return `${m[3]}-${mo}-${m[1].padStart(2,'0')}`;
+        }
+        // "31/12/24" or "31/12/2024"
+        m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+        if (m) {
+            let y = m[3]; if (y.length === 2) y = '20' + y;
+            return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+        }
+        return null;
+    }
+
+    function parseBool(val) {
+        if (!val) return false;
+        return val.toString().trim().toUpperCase() === 'TRUE';
+    }
+
+    function cleanVal(val) {
+        if (!val) return null;
+        const s = val.toString().trim();
+        if (s === '' || s.startsWith('#') || s === 'FALSE' || s === 'TRUE') return null;
+        return s;
+    }
+
+    async function processUpload() {
+        const file = document.getElementById('uploadFileInput').files[0];
+        if (!file) { alert('Pilih file CSV dulu!'); return; }
+
+        const status = document.getElementById('uploadStatus');
+        status.innerHTML = '<div style="color:#6366F1;">⏳ Membaca file...</div>';
+
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { status.innerHTML = '<div style="color:#EF4444;">File kosong atau tidak valid</div>'; return; }
+
+        // Parse header
+        const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, ''));
+
+        status.innerHTML = `<div style="color:#6366F1;">⏳ Memproses ${lines.length - 1} baris...</div>`;
+
+        const colMap = {
+            tgl:    ['tgl'],
+            nama:   ['nama'],
+            no_hp:  ['no_hp', 'no_hp_'],
+            desa:   ['desa'],
+            kec:    ['kec'],
+            kab:    ['kab'],
+            prov:   ['prov'],
+            nama_cs:['nama_cs'],
+            crm:    ['crm'],
+            type:   ['type'],
+            penyakit:['penyakit'],
+            usia:   ['usia'],
+            jenis_kelamin: ['jenis_kelamin'],
+            pekerjaan: ['pekerjaanaktivitas','pekerjaan'],
+            hobi:   ['hobikesenangan','hobi'],
+            tgl_lahir: ['tgl_lahir'],
+            manjur: ['manjur'],
+            zonk:   ['zonk'],
+            perkembangan: ['perkembangan'],
+            edukasi: ['edukasi'],
+            edukasi_2: ['edukasi_2'],
+            promo:  ['promo'],
+            ro:     ['ro'],
+            jumlah_box: ['jumlah_box'],
+            point:  ['point'],
+            interaksi_terakhir: ['interaksi_terakhir'],
+            last_fu: ['last_fu'],
+            tgl_potensi_ro: ['tgl_potensi_ro'],
+            sebab_gagal_ro: ['sebabgagal_ro','sebab'],
+            curhat: ['curhat'],
+            catatan: ['catatan_khususcustomer','catatan_khusus','catatan'],
+        };
+
+        function getCol(field) {
+            const aliases = colMap[field] || [field];
+            for (const alias of aliases) {
+                const idx = headers.findIndex(h => h.includes(alias) || alias.includes(h));
+                if (idx >= 0) return idx;
+            }
+            return -1;
+        }
+
+        const idx = {};
+        Object.keys(colMap).forEach(f => { idx[f] = getCol(f); });
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const cols = parseCSVLine(lines[i]);
+            const get = (f) => idx[f] >= 0 ? (cols[idx[f]] || '').trim() : '';
+
+            const nama = get('nama');
+            if (!nama || nama.startsWith('#')) continue;
+
+            // clean type (strip emoji prefix if any)
+            let typeVal = get('type');
+            if (typeVal.includes('Aktif')) typeVal = '🟢 Aktif';
+            else if (typeVal.includes('Pasif')) typeVal = '🟡 Pasif';
+            else if (typeVal.includes('Jenuh')) typeVal = '🟠 Jenuh';
+            else typeVal = cleanVal(typeVal);
+
+            rows.push({
+                tgl:        parseIndonesianDate(get('tgl')),
+                nama:       nama,
+                no_hp:      cleanVal(get('no_hp')),
+                desa:       cleanVal(get('desa')),
+                kec:        cleanVal(get('kec')),
+                kab:        cleanVal(get('kab')),
+                prov:       cleanVal(get('prov')),
+                nama_cs:    cleanVal(get('nama_cs')),
+                crm:        cleanVal(get('crm')),
+                type:       typeVal,
+                penyakit:   cleanVal(get('penyakit')),
+                usia:       cleanVal(get('usia')),
+                jenis_kelamin: cleanVal(get('jenis_kelamin')),
+                pekerjaan:  cleanVal(get('pekerjaan')),
+                hobi:       cleanVal(get('hobi')),
+                tgl_lahir:  cleanVal(get('tgl_lahir')),
+                manjur:     parseBool(get('manjur')),
+                zonk:       parseBool(get('zonk')),
+                perkembangan: cleanVal(get('perkembangan')),
+                edukasi:    parseBool(get('edukasi')),
+                edukasi_2:  parseBool(get('edukasi_2')),
+                promo:      parseBool(get('promo')),
+                ro:         parseBool(get('ro')),
+                jumlah_box: parseInt(get('jumlah_box')) || null,
+                point:      parseInt(get('point')) || null,
+                interaksi_terakhir: cleanVal(get('interaksi_terakhir')),
+                last_fu:    parseIndonesianDate(get('last_fu')),
+                tgl_potensi_ro: parseIndonesianDate(get('tgl_potensi_ro')),
+                sebab_gagal_ro: cleanVal(get('sebab_gagal_ro')),
+                curhat:     cleanVal(get('curhat')),
+                catatan:    cleanVal(get('catatan')),
+            });
+        }
+
+        if (!rows.length) { status.innerHTML = '<div style="color:#EF4444;">Tidak ada data valid ditemukan</div>'; return; }
+
+        // Batch insert 100 per request
+        let inserted = 0, errors = 0;
+        const batchSize = 100;
+        for (let i = 0; i < rows.length; i += batchSize) {
+            const batch = rows.slice(i, i + batchSize);
+            const { error } = await sbApp.from('crm_customers').insert(batch);
+            if (error) { errors += batch.length; console.error(error); }
+            else inserted += batch.length;
+            status.innerHTML = `<div style="color:#6366F1;">⏳ Upload ${Math.min(i + batchSize, rows.length)} / ${rows.length}...</div>`;
+        }
+
+        status.innerHTML = `<div style="color:#10B981;font-weight:700;">✅ Berhasil upload ${inserted} pelanggan${errors ? ` (${errors} error)` : ''}</div>`;
+        await loadPelanggan();
+    }
+
+    function parseCSVLine(line) {
+        const result = [];
+        let cur = '', inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+                else inQuote = !inQuote;
+            } else if (ch === ',' && !inQuote) {
+                result.push(cur); cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur);
+        return result;
+    }
+
+    // ── PESANAN (ORDERS) ──
+    async function loadOrders() {
+        if (!assignments[currentUser.username]) {
+            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
+            return;
+        }
+        const assignedData = assignmentDates[currentUser.username] || [];
+        if (!assignedData.length) {
+            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
+            return;
+        }
+
+        document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
+        allOrders = [];
+
+        // Coba baca dari crm_customer_orders dulu (sbApp)
+        let page = 0, hasMore = true;
+        while (hasMore) {
+            const { data } = await sbApp.from('crm_customer_orders')
+                .select('*')
+                .eq('crm_name', currentUser.username)
+                .range(page*1000, (page+1)*1000-1);
+            if (data && data.length > 0) {
+                const normalized = data.map(o => ({
+                    ...o,
+                    id:         o.orderan_id,
+                    hp:         o.no_hp,
+                    created_at: o.tgl_created,
+                }));
+                allOrders = allOrders.concat(normalized);
+                hasMore = data.length === 1000;
+                page++;
+            } else hasMore = false;
+        }
+
+        // Fallback ke all_orderan kalau crm_customer_orders masih kosong
+        if (!allOrders.length) {
+            const uniqueCS = [...new Set(assignedData.map(a => a.cs))];
+            const dates   = assignedData.map(a => ({ from: a.dateFrom, to: a.dateTo }));
+            const minDate = dates.reduce((m,r) => r.from < m ? r.from : m, dates[0].from);
+            const maxDate = dates.reduce((m,r) => r.to > m ? r.to : m, dates[0].to);
+            const fromUTC = new Date(minDate + 'T00:00:00+07:00').toISOString();
+            const toUTC   = new Date(maxDate + 'T23:59:59+07:00').toISOString();
+            let pg2 = 0, more2 = true;
+            while (more2) {
+                const { data } = await sbData.from('all_orderan').select('*')
+                    .ilike('sumber','Validasi').in('cs', uniqueCS)
+                    .gte('created_at', fromUTC).lte('created_at', toUTC)
+                    .range(pg2*1000, (pg2+1)*1000-1);
+                if (data && data.length > 0) { allOrders = allOrders.concat(data); more2 = data.length === 1000; pg2++; }
+                else more2 = false;
+            }
+        }
+
+        const matching = allOrders.filter(o => {
+            const p = extractProduk(o.jumlah) || o.produk; if (!p) return false;
+            const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
+            if (!d) return false;
+            return assignedData.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && d >= a.dateFrom && d <= a.dateTo);
+        });
+
+        orders = Array.from(new Map(matching.map(i => [i.id, i])).values());
+        orders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        populateFilterDropdowns(assignedData);
+        applyFilters();
+        renderDashboard();
+    }
+
+    function populateFilterDropdowns(assignedData) {
+        // Deduplikasi case-insensitive: "ghazi" dan "Ghazi" jadi 1 opsi "Ghazi"
+        const csMap = {}, produkMap = {};
+        assignedData.forEach(a => {
+            const ck = (a.cs||'').trim().toLowerCase();
+            if (ck && !csMap[ck]) csMap[ck] = norm(a.cs);
+            const pk = (a.produk||'').trim().toLowerCase();
+            if (pk && !produkMap[pk]) produkMap[pk] = (a.produk||'').trim().toUpperCase();
+        });
+        document.getElementById('filterCS').innerHTML = '<option value="">Semua CS</option>' +
+            Object.values(csMap).sort().map(c=>`<option value="${c}">${c}</option>`).join('');
+        document.getElementById('filterProduk').innerHTML = '<option value="">Semua Produk</option>' +
+            Object.values(produkMap).sort().map(p=>`<option value="${p}">${p}</option>`).join('');
+        const eksMap = {};
+        orders.forEach(o => { const e = extractEkspedisi(o.pembayaran); if(e) eksMap[e.toLowerCase()] = e.toUpperCase(); });
+        document.getElementById('filterEkspedisi').innerHTML = '<option value="">Semua Ekspedisi</option>' +
+            Object.values(eksMap).sort().map(e=>`<option value="${e}">${e}</option>`).join('');
+    }
+
+    function applyFilters() {
+        const q    = document.getElementById('crmSearch').value.toLowerCase();
+        const st   = document.getElementById('crmFilter').value;
+        const tgl  = document.getElementById('filterTanggalAssign').value;
+        const cs   = document.getElementById('filterCS').value;
+        const pr   = document.getElementById('filterProduk').value;
+        const eks  = document.getElementById('filterEkspedisi').value;
+        const ad   = assignmentDates[currentUser.username] || [];
+
+        filteredOrders = orders.filter(o => {
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
+            if (st !== 'all' && o.status !== st) return false;
+            if (tgl) { const p = extractProduk(o.jumlah); if (!ad.some(a => normEq(a.cs,o.cs) && normEq(a.produk,p) && a.dateFrom===tgl)) return false; }
+            if (cs  && !normEq(o.cs, cs)) return false;
+            if (pr  && !normEq(extractProduk(o.jumlah), pr)) return false;
+            if (eks && !normEq(extractEkspedisi(o.pembayaran), eks)) return false;
+            return true;
+        });
+        currentPage = 1;
+        updateStats();
+        renderTableWithPagination();
+        updateFilterInfo();
+    }
+
+    function clearFilters() {
+        ['filterTanggalAssign','filterCS','filterProduk','filterEkspedisi'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('crmSearch').value = '';
+        document.getElementById('crmFilter').value = 'all';
+        applyFilters();
+    }
+
+    function updateFilterInfo() {
+        const active = [];
+        if (document.getElementById('filterTanggalAssign').value) active.push('Tanggal');
+        if (document.getElementById('filterCS').value) active.push('CS');
+        if (document.getElementById('filterProduk').value) active.push('Produk');
+        if (document.getElementById('filterEkspedisi').value) active.push('Ekspedisi');
+        document.getElementById('filterInfo').textContent = active.length ? `Filter aktif: ${active.join(', ')}` : '';
+    }
+
+    function filterOrders() { applyFilters(); }
+
+    function changeRowsPerPage() {
+        rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+        currentPage = 1;
+        renderTableWithPagination();
+    }
+
+    function renderTableWithPagination() {
+        const total = filteredOrders.length;
+        const totalPages = Math.ceil(total / rowsPerPage);
+        const start = (currentPage - 1) * rowsPerPage;
+        filtered = filteredOrders.slice(start, start + rowsPerPage);
+
+        document.getElementById('paginationInfo').textContent =
+            `Menampilkan ${total > 0 ? start+1 : 0}–${Math.min(start+rowsPerPage, total)} dari ${total} orderan`;
+
+        renderTable();
+
+        const pgEl = document.getElementById('crmPagination');
+        if (totalPages > 1) {
+            pgEl.innerHTML = `
+                <button onclick="crmGoPage(${currentPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${currentPage===1?'disabled':''}>‹ Prev</button>
+                <span style="font-size:13px;color:#6B7280;">Hal ${currentPage} / ${totalPages}</span>
+                <button onclick="crmGoPage(${currentPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${currentPage===totalPages?'disabled':''}>Next ›</button>`;
+        } else { pgEl.innerHTML = ''; }
+    }
+
+    function crmGoPage(pg) {
+        const tp = Math.ceil(filteredOrders.length / rowsPerPage);
+        if (pg < 1 || pg > tp) return;
+        currentPage = pg;
+        renderTableWithPagination();
+    }
+
+    function updateStats() {
+        document.getElementById('statTotal').textContent     = filteredOrders.length;
+        document.getElementById('statPending').textContent   = filteredOrders.filter(o=>o.status==='Pending').length;
+        document.getElementById('statDelivered').textContent = filteredOrders.filter(o=>o.status==='Delivered').length;
+        document.getElementById('statCancelled').textContent = filteredOrders.filter(o=>o.status==='Cancelled').length;
+    }
+
+    function renderTable() {
+        const tb = document.getElementById('crmTbody');
+        if (!filtered.length) {
+            tb.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Tidak ada data.</td></tr>';
+            return;
+        }
+        tb.innerHTML = filtered.map(o => {
+            const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
+            const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
+            const produk = extractProduk(o.jumlah) || '-';
+            const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status]||'#9CA3AF';
+            const checked = selectedOrders.has(o.id);
+            return `<tr style="${checked?'background:#F9FAFB;':''}">
+                <td><input type="checkbox" ${checked?'checked':''} onchange="toggleOrderSelection(${o.id})"></td>
+                <td style="white-space:nowrap;font-size:12px;color:#6B7280;">${tgl}</td>
+                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(o.nama||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.hp||'-')}</td>
+                <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
+                <td style="font-size:12px;">${escapeHtml(o.kabupaten||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.provinsi||'-')}</td>
+                <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(o.pesanan||o['jumlah pesanan']||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.pembayaran||'-')}</td>
+                <td style="font-size:11px;font-weight:600;">${escapeHtml(o.resi||'-')}</td>
+                <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
+                <td style="font-size:12px;">${escapeHtml(o.cs||'-')}</td>
+                <td><button onclick="openEditModal(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Edit</button></td>
+            </tr>`;
+        }).join('');
+        updateSelectedCount();
+    }
+
+    function toggleOrderSelection(id) { if(selectedOrders.has(id)) selectedOrders.delete(id); else selectedOrders.add(id); updateSelectedCount(); }
+    function toggleSelectAll()   { const cb=document.getElementById('selectAllCheckbox'); if(cb.checked) filtered.forEach(o=>selectedOrders.add(o.id)); else filtered.forEach(o=>selectedOrders.delete(o.id)); renderTable(); }
+    function selectAllOrders()   { filtered.forEach(o=>selectedOrders.add(o.id)); document.getElementById('selectAllCheckbox').checked=true; renderTable(); }
+    function deselectAllOrders() { selectedOrders.clear(); document.getElementById('selectAllCheckbox').checked=false; renderTable(); }
+    function updateSelectedCount() { document.getElementById('selectedCount').textContent=`${selectedOrders.size} dipilih`; }
+
+    function exportSelectedToCSV() {
+        const sel = orders.filter(o => selectedOrders.has(o.id));
+        if (!sel.length) { alert('Pilih orderan dulu!'); return; }
+        const csv = [
+            ['Tanggal','Nama','No HP','Produk','Kabupaten','Provinsi','Pesanan','Pembayaran','Resi','Status','CS'].join(','),
+            ...sel.map(o => [
+                o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : '',
+                `"${(o.nama||'').replace(/"/g,'""')}"`, o.hp||'',
+                `"${(extractProduk(o.jumlah)||'').replace(/"/g,'""')}"`,
+                o.kabupaten||'', o.provinsi||'',
+                `"${(o.pesanan||o['jumlah pesanan']||'').replace(/"/g,'""')}"`,
+                o.pembayaran||'', o.resi||'', o.status||'', o.cs||''
+            ].join(','))
+        ].join('\n');
+        const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+        const a    = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `orders_${new Date().toISOString().slice(0,10)}.csv` });
+        a.click();
+        alert(`✅ ${sel.length} orderan berhasil di-download!`);
+    }
+
+    function openEditModal(id) {
+        const o = orders.find(x=>x.id===id); if(!o) return;
+        editId = id;
+        document.getElementById('editModalTitle').textContent = `Edit — ${o.nama||id}`;
+        document.getElementById('editResi').value   = o.resi   ||'';
+        document.getElementById('editStatus').value = o.status ||'Pending';
+        document.getElementById('editTeam').value   = o.team   ||'';
+        document.getElementById('editCRM').value    = o.crm    ||'';
+        document.getElementById('editRetur').value  = o.retur  ||'';
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+    async function updateOrder() {
+        const updates = {
+            resi:   document.getElementById('editResi').value,
+            status: document.getElementById('editStatus').value,
+            team:   document.getElementById('editTeam').value,
+            crm:    document.getElementById('editCRM').value,
+            retur:  document.getElementById('editRetur').value
+        };
+        const { error } = await sbApp.from('crm_customer_orders').update(updates).eq('orderan_id', editId);
+        if (error) { alert('Gagal update: ' + error.message); return; }
+        await loadOrders();
+        closeEditModal();
+        alert('✅ Berhasil diupdate!');
+    }
+
+    // Sync ulang semua data dari server (assignment + orders + pelanggan)
+    async function syncAll() {
+        const btn   = document.getElementById('syncBtn');
+        const label = document.getElementById('syncBtnLabel');
+        if (btn) { btn.disabled = true; label.textContent = 'Memuat...'; }
+        try {
+            await loadAssignments();
+            await loadOrders();       // harus duluan karena pelanggan fallback ke orders
+            await loadPelanggan();
+            renderDashboard();
+        } finally {
+            if (btn) { btn.disabled = false; label.textContent = 'Sync Data'; }
+        }
+    }
+
+    // Refresh dashboard setiap kali date range picker di-apply
+    document.addEventListener('dateRangeApplied', () => renderDashboard());
+
+    // ── INIT ──
+    window.onload = async function() {
+        await initSupabase();
+        const stored = sessionStorage.getItem('user');
+        if (!stored) { window.location.href = 'index.html'; return; }
+        currentUser = JSON.parse(stored);
+        if (currentUser.role !== 'crm') { window.location.href = 'index.html'; return; }
+
+        document.getElementById('crmUsername').textContent    = currentUser.username;
+        document.getElementById('crmTopUsername').textContent = currentUser.username.toUpperCase();
+
+        await loadAssignments();
+        await loadOrders();
+
+        // Auto-refresh setiap 2 menit di background
+        setInterval(syncAll, 2 * 60 * 1000);
+
+        // Refresh juga saat user kembali ke tab ini
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') syncAll();
+        });
+    };
+</script>
+</body>
+</html>

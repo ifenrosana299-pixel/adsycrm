@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Adsy - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="loginView">
+        <div class="login-card">
+            <div class="login-title">CRM Adsy</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="loginUsername" class="form-input" onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="loginPassword" class="form-input" onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <button onclick="login()" class="btn btn-primary" style="width: 100%;">LOGIN</button>
+        </div>
+    </div>
+
+    <script src="js/shared.js"></script>
+    <script>
+        window.onload = async function() {
+            await initSupabase();
+
+            // Kalau sudah login, redirect langsung ke halaman yang sesuai
+            const stored = sessionStorage.getItem('user');
+            if (stored) {
+                const user = JSON.parse(stored);
+                if (user.role === 'admin') window.location.href = 'admin.html';
+                else if (user.role === 'spv') window.location.href = 'spv.html';
+                else if (user.role === 'crm') window.location.href = 'crm.html';
+            }
+        };
+    </script>
+</body>
+</html>
