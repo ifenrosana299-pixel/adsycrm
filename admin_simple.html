@@ -173,7 +173,7 @@
         window.onload = async function() {
             await initSupabase();
             const stored = sessionStorage.getItem('user');
-            if (!stored) { window.location.href = 'index.html'; return; }
+            if (!stored) { window.location.href = 'login_simple.html'; return; }
             const user = JSON.parse(stored);
             if (user.role !== 'admin') { alert('Akses ditolak!'); logout(); return; }
             await loadCRMUsers();
@@ -418,7 +418,7 @@
 
         function logout() {
             sessionStorage.removeItem('user');
-            window.location.href = 'index.html';
+            window.location.href = 'login_simple.html';
         }
     </script>
 </body>
