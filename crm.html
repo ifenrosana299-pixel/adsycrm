@@ -437,6 +437,9 @@
             <div class="crm-nav-item" id="crmNavItem-task" onclick="crmShow('task', this)">
                 <span class="crm-nav-icon">✅</span> Task
             </div>
+            <div class="crm-nav-item" id="crmNavItem-testimoni" onclick="crmShow('testimoni', this)">
+                <span class="crm-nav-icon">⭐</span> Testimoni
+            </div>
         </nav>
 
         <div class="crm-sidebar-footer">
@@ -795,6 +798,98 @@
                 <div class="crm-coming-soon"><div class="crm-coming-soon-icon">✅</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur manajemen task sedang dikembangkan</div></div>
             </section>
 
+            <!-- ═══ TESTIMONI ═══ -->
+            <section id="crmSec-testimoni" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">⭐</div>
+                        <h2>Testimoni</h2>
+                    </div>
+                    <button onclick="loadTestimoni()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Upload card -->
+                <div class="crm-card" style="margin-bottom:20px;">
+                    <div class="crm-card-title">📤 Upload Testimoni Baru</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                        <div>
+                            <label class="crm-form-label">Produk</label>
+                            <select id="testiProduk" class="crm-select" style="width:100%;margin-top:5px;">
+                                <option value="">— Pilih Produk —</option>
+                                <option>DIABCARE</option>
+                                <option>URICARE</option>
+                                <option>GASTRIC</option>
+                                <option>STROCAV</option>
+                                <option>DIALIVE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="crm-form-label">Foto Testimoni</label>
+                            <div id="testiDropArea"
+                                style="margin-top:5px;border:2px dashed #C7D2FE;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#F9FAFB;transition:all 0.15s;"
+                                onclick="document.getElementById('testiFileInput').click()"
+                                ondragover="testiDragOver(event)"
+                                ondrop="testiDrop(event)">
+                                <div id="testiDropLabel" style="font-size:13px;color:#9CA3AF;">📷 Klik atau drag foto ke sini</div>
+                                <img id="testiPreviewImg" style="display:none;max-height:120px;max-width:100%;border-radius:8px;margin-top:8px;object-fit:contain;" alt="preview">
+                            </div>
+                            <input type="file" id="testiFileInput" accept="image/*" style="display:none;" onchange="testiFileChange(this)">
+                        </div>
+                    </div>
+                    <button onclick="analyzeTestimoni()" id="testiAnalyzeBtn" class="crm-btn crm-btn-primary">🔍 Analisis dengan AI</button>
+                </div>
+
+                <!-- Hasil Analisis -->
+                <div id="testiResultCard" class="crm-card hidden" style="margin-bottom:20px;border-left:4px solid #10B981;">
+                    <div class="crm-card-title" style="color:#10B981;">✅ Hasil Analisis AI — cek & edit jika perlu</div>
+                    <div style="display:grid;gap:12px;margin-bottom:16px;">
+                        <div>
+                            <label class="crm-form-label">Nama Customer</label>
+                            <input type="text" id="testiNamaCustomer" class="crm-input" style="width:100%;margin-top:5px;" placeholder="kosong jika tidak terdeteksi">
+                        </div>
+                        <div>
+                            <label class="crm-form-label">Khasiat</label>
+                            <textarea id="testiKhasiat" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
+                        </div>
+                        <div>
+                            <label class="crm-form-label">Ringkasan</label>
+                            <textarea id="testiRingkasan" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="simpanTestimoni()" id="testiSimpanBtn" class="crm-btn crm-btn-primary">💾 Simpan Testimoni</button>
+                        <button onclick="resetTestiForm()" class="crm-btn crm-btn-secondary">✖ Batal</button>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="crm-filters" style="margin-bottom:16px;">
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Produk</label>
+                        <select id="testiFilterProduk" class="crm-select" onchange="renderTestimoniGallery()">
+                            <option value="">Semua Produk</option>
+                            <option>DIABCARE</option>
+                            <option>URICARE</option>
+                            <option>GASTRIC</option>
+                            <option>STROCAV</option>
+                            <option>DIALIVE</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group" style="flex:2;min-width:200px;">
+                        <label class="crm-form-label">Cari Nama / Khasiat</label>
+                        <input type="text" id="testiSearch" class="crm-input" placeholder="🔍 Ketik..." oninput="renderTestimoniGallery()">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <span id="testiCount" style="font-size:12px;color:#9CA3AF;"></span>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div id="testiGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+                    <div style="grid-column:1/-1;text-align:center;padding:48px;color:#9CA3AF;">Memuat...</div>
+                </div>
+            </section>
+
         </div><!-- /crm-content -->
     </div><!-- /crm-main -->
 </div><!-- /crm-layout -->
@@ -937,7 +1032,7 @@
 
 <script src="js/shared.js"></script>
 <script>
-    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task'];
+    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
 
@@ -955,6 +1050,7 @@
 
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
+        if (name === 'testimoni') loadTestimoni();
         if (name === 'dashboard') renderDashboard();
     }
 
@@ -1789,6 +1885,267 @@
             if (document.visibilityState === 'visible') syncAll();
         });
     };
+
+    // ════════════════════════════════════════
+    // TESTIMONI
+    // ════════════════════════════════════════
+    let testiAll  = [];
+    let testiFile = null;
+
+    const TESTI_PRODUK_COLORS = {
+        'DIABCARE': '#4F46E5',
+        'URICARE':  '#059669',
+        'GASTRIC':  '#D97706',
+        'STROCAV':  '#DC2626',
+        'DIALIVE':  '#0EA5E9',
+    };
+
+    function testiDragOver(e) {
+        e.preventDefault();
+        const area = document.getElementById('testiDropArea');
+        area.style.borderColor = '#4F46E5';
+        area.style.background  = '#EEF2FF';
+    }
+
+    function testiDrop(e) {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) testiSetFile(file);
+        const area = document.getElementById('testiDropArea');
+        area.style.borderColor = '#C7D2FE';
+        area.style.background  = '#F9FAFB';
+    }
+
+    function testiFileChange(input) {
+        const file = input.files[0];
+        if (file) testiSetFile(file);
+    }
+
+    function testiSetFile(file) {
+        testiFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.getElementById('testiPreviewImg');
+            img.src = e.target.result;
+            img.style.display = 'block';
+            document.getElementById('testiDropLabel').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Kompres gambar via Canvas sebelum kirim ke AI (hemat token & bandwidth)
+    function testiCompress(file, maxWidth = 1200, quality = 0.82) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                canvas.toBlob(resolve, 'image/jpeg', quality);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    async function analyzeTestimoni() {
+        const produk = document.getElementById('testiProduk').value;
+        if (!produk)    return alert('Pilih produk terlebih dahulu!');
+        if (!testiFile) return alert('Pilih foto testimoni terlebih dahulu!');
+
+        const btn = document.getElementById('testiAnalyzeBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menganalisis...';
+
+        try {
+            const compressed = await testiCompress(testiFile);
+            const base64 = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result.split(',')[1]);
+                reader.readAsDataURL(compressed);
+            });
+
+            const response = await fetch('/api/analyze-testimoni', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg', produk })
+            });
+
+            if (!response.ok) throw new Error('Server error ' + response.status);
+            const result = await response.json();
+            if (result.error) throw new Error(result.error);
+
+            document.getElementById('testiNamaCustomer').value = result.nama_customer || '';
+            document.getElementById('testiKhasiat').value      = result.khasiat       || '';
+            document.getElementById('testiRingkasan').value    = result.ringkasan     || '';
+            document.getElementById('testiResultCard').classList.remove('hidden');
+            document.getElementById('testiResultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch(err) {
+            alert('Gagal analisis: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '🔍 Analisis dengan AI';
+        }
+    }
+
+    async function simpanTestimoni() {
+        const produk       = document.getElementById('testiProduk').value;
+        const namaCustomer = document.getElementById('testiNamaCustomer').value.trim();
+        const khasiat      = document.getElementById('testiKhasiat').value.trim();
+        const ringkasan    = document.getElementById('testiRingkasan').value.trim();
+
+        if (!produk)    return alert('Produk belum dipilih!');
+        if (!testiFile) return alert('Foto belum dipilih!');
+
+        const btn = document.getElementById('testiSimpanBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menyimpan...';
+
+        try {
+            const storagePath = `${currentUser.username}/${Date.now()}.jpg`;
+            const compressed  = await testiCompress(testiFile);
+
+            const { error: uploadErr } = await sbApp.storage
+                .from('testimoni')
+                .upload(storagePath, compressed, { contentType: 'image/jpeg', upsert: false });
+            if (uploadErr) throw uploadErr;
+
+            const { data: { publicUrl } } = sbApp.storage.from('testimoni').getPublicUrl(storagePath);
+
+            const { error: dbErr } = await sbApp.from('crm_testimonials').insert({
+                crm_name:      currentUser.username,
+                produk,
+                image_url:     publicUrl,
+                storage_path:  storagePath,
+                nama_customer: namaCustomer || null,
+                khasiat:       khasiat      || null,
+                ringkasan:     ringkasan    || null,
+            });
+            if (dbErr) throw dbErr;
+
+            alert('✅ Testimoni berhasil disimpan!');
+            resetTestiForm();
+            loadTestimoni();
+        } catch(err) {
+            alert('Gagal simpan: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '💾 Simpan Testimoni';
+        }
+    }
+
+    function resetTestiForm() {
+        testiFile = null;
+        document.getElementById('testiProduk').value            = '';
+        document.getElementById('testiFileInput').value         = '';
+        document.getElementById('testiPreviewImg').style.display = 'none';
+        document.getElementById('testiPreviewImg').src           = '';
+        document.getElementById('testiDropLabel').style.display  = 'block';
+        document.getElementById('testiResultCard').classList.add('hidden');
+        document.getElementById('testiDropArea').style.borderColor = '#C7D2FE';
+        document.getElementById('testiDropArea').style.background  = '#F9FAFB';
+    }
+
+    async function loadTestimoni() {
+        const gallery = document.getElementById('testiGallery');
+        if (!gallery) return;
+        gallery.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#9CA3AF;">Memuat...</div>';
+
+        const { data, error } = await sbApp
+            .from('crm_testimonials')
+            .select('*')
+            .eq('crm_name', currentUser.username)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            gallery.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:#EF4444;">Error: ${escapeHtml(error.message)}</div>`;
+            return;
+        }
+
+        testiAll = data || [];
+        renderTestimoniGallery();
+    }
+
+    function renderTestimoniGallery() {
+        const gallery  = document.getElementById('testiGallery');
+        const countEl  = document.getElementById('testiCount');
+        if (!gallery) return;
+
+        const filterProd = document.getElementById('testiFilterProduk')?.value || '';
+        const search     = (document.getElementById('testiSearch')?.value || '').toLowerCase();
+
+        let data = testiAll;
+        if (filterProd) data = data.filter(t => t.produk === filterProd);
+        if (search)     data = data.filter(t =>
+            (t.nama_customer || '').toLowerCase().includes(search) ||
+            (t.khasiat        || '').toLowerCase().includes(search) ||
+            (t.ringkasan      || '').toLowerCase().includes(search)
+        );
+
+        if (countEl) countEl.textContent = `${data.length} testimoni`;
+
+        if (!data.length) {
+            gallery.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:64px;background:white;border-radius:16px;">
+                    <div style="font-size:48px;margin-bottom:12px;">📭</div>
+                    <div style="font-weight:700;color:#1F2937;margin-bottom:4px;">Belum ada testimoni</div>
+                    <div style="font-size:13px;color:#9CA3AF;">Upload testimoni pertama kamu di atas</div>
+                </div>`;
+            return;
+        }
+
+        gallery.innerHTML = data.map(t => {
+            const color = TESTI_PRODUK_COLORS[t.produk] || '#6366F1';
+            const tgl   = t.created_at
+                ? new Date(new Date(t.created_at).getTime() + 7*3600*1000).toISOString().slice(0,10)
+                : '-';
+            return `
+                <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);display:flex;flex-direction:column;">
+                    <div style="position:relative;height:200px;overflow:hidden;background:#F3F4F6;${t.image_url ? 'cursor:zoom-in;' : ''}"
+                        ${t.image_url ? `onclick="window.open('${escapeHtml(t.image_url)}','_blank')"` : ''}>
+                        ${t.image_url
+                            ? `<img src="${escapeHtml(t.image_url)}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" alt="testimoni">`
+                            : `<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;">🖼️</div>`
+                        }
+                        <div style="position:absolute;top:10px;left:10px;">
+                            <span style="background:${color};color:white;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;">${escapeHtml(t.produk)}</span>
+                        </div>
+                    </div>
+                    <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:8px;">
+                        ${t.nama_customer ? `<div style="font-size:14px;font-weight:700;color:#111827;">👤 ${escapeHtml(t.nama_customer)}</div>` : ''}
+                        ${t.khasiat ? `
+                            <div>
+                                <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Khasiat</div>
+                                <div style="font-size:13px;color:#374151;line-height:1.5;">${escapeHtml(t.khasiat)}</div>
+                            </div>` : ''}
+                        ${t.ringkasan ? `
+                            <div style="background:#F9FAFB;border-radius:8px;padding:10px;margin-top:2px;">
+                                <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Ringkasan</div>
+                                <div style="font-size:12px;color:#6B7280;line-height:1.5;font-style:italic;">"${escapeHtml(t.ringkasan)}"</div>
+                            </div>` : ''}
+                        <div style="margin-top:auto;padding-top:10px;border-top:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:11px;color:#9CA3AF;">${escapeHtml(tgl)}</span>
+                            <button onclick="deleteTestimoni(${t.id})" class="crm-btn crm-btn-danger crm-btn-sm" style="padding:4px 10px;font-size:11px;">Hapus</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    async function deleteTestimoni(id) {
+        if (!confirm('Hapus testimoni ini? Foto juga akan dihapus.')) return;
+        const item = testiAll.find(t => t.id === id);
+
+        const { error } = await sbApp.from('crm_testimonials').delete().eq('id', id);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+
+        if (item?.storage_path) {
+            await sbApp.storage.from('testimoni').remove([item.storage_path]);
+        }
+
+        loadTestimoni();
+    }
 </script>
 </body>
 </html>
