@@ -3,6 +3,10 @@
     {
       "src": "/api/config",
       "dest": "/api/config.js"
+    },
+    {
+      "src": "/api/analyze-testimoni",
+      "dest": "/api/analyze-testimoni.js"
     }
   ],
   "headers": [
