@@ -1608,6 +1608,7 @@
         allOrders = [];
 
         // Coba baca dari crm_customer_orders dulu (sbApp)
+        let usedCrmOrders = false;
         let page = 0, hasMore = true;
         while (hasMore) {
             const { data } = await sbApp.from('crm_customer_orders')
@@ -1615,19 +1616,15 @@
                 .eq('crm_name', currentUser.username)
                 .range(page*1000, (page+1)*1000-1);
             if (data && data.length > 0) {
-                const normalized = data.map(o => ({
-                    ...o,
-                    id:         o.orderan_id,
-                    hp:         o.no_hp,
-                    created_at: o.tgl_created,
-                }));
+                const normalized = data.map(o => ({ ...o, id: o.orderan_id, hp: o.no_hp }));
                 allOrders = allOrders.concat(normalized);
                 hasMore = data.length === 1000;
                 page++;
+                usedCrmOrders = true;
             } else hasMore = false;
         }
 
-        // Fallback ke all_orderan kalau crm_customer_orders masih kosong
+        // Fallback ke all_orderan kalau crm_customer_orders kosong
         if (!allOrders.length) {
             const uniqueCS = [...new Set(assignedData.map(a => a.cs))];
             const dates   = assignedData.map(a => ({ from: a.dateFrom, to: a.dateTo }));
@@ -1637,8 +1634,9 @@
             const toUTC   = new Date(maxDate + 'T23:59:59+07:00').toISOString();
             let pg2 = 0, more2 = true;
             while (more2) {
+                const csFilter = uniqueCS.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
                 const { data } = await sbData.from('all_orderan').select('*')
-                    .ilike('sumber','Validasi').in('cs', uniqueCS)
+                    .ilike('sumber','Validasi').or(csFilter)
                     .gte('created_at', fromUTC).lte('created_at', toUTC)
                     .range(pg2*1000, (pg2+1)*1000-1);
                 if (data && data.length > 0) { allOrders = allOrders.concat(data); more2 = data.length === 1000; pg2++; }
@@ -1647,7 +1645,13 @@
         }
 
         const matching = allOrders.filter(o => {
-            const p = extractProduk(o.jumlah, o.nama) || o.produk; if (!p) return false;
+            const p = extractProduk(o.jumlah, o.nama) || o.produk;
+            if (!p) return false;
+            if (usedCrmOrders) {
+                // crm_customer_orders sudah di-filter saat sync, cukup match CS + produk
+                return assignedData.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p));
+            }
+            // all_orderan: filter by CS + produk + tanggal upload
             const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
             if (!d) return false;
             return assignedData.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && d >= a.dateFrom && d <= a.dateTo);
