@@ -708,11 +708,10 @@
                     const csMap = {};
                     rawData.forEach(row => {
                         if (!row.cs) return;
-                        const produk = extractProduk(row.jumlah, row.nama);
-                        if (!produk) return;
                         const csKey = norm(row.cs);
                         if (!csMap[csKey]) csMap[csKey] = { name: norm(row.cs), team: norm(row.team) || 'Lainnya', products: new Set() };
-                        csMap[csKey].products.add(produk.toUpperCase());
+                        const produk = extractProduk(row.jumlah, row.nama);
+                        if (produk) csMap[csKey].products.add(produk.toUpperCase());
                     });
 
                     allCS = Object.keys(csMap).sort().map(key => ({
@@ -746,11 +745,10 @@
                     const csMap = {};
                     rawData.forEach(row => {
                         if (!row.cs) return;
-                        const produk = extractProduk(row.jumlah, row.nama);
-                        if (!produk) return;
                         const csKey = norm(row.cs);
                         if (!csMap[csKey]) csMap[csKey] = { name: norm(row.cs), team: norm(row.team) || 'Lainnya', products: new Set() };
-                        csMap[csKey].products.add(produk.toUpperCase());
+                        const produk = extractProduk(row.jumlah, row.nama);
+                        if (produk) csMap[csKey].products.add(produk.toUpperCase());
                     });
 
                     allCS = Object.keys(csMap).sort().map(key => ({
