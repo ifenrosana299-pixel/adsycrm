@@ -3,6 +3,8 @@
 // =====================
 let sbData, sbApp, CONFIG;
 
+let skuList = [];
+
 let currentUser = null;
 let users = [];
 let assignments = {};
@@ -122,16 +124,32 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;');
 }
 
-function extractProduk(jumlahText) {
-    if (!jumlahText) return null;
+async function loadSkuList() {
+    if (skuList.length) return;
+    try {
+        const { data } = await sbData.from('sku_produk').select('kode,nama_produk');
+        skuList = data || [];
+    } catch(_) { skuList = []; }
+}
 
-    let match = jumlahText.match(/NEW\s+(.+)/i);
-    if (match) return match[1].trim().toUpperCase();
+function parseSKUKode(nama) {
+    if (!nama) return null;
+    const part = (nama.split('|')[1] || '').trim().toUpperCase();
+    if (!part) return null;
+    const match = part.match(/^([A-Z]+)\s*\d*/);
+    return match ? match[1] : null;
+}
 
-    match = jumlahText.match(/^\d+\s+\w+\s+(.+)/i);
-    if (match) return match[1].trim().toUpperCase();
-
-    return jumlahText.trim().toUpperCase();
+function extractProduk(jumlah, nama) {
+    // Prioritas: SKU dari kolom nama (format "BUDI|HRB 1|PDS")
+    if (nama && skuList.length) {
+        const kode = parseSKUKode(nama);
+        if (kode) {
+            const found = skuList.find(s => s.kode.toUpperCase() === kode.toUpperCase());
+            if (found) return found.nama_produk.toUpperCase();
+        }
+    }
+    return null;
 }
 
 function extractEkspedisi(pembayaran) {
