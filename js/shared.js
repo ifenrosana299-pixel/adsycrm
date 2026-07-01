@@ -140,14 +140,21 @@ function parseSKUKode(nama) {
     return match ? match[1] : null;
 }
 
+
 function extractProduk(jumlah, nama) {
-    // Prioritas: SKU dari kolom nama (format "BUDI|HRB 1|PDS")
-    if (nama && skuList.length) {
+    // Prioritas 1: SKU dari kolom nama (cs-input format "BUDI|HRB 1|PDS")
+    if (nama && nama.includes('|') && skuList.length) {
         const kode = parseSKUKode(nama);
         if (kode) {
             const found = skuList.find(s => s.kode.toUpperCase() === kode.toUpperCase());
             if (found) return found.nama_produk.toUpperCase();
         }
+    }
+    // Fallback: cari nama_produk di dalam teks jumlah (Excel orders)
+    if (jumlah && skuList.length) {
+        const jumlahUp = jumlah.toUpperCase();
+        const found = skuList.find(s => jumlahUp.includes(s.nama_produk.toUpperCase()));
+        if (found) return found.nama_produk.toUpperCase();
     }
     return null;
 }
