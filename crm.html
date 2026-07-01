@@ -1690,7 +1690,7 @@
         filteredOrders = orders.filter(o => {
             if (q && !(o.nama?.toLowerCase().includes(q) || o.hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
             if (st !== 'all' && o.status !== st) return false;
-            if (tgl) { const p = extractProduk(o.jumlah); if (!ad.some(a => normEq(a.cs,o.cs) && normEq(a.produk,p) && a.dateFrom===tgl)) return false; }
+            if (tgl) { const p = o.produk || extractProduk(o.jumlah); const oTgl = o.tgl_order || (o.tgl_created||'').slice(0,10); if (!ad.some(a => normEq(a.cs,o.cs) && normEq(a.produk,p) && tgl >= a.dateFrom && tgl <= a.dateTo)) return false; }
             if (cs  && !normEq(o.cs, cs)) return false;
             if (pr  && !normEq(extractProduk(o.jumlah), pr)) return false;
             if (eks && !normEq(extractEkspedisi(o.pembayaran), eks)) return false;
