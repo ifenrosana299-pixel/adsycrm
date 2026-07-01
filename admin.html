@@ -698,9 +698,9 @@
                 const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
 
                 const { data: rawData, error } = await fetchAll((from, to) =>
-                    sbData.from('all_orderan').select('cs, jumlah, team')
+                    sbData.from('all_orderan').select('cs, jumlah, nama, team')
                         .ilike('sumber', 'Validasi')
-                        .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
+                        .gte('tanggal', dateFrom).lte('tanggal', dateTo)
                         .range(from, to));
                 if (error) throw error;
 
