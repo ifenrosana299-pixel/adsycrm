@@ -1788,7 +1788,7 @@
 
     function toggleOrderSelection(id) { if(selectedOrders.has(id)) selectedOrders.delete(id); else selectedOrders.add(id); updateSelectedCount(); }
     function toggleSelectAll()   { const cb=document.getElementById('selectAllCheckbox'); if(cb.checked) filtered.forEach(o=>selectedOrders.add(o.id)); else filtered.forEach(o=>selectedOrders.delete(o.id)); renderTable(); }
-    function selectAllOrders()   { filtered.forEach(o=>selectedOrders.add(o.id)); document.getElementById('selectAllCheckbox').checked=true; renderTable(); }
+    function selectAllOrders()   { filteredOrders.forEach(o=>selectedOrders.add(o.id)); document.getElementById('selectAllCheckbox').checked=true; renderTable(); }
     function deselectAllOrders() { selectedOrders.clear(); document.getElementById('selectAllCheckbox').checked=false; renderTable(); }
     function updateSelectedCount() { document.getElementById('selectedCount').textContent=`${selectedOrders.size} dipilih`; }
 
