@@ -281,24 +281,25 @@
             const thirtyDaysAgo = new Date(todayWIB);
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
-            const dateFrom30 = thirtyDaysAgo.toISOString().split('T')[0];
-            const dateTo30   = todayWIB.toISOString().split('T')[0];
+            const dateFrom30UTC = thirtyDaysAgo.toISOString().split('T')[0] + 'T00:00:00+07:00';
+            const dateTo30UTC   = todayWIB.toISOString().split('T')[0] + 'T23:59:59+07:00';
 
             const { data, error: dashErr } = await fetchAll((from, to) =>
-                sbData.from('all_orderan').select('cs, jumlah, nama, tanggal')
+                sbData.from('all_orderan').select('cs, jumlah, nama, created_at')
                     .ilike('sumber', 'Validasi')
-                    .gte('tanggal', dateFrom30).lte('tanggal', dateTo30)
+                    .gte('created_at', dateFrom30UTC).lte('created_at', dateTo30UTC)
                     .range(from, to));
             if (dashErr) { alertEl.innerHTML = ''; return; }
 
             const unassignedByDate = {};
 
             data.forEach(order => {
-                if (!order.cs || !order.tanggal) return;
+                if (!order.cs || !order.created_at) return;
                 const produk = extractProduk(order.jumlah, order.nama);
                 if (!produk) return;
 
-                const orderDateWIB = order.tanggal.slice(0, 10);
+                const orderDateWIB = new Date(new Date(order.created_at).getTime() + 7*60*60*1000)
+                    .toISOString().split('T')[0];
 
                 let assigned = false;
                 for (const crmName in assignmentDates) {
