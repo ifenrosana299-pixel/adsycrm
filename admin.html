@@ -951,10 +951,13 @@
                 return;
             }
 
+            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+
             const { data: allOrdersData } = await fetchAll((from, to) =>
-                sbData.from('all_orderan').select('cs, jumlah, nama, tanggal')
+                sbData.from('all_orderan').select('cs, jumlah, nama')
                     .ilike('sumber', 'Validasi')
-                    .gte('tanggal', dateFrom).lte('tanggal', dateTo)
+                    .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
                     .range(from, to));
 
             const { data: assignmentsData } = await sbApp.from('crm_assignments')
