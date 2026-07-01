@@ -295,7 +295,7 @@
 
             data.forEach(order => {
                 if (!order.cs || !order.created_at) return;
-                const produk = extractProduk(order.jumlah);
+                const produk = extractProduk(order.jumlah, order.nama);
                 if (!produk) return;
 
                 const orderDateWIB = new Date(new Date(order.created_at).getTime() + 7 * 60 * 60 * 1000)
@@ -708,7 +708,7 @@
                     const csMap = {};
                     rawData.forEach(row => {
                         if (!row.cs) return;
-                        const produk = extractProduk(row.jumlah);
+                        const produk = extractProduk(row.jumlah, row.nama);
                         if (!produk) return;
                         const csKey = norm(row.cs);
                         if (!csMap[csKey]) csMap[csKey] = { name: norm(row.cs), team: norm(row.team) || 'Lainnya', products: new Set() };
@@ -739,14 +739,14 @@
 
             try {
                 const { data: rawData, error } = await fetchAll((from, to) =>
-                    sbData.from('all_orderan').select('cs, jumlah, team').range(from, to));
+                    sbData.from('all_orderan').select('cs, jumlah, nama, team').range(from, to));
                 if (error) throw error;
 
                 if (rawData.length > 0) {
                     const csMap = {};
                     rawData.forEach(row => {
                         if (!row.cs) return;
-                        const produk = extractProduk(row.jumlah);
+                        const produk = extractProduk(row.jumlah, row.nama);
                         if (!produk) return;
                         const csKey = norm(row.cs);
                         if (!csMap[csKey]) csMap[csKey] = { name: norm(row.cs), team: norm(row.team) || 'Lainnya', products: new Set() };
@@ -973,7 +973,7 @@
             const unassignedByProduct = {};
 
             (allOrdersData || []).forEach(order => {
-                const produk = extractProduk(order.jumlah);
+                const produk = extractProduk(order.jumlah, order.nama);
                 if (!produk || !order.cs) return;
 
                 const key = `${order.cs}|${produk}`;
@@ -1154,7 +1154,7 @@
                 nama:        norm(o.nama)        || null,
                 no_hp:       o.hp               || null,
                 cs:          norm(o.cs)          || null,
-                produk:      (extractProduk(o.jumlah) || '').toUpperCase() || null,
+                produk:      (extractProduk(o.jumlah, o.nama) || '').toUpperCase() || null,
                 jumlah:      o.jumlah            || null,
                 quantity:    o.quantity          || null,
                 pembayaran:  o.pembayaran        || null,
@@ -1399,6 +1399,7 @@
         // =====================
         window.onload = async function() {
             await initSupabase();
+            await loadSkuList();
 
             const stored = sessionStorage.getItem('user');
             if (!stored) { window.location.href = 'index.html'; return; }
