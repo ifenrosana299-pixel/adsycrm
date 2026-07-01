@@ -281,25 +281,24 @@
             const thirtyDaysAgo = new Date(todayWIB);
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
-            const dateFromUTC = new Date(thirtyDaysAgo.toISOString().split('T')[0] + 'T00:00:00+07:00').toISOString();
-            const dateToUTC = new Date(todayWIB.toISOString().split('T')[0] + 'T23:59:59+07:00').toISOString();
+            const dateFrom30 = thirtyDaysAgo.toISOString().split('T')[0];
+            const dateTo30   = todayWIB.toISOString().split('T')[0];
 
             const { data, error: dashErr } = await fetchAll((from, to) =>
-                sbData.from('all_orderan').select('cs, jumlah, created_at')
+                sbData.from('all_orderan').select('cs, jumlah, nama, tanggal')
                     .ilike('sumber', 'Validasi')
-                    .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
+                    .gte('tanggal', dateFrom30).lte('tanggal', dateTo30)
                     .range(from, to));
             if (dashErr) { alertEl.innerHTML = ''; return; }
 
             const unassignedByDate = {};
 
             data.forEach(order => {
-                if (!order.cs || !order.created_at) return;
+                if (!order.cs || !order.tanggal) return;
                 const produk = extractProduk(order.jumlah, order.nama);
                 if (!produk) return;
 
-                const orderDateWIB = new Date(new Date(order.created_at).getTime() + 7 * 60 * 60 * 1000)
-                    .toISOString().split('T')[0];
+                const orderDateWIB = order.tanggal.slice(0, 10);
 
                 let assigned = false;
                 for (const crmName in assignmentDates) {
@@ -947,13 +946,10 @@
                 return;
             }
 
-            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-            const dateToUTC = new Date(dateTo + 'T23:59:59+07:00').toISOString();
-
             const { data: allOrdersData } = await fetchAll((from, to) =>
-                sbData.from('all_orderan').select('cs, jumlah')
+                sbData.from('all_orderan').select('cs, jumlah, nama, tanggal')
                     .ilike('sumber', 'Validasi')
-                    .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
+                    .gte('tanggal', dateFrom).lte('tanggal', dateTo)
                     .range(from, to));
 
             const { data: assignmentsData } = await sbApp.from('crm_assignments')
