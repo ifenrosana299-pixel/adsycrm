@@ -421,8 +421,8 @@
             let query = sbApp.from('crm_assignments').select('*').order('assigned_at', { ascending: false });
             if (crmFilter)  query = query.eq('crm_name', crmFilter);
             if (assignDate) {
-                query = query.gte('assigned_at', assignDate + 'T00:00:00.000Z')
-                             .lte('assigned_at', assignDate + 'T23:59:59.999Z');
+                query = query.gte('assigned_at', new Date(assignDate + 'T00:00:00+07:00').toISOString())
+                             .lte('assigned_at', new Date(assignDate + 'T23:59:59+07:00').toISOString());
             }
 
             const { data, error } = await query;
@@ -560,8 +560,8 @@
             if (assignDate) {
                 // Ada filter tanggal assign → cari assignments yang di-assign hari itu,
                 // lalu filter orders sesuai cs+produk+date_range assignment
-                const dayStart = assignDate + 'T00:00:00.000Z';
-                const dayEnd   = assignDate + 'T23:59:59.999Z';
+                const dayStart = new Date(assignDate + 'T00:00:00+07:00').toISOString();
+                const dayEnd   = new Date(assignDate + 'T23:59:59+07:00').toISOString();
                 let aq = sbApp.from('crm_assignments').select('crm_name, cs_name, produk, date_from, date_to')
                     .gte('assigned_at', dayStart).lte('assigned_at', dayEnd);
                 if (crmFilter) aq = aq.eq('crm_name', crmFilter);
@@ -1092,22 +1092,19 @@
         // ── SYNC DARI all_orderan KE crm_customers + crm_customer_orders ──
         async function syncCustomersFromAssignment(assignmentList, crmName, dateFrom, dateTo) {
             try {
-            const fromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-            const toUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
-
             const csNames = [...new Set(assignmentList.map(a => a.csName))];
-            console.log('[Sync] crmName:', crmName, '| csNames:', csNames, '| range:', fromUTC, '-', toUTC);
+            console.log('[Sync] crmName:', crmName, '| csNames:', csNames, '| range:', dateFrom, '-', dateTo);
 
             // Pakai ilike (case-insensitive) supaya "ghazi" == "Ghazi" di query
             const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
 
-            // Fetch semua kolom (select * supaya tidak salah nama kolom)
+            // Filter by tanggal (order date), bukan created_at (upload date)
             const { data: orderData, error: fetchErr } = await fetchAll((from, to) =>
                 sbData.from('all_orderan')
                     .select('*')
                     .or(csFilter)
-                    .gte('created_at', fromUTC)
-                    .lte('created_at', toUTC)
+                    .gte('tanggal', dateFrom)
+                    .lte('tanggal', dateTo)
                     .range(from, to)
             );
 
