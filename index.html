@@ -7,20 +7,120 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .auth-tabs {
+            display: flex;
+            gap: 4px;
+            background: #EDE9FE;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 9px;
+            border: none;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            color: #8B5CF6;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .auth-tab.active {
+            background: #fff;
+            color: #5B21B6;
+            box-shadow: 0 2px 8px rgba(109,40,217,0.12);
+        }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .auth-err {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #FEE2E2;
+            color: #DC2626;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .auth-ok {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #D1FAE5;
+            color: #065F46;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .login-card { max-width: 460px; }
+    </style>
 </head>
 <body>
     <div id="loginView">
         <div class="login-card">
             <div class="login-title">CRM Adsy</div>
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" id="loginUsername" class="form-input" onkeydown="if(event.key==='Enter') login()">
+            <div class="login-subtitle">sistem manajemen pelanggan</div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Masuk</button>
+                <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Daftar</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="loginPassword" class="form-input" onkeydown="if(event.key==='Enter') login()">
+
+            <!-- LOGIN -->
+            <div class="auth-form active" id="form-login">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="l-username" class="form-input" placeholder="username kamu" autocomplete="username" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="l-pass" class="form-input" placeholder="password" autocomplete="current-password" />
+                </div>
+                <button onclick="doLogin()" class="btn btn-primary" style="width:100%;">Masuk</button>
+                <div class="auth-err" id="login-err"></div>
             </div>
-            <button onclick="login()" class="btn btn-primary" style="width: 100%;">LOGIN</button>
+
+            <!-- REGISTER -->
+            <div class="auth-form" id="form-register">
+                <div class="form-group">
+                    <label class="form-label">Nama Lengkap</label>
+                    <input type="text" id="r-nama" class="form-input" placeholder="Nama kamu" />
+                </div>
+                <div class="field-row">
+                    <div class="form-group">
+                        <label class="form-label">No WhatsApp</label>
+                        <input type="tel" id="r-wa" class="form-input" placeholder="08xxxxxxxxxx" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="r-email" class="form-input" placeholder="email@adsy.com" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="r-username" class="form-input" placeholder="username untuk login" />
+                </div>
+                <div class="field-row">
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="r-pass" class="form-input" placeholder="min 6 karakter" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Konfirmasi</label>
+                        <input type="password" id="r-pass2" class="form-input" placeholder="ulangi password" />
+                    </div>
+                </div>
+                <button onclick="doRegister()" class="btn btn-primary" id="btn-register" style="width:100%;">Daftar Sekarang</button>
+                <div class="auth-err" id="register-err"></div>
+                <div class="auth-ok" id="register-ok"></div>
+            </div>
         </div>
     </div>
 
@@ -28,8 +128,6 @@
     <script>
         window.onload = async function() {
             await initSupabase();
-
-            // Kalau sudah login, redirect langsung ke halaman yang sesuai
             const stored = sessionStorage.getItem('user');
             if (stored) {
                 const user = JSON.parse(stored);
@@ -38,6 +136,105 @@
                 else if (user.role === 'crm') window.location.href = 'crm.html';
             }
         };
+
+        function switchTab(tab) {
+            ['login','register'].forEach(t => {
+                document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+                document.getElementById('form-'+t).classList.toggle('active', t===tab);
+            });
+        }
+
+        async function doLogin() {
+            const username = document.getElementById('l-username').value.trim();
+            const pass     = document.getElementById('l-pass').value.trim();
+            const errEl    = document.getElementById('login-err');
+            const btn      = document.querySelector('#form-login .btn-primary');
+
+            if (!username || !pass) { showErr(errEl, 'Username dan password wajib diisi.'); return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Masuk...';
+            errEl.style.display = 'none';
+
+            const { data } = await sbApp.from('users').select('*').eq('username', username).eq('password', pass).single();
+
+            if (!data) {
+                showErr(errEl, 'Username atau password salah.');
+                btn.disabled = false;
+                btn.textContent = 'Masuk';
+                return;
+            }
+
+            sessionStorage.setItem('user', JSON.stringify(data));
+            if (data.role === 'admin') window.location.href = 'admin.html';
+            else if (data.role === 'spv') window.location.href = 'spv.html';
+            else window.location.href = 'crm.html';
+        }
+
+        async function doRegister() {
+            const nama     = document.getElementById('r-nama').value.trim();
+            const wa       = document.getElementById('r-wa').value.trim();
+            const email    = document.getElementById('r-email').value.trim();
+            const username = document.getElementById('r-username').value.trim();
+            const pass     = document.getElementById('r-pass').value;
+            const pass2    = document.getElementById('r-pass2').value;
+            const errEl    = document.getElementById('register-err');
+            const okEl     = document.getElementById('register-ok');
+            const btn      = document.getElementById('btn-register');
+
+            errEl.style.display = 'none';
+            okEl.style.display  = 'none';
+
+            if (!nama || !username || !pass) { showErr(errEl, 'Nama, username, dan password wajib diisi.'); return; }
+            if (pass.length < 6)             { showErr(errEl, 'Password minimal 6 karakter.'); return; }
+            if (pass !== pass2)              { showErr(errEl, 'Konfirmasi password tidak cocok.'); return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Mendaftar...';
+
+            // Cek username sudah ada atau belum
+            const { data: existing } = await sbApp.from('users').select('id').eq('username', username).single();
+            if (existing) {
+                showErr(errEl, 'Username sudah dipakai, coba yang lain.');
+                btn.disabled = false;
+                btn.textContent = 'Daftar Sekarang';
+                return;
+            }
+
+            const { error } = await sbApp.from('users').insert({
+                username,
+                password : pass,
+                role     : 'crm',
+                nama,
+                no_wa    : wa || null,
+                email    : email || null,
+            });
+
+            if (error) {
+                showErr(errEl, 'Gagal daftar: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Daftar Sekarang';
+                return;
+            }
+
+            okEl.textContent   = '✓ Pendaftaran berhasil! Silakan masuk.';
+            okEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Daftar Sekarang';
+            setTimeout(() => switchTab('login'), 1500);
+        }
+
+        function showErr(el, msg) {
+            el.textContent   = msg;
+            el.style.display = 'block';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Enter') return;
+            const active = document.querySelector('.auth-form.active').id;
+            if (active === 'form-login') doLogin();
+            else doRegister();
+        });
     </script>
 </body>
 </html>
