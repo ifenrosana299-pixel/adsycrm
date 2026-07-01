@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         /* ── RESET FOR CRM PAGE ── */
         body { font-family: 'Inter', sans-serif; background: #F3F4F6; }
@@ -643,7 +644,7 @@
 
                 <!-- Toolbar -->
                 <div class="crm-toolbar">
-                    <button onclick="exportSelectedToCSV()" class="crm-btn crm-btn-primary crm-btn-sm">📥 Download CSV</button>
+                    <button onclick="exportSelectedToExcel()" class="crm-btn crm-btn-primary crm-btn-sm">📥 Download Excel</button>
                     <button onclick="selectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☑️ Pilih Semua</button>
                     <button onclick="deselectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☐ Batal Pilih</button>
                     <select id="rowsPerPage" class="crm-select" style="width:auto;" onchange="changeRowsPerPage()">
@@ -661,13 +662,12 @@
                         <thead>
                             <tr>
                                 <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th>
-                                <th>Tanggal</th><th>Nama</th><th>No HP</th><th>Produk</th>
-                                <th>Kab/Kota</th><th>Provinsi</th><th>Pesanan</th>
-                                <th>Pembayaran</th><th>Resi</th><th>Status</th><th>CS</th><th>Aksi</th>
+                                <th>Nama</th><th>No HP</th><th>Produk</th><th>Qty</th>
+                                <th>Total COD</th><th>CS</th><th>Resi</th><th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="crmTbody">
-                            <tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>
+                            <tr><td colspan="9" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1594,16 +1594,16 @@
     // ── PESANAN (ORDERS) ──
     async function loadOrders() {
         if (!assignments[currentUser.username]) {
-            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
+            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
             return;
         }
         const assignedData = assignmentDates[currentUser.username] || [];
         if (!assignedData.length) {
-            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
+            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
             return;
         }
 
-        document.getElementById('crmTbody').innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
+        document.getElementById('crmTbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
 
         // Coba baca dari crm_customer_orders dulu (sbApp)
@@ -1763,28 +1763,23 @@
     function renderTable() {
         const tb = document.getElementById('crmTbody');
         if (!filtered.length) {
-            tb.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:56px;color:#9CA3AF;">Tidak ada data.</td></tr>';
+            tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:56px;color:#9CA3AF;">Tidak ada data.</td></tr>';
             return;
         }
         tb.innerHTML = filtered.map(o => {
-            const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
-            const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
-            const produk = extractProduk(o.jumlah) || '-';
-            const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status]||'#9CA3AF';
+            const produk  = o.produk || extractProduk(o.jumlah) || '-';
+            const qty     = o.quantity || '-';
+            const totalCOD = o.total_pembayaran ? 'Rp' + Number(o.total_pembayaran).toLocaleString('id-ID') : '-';
             const checked = selectedOrders.has(o.id);
             return `<tr style="${checked?'background:#F9FAFB;':''}">
                 <td><input type="checkbox" ${checked?'checked':''} onchange="toggleOrderSelection(${o.id})"></td>
-                <td style="white-space:nowrap;font-size:12px;color:#6B7280;">${tgl}</td>
                 <td style="font-weight:600;white-space:nowrap;">${escapeHtml(o.nama||'-')}</td>
-                <td style="font-size:12px;">${escapeHtml(o.hp||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.no_hp||o.hp||'-')}</td>
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
-                <td style="font-size:12px;">${escapeHtml(o.kabupaten||'-')}</td>
-                <td style="font-size:12px;">${escapeHtml(o.provinsi||'-')}</td>
-                <td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(o.pesanan||o['jumlah pesanan']||'-')}</td>
-                <td style="font-size:12px;">${escapeHtml(o.pembayaran||'-')}</td>
-                <td style="font-size:11px;font-weight:600;">${escapeHtml(o.resi||'-')}</td>
-                <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
+                <td style="font-size:12px;text-align:center;">${qty}</td>
+                <td style="font-size:12px;font-weight:600;">${totalCOD}</td>
                 <td style="font-size:12px;">${escapeHtml(o.cs||'-')}</td>
+                <td style="font-size:11px;font-weight:600;">${escapeHtml(o.resi||'-')}</td>
                 <td><button onclick="openEditModal(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Edit</button></td>
             </tr>`;
         }).join('');
@@ -1797,23 +1792,24 @@
     function deselectAllOrders() { selectedOrders.clear(); document.getElementById('selectAllCheckbox').checked=false; renderTable(); }
     function updateSelectedCount() { document.getElementById('selectedCount').textContent=`${selectedOrders.size} dipilih`; }
 
-    function exportSelectedToCSV() {
+    function exportSelectedToExcel() {
         const sel = orders.filter(o => selectedOrders.has(o.id));
         if (!sel.length) { alert('Pilih orderan dulu!'); return; }
-        const csv = [
-            ['Tanggal','Nama','No HP','Produk','Kabupaten','Provinsi','Pesanan','Pembayaran','Resi','Status','CS'].join(','),
-            ...sel.map(o => [
-                o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : '',
-                `"${(o.nama||'').replace(/"/g,'""')}"`, o.hp||'',
-                `"${(extractProduk(o.jumlah)||'').replace(/"/g,'""')}"`,
-                o.kabupaten||'', o.provinsi||'',
-                `"${(o.pesanan||o['jumlah pesanan']||'').replace(/"/g,'""')}"`,
-                o.pembayaran||'', o.resi||'', o.status||'', o.cs||''
-            ].join(','))
-        ].join('\n');
-        const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
-        const a    = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `orders_${new Date().toISOString().slice(0,10)}.csv` });
-        a.click();
+        const headers = ['Nama', 'No HP', 'Produk', 'Qty', 'Total COD', 'CS', 'Resi'];
+        const rows = sel.map(o => [
+            o.nama || '',
+            o.no_hp || o.hp || '',
+            o.produk || extractProduk(o.jumlah) || '',
+            o.quantity || '',
+            o.total_pembayaran || '',
+            o.cs || '',
+            o.resi || ''
+        ]);
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        ws['!cols'] = [40,18,16,8,16,20,24].map(w => ({ wch: w }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Orderan');
+        XLSX.writeFile(wb, `orders_${new Date().toISOString().slice(0,10)}.xlsx`);
         alert(`✅ ${sel.length} orderan berhasil di-download!`);
     }
 
