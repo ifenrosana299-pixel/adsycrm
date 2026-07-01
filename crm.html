@@ -644,7 +644,8 @@
 
                 <!-- Toolbar -->
                 <div class="crm-toolbar">
-                    <button onclick="exportSelectedToExcel()" class="crm-btn crm-btn-primary crm-btn-sm">📥 Download Excel</button>
+                    <button onclick="exportAllToExcel()" class="crm-btn crm-btn-primary crm-btn-sm">📥 Download Semua</button>
+                    <button onclick="exportSelectedToExcel()" class="crm-btn crm-btn-secondary crm-btn-sm">📥 Download Dipilih</button>
                     <button onclick="selectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☑️ Pilih Semua</button>
                     <button onclick="deselectAllOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">☐ Batal Pilih</button>
                     <select id="rowsPerPage" class="crm-select" style="width:auto;" onchange="changeRowsPerPage()">
@@ -1788,7 +1789,7 @@
 
     function toggleOrderSelection(id) { if(selectedOrders.has(id)) selectedOrders.delete(id); else selectedOrders.add(id); updateSelectedCount(); }
     function toggleSelectAll()   { const cb=document.getElementById('selectAllCheckbox'); if(cb.checked) filtered.forEach(o=>selectedOrders.add(o.id)); else filtered.forEach(o=>selectedOrders.delete(o.id)); renderTable(); }
-    function selectAllOrders()   { filteredOrders.forEach(o=>selectedOrders.add(o.id)); document.getElementById('selectAllCheckbox').checked=true; renderTable(); }
+    function selectAllOrders()   { filtered.forEach(o=>selectedOrders.add(o.id)); document.getElementById('selectAllCheckbox').checked=true; renderTable(); }
     function deselectAllOrders() { selectedOrders.clear(); document.getElementById('selectAllCheckbox').checked=false; renderTable(); }
     function updateSelectedCount() { document.getElementById('selectedCount').textContent=`${selectedOrders.size} dipilih`; }
 
@@ -1811,6 +1812,26 @@
         XLSX.utils.book_append_sheet(wb, ws, 'Orderan');
         XLSX.writeFile(wb, `orders_${new Date().toISOString().slice(0,10)}.xlsx`);
         alert(`✅ ${sel.length} orderan berhasil di-download!`);
+    }
+
+    function exportAllToExcel() {
+        if (!filteredOrders || !filteredOrders.length) { alert('Tidak ada data!'); return; }
+        const headers = ['Nama', 'No HP', 'Produk', 'Qty', 'Total COD', 'CS', 'Resi'];
+        const rows = filteredOrders.map(o => [
+            o.nama || '',
+            o.no_hp || o.hp || '',
+            o.produk || extractProduk(o.jumlah, o.nama) || '',
+            o.quantity || '',
+            o.total_pembayaran || '',
+            o.cs || '',
+            o.resi || ''
+        ]);
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        ws['!cols'] = [40,18,16,8,16,20,24].map(w => ({ wch: w }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Orderan');
+        XLSX.writeFile(wb, `orders_${new Date().toISOString().slice(0,10)}.xlsx`);
+        alert(`✅ ${filteredOrders.length} orderan berhasil di-download!`);
     }
 
     function openEditModal(id) {
