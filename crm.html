@@ -1608,7 +1608,6 @@
         allOrders = [];
 
         // Coba baca dari crm_customer_orders dulu (sbApp)
-        let usedCrmOrders = false;
         let page = 0, hasMore = true;
         while (hasMore) {
             const { data } = await sbApp.from('crm_customer_orders')
@@ -1616,11 +1615,15 @@
                 .eq('crm_name', currentUser.username)
                 .range(page*1000, (page+1)*1000-1);
             if (data && data.length > 0) {
-                const normalized = data.map(o => ({ ...o, id: o.orderan_id, hp: o.no_hp }));
+                const normalized = data.map(o => ({
+                    ...o,
+                    id:         o.orderan_id,
+                    hp:         o.no_hp,
+                    created_at: o.tgl_created,
+                }));
                 allOrders = allOrders.concat(normalized);
                 hasMore = data.length === 1000;
                 page++;
-                usedCrmOrders = true;
             } else hasMore = false;
         }
 
@@ -1645,16 +1648,10 @@
         }
 
         const matching = allOrders.filter(o => {
-            const p = extractProduk(o.jumlah, o.nama) || o.produk;
-            if (!p) return false;
-            if (usedCrmOrders) {
-                // crm_customer_orders sudah di-filter saat sync, cukup match CS + produk
-                return assignedData.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p));
-            }
-            // all_orderan: filter by CS + produk + tanggal upload
             const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
             if (!d) return false;
-            return assignedData.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && d >= a.dateFrom && d <= a.dateTo);
+            const p = extractProduk(o.jumlah, o.nama) || o.produk;
+            return assignedData.some(a => normEq(a.cs, o.cs) && d >= a.dateFrom && d <= a.dateTo && (!p || normEq(a.produk, p)));
         });
 
         orders = Array.from(new Map(matching.map(i => [i.id, i])).values());
