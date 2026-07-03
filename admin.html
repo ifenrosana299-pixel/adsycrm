@@ -721,7 +721,12 @@
                     }));
 
                     updateAdminCSTotal();
+                    const _prevTeam1 = document.getElementById('adminTeamSelect').value;
                     populateTeamDropdown();
+                    if (_prevTeam1) {
+                        document.getElementById('adminTeamSelect').value = _prevTeam1;
+                        onAdminTeamChange();
+                    }
                     await updateAssignmentStats();
                     alert(`✅ Berhasil load ${allCS.length} CS dari ${rawData.length} orderan\nPeriode: ${dateFrom} - ${dateTo}`);
                 } else {
@@ -758,7 +763,12 @@
                     }));
 
                     updateAdminCSTotal();
+                    const _prevTeam2 = document.getElementById('adminTeamSelect').value;
                     populateTeamDropdown();
+                    if (_prevTeam2) {
+                        document.getElementById('adminTeamSelect').value = _prevTeam2;
+                        onAdminTeamChange();
+                    }
                     alert(`✅ Berhasil load ${allCS.length} CS dari ${rawData.length} orderan`);
                 } else {
                     alert('❌ Tidak ada data!');
@@ -1101,13 +1111,15 @@
             // Pakai ilike (case-insensitive) supaya "ghazi" == "Ghazi" di query
             const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
 
-            // Filter by tanggal (order date), bukan created_at (upload date)
+            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+
             const { data: orderData, error: fetchErr } = await fetchAll((from, to) =>
                 sbData.from('all_orderan')
                     .select('*')
                     .or(csFilter)
-                    .gte('tanggal', dateFrom)
-                    .lte('tanggal', dateTo)
+                    .gte('created_at', dateFromUTC)
+                    .lte('created_at', dateToUTC)
                     .range(from, to)
             );
 
