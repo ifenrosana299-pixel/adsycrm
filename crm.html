@@ -634,7 +634,10 @@
                     </div>
                     <div class="crm-form-group">
                         <label class="crm-form-label">Tgl Assign</label>
-                        <input type="date" id="filterTanggalAssign" class="crm-input" onchange="applyFilters()">
+                        <div style="display:flex;gap:6px;margin-top:5px;">
+                            <input type="date" id="filterTanggalAssign" class="crm-input" oninput="applyFilters()" onchange="applyFilters()">
+                            <button onclick="setFilterHariIni()" class="crm-btn crm-btn-secondary crm-btn-sm" style="white-space:nowrap;">Hari Ini</button>
+                        </div>
                     </div>
                     <div style="display:flex;align-items:flex-end;">
                         <button onclick="clearFilters()" class="crm-btn crm-btn-secondary">✖ Reset</button>
@@ -1695,6 +1698,12 @@
         updateStats();
         renderTableWithPagination();
         updateFilterInfo();
+    }
+
+    function setFilterHariIni() {
+        const today = new Date(new Date().getTime() + 7*3600*1000).toISOString().slice(0,10);
+        document.getElementById('filterTanggalAssign').value = today;
+        applyFilters();
     }
 
     function clearFilters() {
