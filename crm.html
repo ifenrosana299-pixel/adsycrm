@@ -633,7 +633,7 @@
                         </select>
                     </div>
                     <div class="crm-form-group">
-                        <label class="crm-form-label">Tgl Order</label>
+                        <label class="crm-form-label">Tgl Assign</label>
                         <input type="date" id="filterTanggalAssign" class="crm-input" onchange="applyFilters()">
                     </div>
                     <div style="display:flex;align-items:flex-end;">
@@ -1683,10 +1683,8 @@
             if (q && !(o.nama?.toLowerCase().includes(q) || o.hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
             if (st !== 'all' && o.status !== st) return false;
             if (tgl) {
-                const oTgl = o.tgl_order
-                    || (o.tgl_created ? new Date(new Date(o.tgl_created).getTime()+7*3600*1000).toISOString().slice(0,10) : null)
-                    || (o.created_at  ? new Date(new Date(o.created_at ).getTime()+7*3600*1000).toISOString().slice(0,10) : null);
-                if (oTgl !== tgl) return false;
+                const p = o.produk || extractProduk(o.jumlah, o.nama);
+                if (!ad.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && tgl >= a.dateFrom && tgl <= a.dateTo)) return false;
             }
             if (cs  && !normEq(o.cs, cs)) return false;
             if (pr  && !normEq(extractProduk(o.jumlah, o.nama), pr)) return false;
