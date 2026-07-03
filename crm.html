@@ -1684,7 +1684,7 @@
             if (st !== 'all' && o.status !== st) return false;
             if (tgl) {
                 const p = o.produk || extractProduk(o.jumlah, o.nama);
-                if (!ad.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && tgl >= a.dateFrom && tgl <= a.dateTo)) return false;
+                if (!ad.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && a.assignedAt === tgl)) return false;
             }
             if (cs  && !normEq(o.cs, cs)) return false;
             if (pr  && !normEq(extractProduk(o.jumlah, o.nama), pr)) return false;
