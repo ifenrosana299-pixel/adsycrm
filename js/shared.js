@@ -97,8 +97,8 @@ async function loadAssignments() {
                 produk: i.produk,
                 dateFrom: i.date_from,
                 dateTo: i.date_to,
-                assignedAt: i.assigned_at
-                    ? new Date(new Date(i.assigned_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                assignedAt: i.created_at
+                    ? new Date(new Date(i.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
                     : null
             });
         });
