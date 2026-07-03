@@ -1182,7 +1182,7 @@
                 kecamatan:   o.kecamatan         || null,
                 team:        o.team              || null,
                 tgl_created: o.created_at        || null,
-                tgl_order:   o.created_at ? o.created_at.slice(0, 10) : null,
+                tgl_order:   o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null,
             }));
 
             console.log('[Sync] Mulai upsert', orderRows.length, 'baris ke crm_customer_orders...');
