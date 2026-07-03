@@ -96,7 +96,10 @@ async function loadAssignments() {
                 cs: i.cs_name,
                 produk: i.produk,
                 dateFrom: i.date_from,
-                dateTo: i.date_to
+                dateTo: i.date_to,
+                assignedAt: i.assigned_at
+                    ? new Date(new Date(i.assigned_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                    : null
             });
         });
     }
@@ -141,6 +144,8 @@ function parseSKUKode(nama) {
 }
 
 
+const PRODUK_HARDCODED = ['DIABCARE', 'URICARE', 'GASTRIC', 'STROCAV', 'DIALIVE'];
+
 function extractProduk(jumlah, nama) {
     // Prioritas 1: SKU dari kolom nama (cs-input format "BUDI|HRB 1|PDS")
     if (nama && nama.includes('|') && skuList.length) {
@@ -150,11 +155,17 @@ function extractProduk(jumlah, nama) {
             if (found) return found.nama_produk.toUpperCase();
         }
     }
-    // Fallback: cari nama_produk di dalam teks jumlah (Excel orders)
+    // Prioritas 2: cari nama_produk di dalam teks jumlah (dari skuList)
     if (jumlah && skuList.length) {
         const jumlahUp = jumlah.toUpperCase();
         const found = skuList.find(s => jumlahUp.includes(s.nama_produk.toUpperCase()));
         if (found) return found.nama_produk.toUpperCase();
+    }
+    // Fallback: hardcoded produk jika tabel sku_produk tidak tersedia
+    if (jumlah) {
+        const jumlahUp = jumlah.toUpperCase();
+        const found = PRODUK_HARDCODED.find(p => jumlahUp.includes(p));
+        if (found) return found;
     }
     return null;
 }
