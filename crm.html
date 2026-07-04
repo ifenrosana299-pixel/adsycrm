@@ -530,17 +530,17 @@
                     <div class="drp-wrap">
                         <button class="drp-trigger" onclick="dDrpToggle()" id="dDrp-trigger">
                             <span class="drp-icon">📅</span>
-                            <span id="dDrp-label">30 Hari Terakhir</span>
+                            <span id="dDrp-label">Hari Ini</span>
                             <span style="color:#9CA3AF;">▾</span>
                         </button>
                         <div class="drp-dropdown" id="dDrp-dropdown" style="left:auto;right:0;">
                             <div class="drp-presets">
-                                <button class="drp-preset" onclick="dDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                <button class="drp-preset active" onclick="dDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
                                 <button class="drp-preset" onclick="dDrpPresetYesterday(this)">Kemarin</button>
                                 <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
                                 <button class="drp-preset" onclick="dDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
                                 <button class="drp-preset" onclick="dDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
-                                <button class="drp-preset active" onclick="dDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                <button class="drp-preset" onclick="dDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
                                 <button class="drp-preset" onclick="dDrpPreset(90,'90 Hari Terakhir',this)">90 Hari Terakhir</button>
                                 <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
                                 <button class="drp-preset" onclick="dDrpPresetThisMonth(this)">Bulan Ini</button>
@@ -691,12 +691,12 @@
                         <div class="drp-wrap" style="margin-top:5px;">
                             <button class="drp-trigger" onclick="pDrpToggle()" id="pDrp-trigger">
                                 <span class="drp-icon">📅</span>
-                                <span id="pDrp-label">Semua Periode</span>
+                                <span id="pDrp-label">Hari Ini</span>
                                 <span style="color:#9CA3AF;">▾</span>
                             </button>
                             <div class="drp-dropdown" id="pDrp-dropdown" style="left:auto;right:0;">
                                 <div class="drp-presets">
-                                    <button class="drp-preset" onclick="pDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                    <button class="drp-preset active" onclick="pDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
                                     <button class="drp-preset" onclick="pDrpPresetYesterday(this)">Kemarin</button>
                                     <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
                                     <button class="drp-preset" onclick="pDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
@@ -1742,11 +1742,15 @@
     function clearFilters() {
         ['filterCS','filterProduk'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('crmSearch').value = '';
-        pFilterStart = null; pFilterEnd = null;
+        // Reset ke Hari Ini
+        pFilterStart = new Date(); pFilterStart.setHours(0,0,0,0);
+        pFilterEnd   = new Date(); pFilterEnd.setHours(23,59,59,999);
         pDrpSelStart = null; pDrpSelEnd = null;
         const lbl = document.getElementById('pDrp-label');
-        if (lbl) lbl.textContent = 'Semua Periode';
+        if (lbl) lbl.textContent = 'Hari Ini';
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b => b.classList.remove('active'));
+        const hariIniBtn = document.querySelector('#pDrp-dropdown .drp-preset');
+        if (hariIniBtn) hariIniBtn.classList.add('active');
         applyFilters();
     }
 
@@ -2024,7 +2028,9 @@
     // ══════════════════════════════════════════
     let pDrpSelStart=null, pDrpSelEnd=null;
     let pDrpViewYear=new Date().getFullYear(), pDrpViewMonth=new Date().getMonth();
-    let pFilterStart=null, pFilterEnd=null;
+    const _pToday = new Date(); _pToday.setHours(0,0,0,0);
+    const _pTodayEnd = new Date(); _pTodayEnd.setHours(23,59,59,999);
+    let pFilterStart=new Date(_pToday), pFilterEnd=new Date(_pTodayEnd);
 
     function pDrpToggle() {
         const dd = document.getElementById('pDrp-dropdown');
@@ -2117,7 +2123,9 @@
     // ══════════════════════════════════════════
     let dDrpSelStart=null, dDrpSelEnd=null;
     let dDrpViewYear=new Date().getFullYear(), dDrpViewMonth=new Date().getMonth();
-    let dFilterStart=new Date(Date.now()-29*864e5), dFilterEnd=new Date();
+    const _dToday = new Date(); _dToday.setHours(0,0,0,0);
+    const _dTodayEnd = new Date(); _dTodayEnd.setHours(23,59,59,999);
+    let dFilterStart=new Date(_dToday), dFilterEnd=new Date(_dTodayEnd);
 
     function dDrpToggle() {
         const dd = document.getElementById('dDrp-dropdown');
