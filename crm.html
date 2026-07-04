@@ -122,7 +122,10 @@
         .crm-user-role { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
 
         /* ── MAIN ── */
-        .crm-main { margin-left: 272px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; min-width: 0; }
+        .crm-main { margin-left: 272px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; min-width: 0; transition: margin-left 0.25s ease; }
+        .crm-sidebar { transition: transform 0.25s ease, width 0.25s ease; }
+        .sidebar-hidden .crm-sidebar { transform: translateX(-272px); }
+        .sidebar-hidden .crm-main { margin-left: 0; }
 
         /* Topbar */
         .crm-topbar {
@@ -141,9 +144,13 @@
         .crm-topbar-hamburger {
             width: 32px; height: 32px;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-            cursor: pointer; border-radius: 8px;
+            cursor: pointer; border-radius: 8px; transition: background 0.15s;
         }
-        .crm-topbar-hamburger span { display: block; width: 18px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; }
+        .crm-topbar-hamburger:hover { background: rgba(255,255,255,0.15); }
+        .crm-topbar-hamburger span { display: block; width: 18px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; transition: all 0.25s ease; }
+        .sidebar-hidden .crm-topbar-hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .sidebar-hidden .crm-topbar-hamburger span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .sidebar-hidden .crm-topbar-hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
         .crm-topbar-right { display: flex; align-items: center; gap: 20px; }
         .crm-topbar-username { font-size: 13px; font-weight: 700; color: white; letter-spacing: 0.05em; }
         .crm-topbar-icon { font-size: 18px; cursor: pointer; }
@@ -458,7 +465,7 @@
         <!-- Topbar -->
         <header class="crm-topbar">
             <div class="crm-topbar-left">
-                <div class="crm-topbar-hamburger">
+                <div class="crm-topbar-hamburger" onclick="toggleSidebar()">
                     <span></span><span></span><span></span>
                 </div>
             </div>
@@ -648,12 +655,12 @@
                         <thead>
                             <tr>
                                 <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th>
-                                <th>Tgl</th><th>Nama</th><th>No HP</th><th>Desa</th><th>Kec</th><th>Kab</th><th>Prov</th>
-                                <th>CS</th><th>Resi</th><th>Produk</th><th>Qty</th><th>Total COD</th><th>Aksi</th>
+                                <th>Tgl</th><th>Nama</th><th>No HP</th><th>Kelurahan</th><th>Kecamatan</th><th>Kabupaten</th><th>Provinsi</th>
+                                <th>CS</th><th>Resi</th><th>Produk</th><th>Qty</th><th>Total COD</th><th>Keluhan</th><th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="crmTbody">
-                            <tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>
+                            <tr><td colspan="15" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -991,6 +998,11 @@
     const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
+
+    // ── SIDEBAR TOGGLE ──
+    function toggleSidebar() {
+        document.querySelector('.crm-layout').classList.toggle('sidebar-hidden');
+    }
 
     // ── NAVIGATION ──
     function crmShow(name, el) {
@@ -1550,10 +1562,10 @@
     // ── PESANAN (ORDERS) ──
     async function loadOrders() {
         if (!assignments[currentUser.username]) {
-            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
+            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="15" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
             return;
         }
-        document.getElementById('crmTbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
+        document.getElementById('crmTbody').innerHTML = '<tr><td colspan="15" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
         let page = 0, hasMore = true;
         while (hasMore) {
@@ -1694,7 +1706,7 @@
     function renderTable() {
         const tb = document.getElementById('crmTbody');
         if (!filtered.length) {
-            tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Tidak ada data.</td></tr>';
+            tb.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:56px;color:#9CA3AF;">Tidak ada data.</td></tr>';
             return;
         }
         tb.innerHTML = filtered.map(o => {
@@ -1721,6 +1733,7 @@
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
                 <td style="font-size:12px;text-align:center;">${qty}</td>
                 <td style="font-size:12px;font-weight:600;">${totalCOD}</td>
+                <td style="font-size:11px;color:#6B7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(o.keluhan||'')}">${escapeHtml(o.keluhan||'-')}</td>
                 <td><button onclick="openDetailModal(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
             </tr>`;
         }).join('');
@@ -1734,7 +1747,7 @@
     function updateSelectedCount() { document.getElementById('selectedCount').textContent=`${selectedOrders.size} dipilih`; }
 
     function _buildExportRows(list) {
-        const headers = ['Tgl','NAMA','NO HP','DESA','KEC','KAB','PROV','NAMA CS','RESI','PRODUK','QTY','TOTAL COD'];
+        const headers = ['Tgl','NAMA','NO HP','KELURAHAN','KECAMATAN','KABUPATEN','PROVINSI','NAMA CS','RESI','PRODUK','QTY','TOTAL COD','KELUHAN'];
         const rows = list.map(o => [
             o.tgl       || '',
             o.nama      || '',
@@ -1743,11 +1756,12 @@
             o.kecamatan  || '',
             o.kabupaten  || '',
             o.provinsi   || '',
-            o.nama_cs   || '',
-            o.resi      || '',
-            o.produk    || '',
-            o.qty       || '',
-            o.total_cod || ''
+            o.nama_cs    || '',
+            o.resi       || '',
+            o.produk     || '',
+            o.qty        || '',
+            o.total_cod  || '',
+            o.keluhan    || ''
         ]);
         return [headers, ...rows];
     }
