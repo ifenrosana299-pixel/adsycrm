@@ -273,6 +273,9 @@
             flex-wrap: wrap;
             align-items: flex-end;
             box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            overflow: visible;
+            position: relative;
+            z-index: 10;
         }
         .crm-form-group { display: flex; flex-direction: column; gap: 5px; }
         .crm-form-label { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -558,21 +561,13 @@
                 </div>
 
                 <!-- Banner -->
-                <div class="crm-banner">
+                <div class="crm-banner" style="margin-top:20px;">
                     <div>
                         <div class="crm-banner-title">Kelola Pelanggan dengan Lebih Mudah</div>
                         <div class="crm-banner-sub">Pantau orderan, pelanggan, dan statistik dalam satu tempat</div>
                     </div>
                     <div class="crm-banner-emoji">🚀</div>
                 </div>
-
-                <!-- Date pill -->
-                <button class="crm-date-pill" onclick="toggleDatePicker(this)">
-                    📅 <span id="datePickerLabel">Semua Tanggal</span> ▼
-                </button>
-                <!-- hidden inputs required oleh shared.js drpApplyToInputs -->
-                <input type="hidden" id="adminDateFrom">
-                <input type="hidden" id="adminDateTo">
 
                 <!-- Stats -->
                 <div class="crm-stats-row">
@@ -699,7 +694,7 @@
                                 <span id="pDrp-label">Semua Periode</span>
                                 <span style="color:#9CA3AF;">▾</span>
                             </button>
-                            <div class="drp-dropdown" id="pDrp-dropdown">
+                            <div class="drp-dropdown" id="pDrp-dropdown" style="left:auto;right:0;">
                                 <div class="drp-presets">
                                     <button class="drp-preset" onclick="pDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
                                     <button class="drp-preset" onclick="pDrpPresetYesterday(this)">Kemarin</button>
