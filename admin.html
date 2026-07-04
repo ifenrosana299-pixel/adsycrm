@@ -1102,99 +1102,85 @@
                 .catch(e => console.error('[Sync] Fatal error:', e));
         }
 
-        // ── SYNC DARI all_orderan KE crm_customers + crm_customer_orders ──
+        // ── SYNC DARI all_orderan KE crm_customers ──
         async function syncCustomersFromAssignment(assignmentList, crmName, dateFrom, dateTo) {
             try {
-            const csNames = [...new Set(assignmentList.map(a => a.csName))];
-            console.log('[Sync] crmName:', crmName, '| csNames:', csNames, '| range:', dateFrom, '-', dateTo);
+                const csNames = [...new Set(assignmentList.map(a => a.csName))];
+                console.log('[Sync] crmName:', crmName, '| csNames:', csNames, '| range:', dateFrom, '-', dateTo);
 
-            // Pakai ilike (case-insensitive) supaya "ghazi" == "Ghazi" di query
-            const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
+                const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
+                const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+                const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
 
-            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+                const { data: orderData, error: fetchErr } = await fetchAll((from, to) =>
+                    sbData.from('all_orderan')
+                        .select('*')
+                        .or(csFilter)
+                        .gte('created_at', dateFromUTC)
+                        .lte('created_at', dateToUTC)
+                        .range(from, to)
+                );
 
-            const { data: orderData, error: fetchErr } = await fetchAll((from, to) =>
-                sbData.from('all_orderan')
-                    .select('*')
-                    .or(csFilter)
-                    .gte('created_at', dateFromUTC)
-                    .lte('created_at', dateToUTC)
-                    .range(from, to)
-            );
-
-            console.log('[Sync] orderData count:', orderData?.length, '| fetchErr:', fetchErr);
-            if (!orderData || !orderData.length) {
-                console.warn('[Sync] Tidak ada data order ditemukan, sync dibatalkan.');
-                return;
-            }
-
-            // ── 1. Sync ke crm_customers (unique per pelanggan) ──
-            const seenCustomer = new Set();
-            const uniqueCustomers = [];
-            orderData.forEach(o => {
-                const key = (o.hp || o.nama || '') + '|' + (o.cs || '');
-                if (!key.startsWith('|') && !seenCustomer.has(key)) {
-                    seenCustomer.add(key);
-                    uniqueCustomers.push({
-                        nama:    norm(o.nama)       || null,
-                        no_hp:   o.hp               || null,
-                        desa:    o.kelurahan         || null,
-                        kec:     o.kecamatan         || null,
-                        kab:     norm(o.kabupaten)   || null,
-                        prov:    norm(o.provinsi)    || null,
-                        nama_cs: norm(o.cs)          || null,
-                        crm:     crmName,
-                        tgl:     o.created_at ? o.created_at.slice(0, 10) : null,
-                    });
+                console.log('[Sync] orderData count:', orderData?.length, '| fetchErr:', fetchErr);
+                if (!orderData || !orderData.length) {
+                    console.warn('[Sync] Tidak ada data order ditemukan, sync dibatalkan.');
+                    return;
                 }
-            });
-            const batchSize = 100;
-            for (let i = 0; i < uniqueCustomers.length; i += batchSize) {
-                await sbApp.from('crm_customers')
-                    .upsert(uniqueCustomers.slice(i, i + batchSize), {
-                        onConflict: 'no_hp,nama_cs',
-                        ignoreDuplicates: true
-                    });
-            }
 
-            // ── 2. Sync ke crm_customer_orders (semua order) ──
-            const produkMap = {};
-            assignmentList.forEach(a => { produkMap[(a.csName||'').toLowerCase()] = a.produk; });
+                // Group by no_hp + cs → 1 row per pelanggan per CS
+                const grouped = {};
+                orderData.forEach(o => {
+                    const tglWIB = o.created_at
+                        ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                        : dateFrom;
+                    const key = (o.hp||'').trim() + '|' + (o.cs||'').trim().toLowerCase();
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push({ ...o, tglWIB });
+                });
 
-            const orderRows = orderData.map(o => ({
-                orderan_id:  o.id,
-                crm_name:    crmName,
-                nama_cs:     norm(o.cs)         || null,
-                nama:        norm(o.nama)        || null,
-                no_hp:       o.hp               || null,
-                cs:          norm(o.cs)          || null,
-                produk:      (extractProduk(o.jumlah, o.nama) || '').toUpperCase() || null,
-                jumlah:      o.jumlah            || null,
-                quantity:    o.quantity          || null,
-                pembayaran:  o.pembayaran        || null,
-                total_pembayaran: o.total_pembayaran || null,
-                resi:        o.resi              || null,
-                status:      o.status            || null,
-                kabupaten:   norm(o.kabupaten)   || null,
-                provinsi:    norm(o.provinsi)    || null,
-                kelurahan:   o.kelurahan         || null,
-                kecamatan:   o.kecamatan         || null,
-                team:        o.team              || null,
-                tgl_created: o.created_at        || null,
-                tgl_order:   o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null,
-            }));
+                const customerRows = Object.values(grouped).map(orders => {
+                    // Sort by date asc — order pertama jadi main
+                    orders.sort((a,b) => new Date(a.created_at||0) - new Date(b.created_at||0));
+                    const first = orders[0];
+                    const repeats = orders.slice(1).map(o => ({
+                        tgl:       o.tglWIB,
+                        resi:      o.resi              || null,
+                        produk:    (extractProduk(o.jumlah, o.nama)||'').toUpperCase() || null,
+                        qty:       o.quantity          || null,
+                        total_cod: o.total_pembayaran  || null,
+                        keluhan:   o.keluhan           || null,
+                    }));
+                    return {
+                        nama:          norm(first.nama)           || null,
+                        no_hp:         first.hp                   || null,
+                        alamat:        first.alamat               || null,
+                        desa:          first.kelurahan            || null,
+                        kec:           first.kecamatan            || null,
+                        kab:           norm(first.kabupaten)      || null,
+                        prov:          norm(first.provinsi)       || null,
+                        nama_cs:       norm(first.cs)             || null,
+                        crm:           crmName,
+                        tgl:           first.tglWIB,
+                        resi:          first.resi                 || null,
+                        produk:        (extractProduk(first.jumlah, first.nama)||'').toUpperCase() || null,
+                        qty:           first.quantity             || null,
+                        total_cod:     first.total_pembayaran     || null,
+                        keluhan:       first.keluhan              || null,
+                        repeat_orders: repeats,
+                    };
+                });
 
-            console.log('[Sync] Mulai upsert', orderRows.length, 'baris ke crm_customer_orders...');
-            for (let i = 0; i < orderRows.length; i += batchSize) {
-                const { error: upsertErr } = await sbApp.from('crm_customer_orders')
-                    .upsert(orderRows.slice(i, i + batchSize), {
-                        onConflict: 'orderan_id,crm_name',
-                        ignoreDuplicates: true
-                    });
-                if (upsertErr) console.error('[Sync] Upsert error batch', i, upsertErr);
-            }
-            console.log('[Sync] Selesai sync crm_customer_orders.');
+                const batchSize = 100;
+                console.log('[Sync] Mulai upsert', customerRows.length, 'baris ke crm_customers...');
+                for (let i = 0; i < customerRows.length; i += batchSize) {
+                    const { error: upsertErr } = await sbApp.from('crm_customers')
+                        .upsert(customerRows.slice(i, i + batchSize), {
+                            onConflict: 'no_hp,nama_cs,tgl',
+                            ignoreDuplicates: false
+                        });
+                    if (upsertErr) console.error('[Sync] Upsert error batch', i, upsertErr);
+                }
+                console.log('[Sync] Selesai sync crm_customers:', customerRows.length, 'baris.');
             } catch(e) { console.error('[Sync] Exception:', e); }
         }
 

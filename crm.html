@@ -576,19 +576,19 @@
                     </div>
                     <div class="crm-stat">
                         <div>
-                            <div class="crm-stat-label">Pending</div>
-                            <div class="crm-stat-value" id="statPending" style="color:#F59E0B;">0</div>
+                            <div class="crm-stat-label">Total Repeat</div>
+                            <div class="crm-stat-value" id="statPending" style="color:#D97706;">0</div>
                         </div>
-                        <div class="crm-stat-icon" style="background:#FEF3C7;">⏳</div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">🔁</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat" style="display:none;">
                         <div>
                             <div class="crm-stat-label">Delivered</div>
                             <div class="crm-stat-value" id="statDelivered" style="color:#10B981;">0</div>
                         </div>
                         <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat" style="display:none;">
                         <div>
                             <div class="crm-stat-label">Cancelled</div>
                             <div class="crm-stat-value" id="statCancelled" style="color:#EF4444;">0</div>
@@ -601,18 +601,7 @@
                 <div class="crm-filters">
                     <div class="crm-form-group" style="flex:2;min-width:220px;">
                         <label class="crm-form-label">Cari</label>
-                        <input type="text" id="crmSearch" class="crm-input crm-input-wide" placeholder="🔍 Nama / HP / Resi..." onkeyup="filterOrders()">
-                    </div>
-                    <div class="crm-form-group">
-                        <label class="crm-form-label">Status</label>
-                        <select id="crmFilter" class="crm-select" onchange="filterOrders()">
-                            <option value="all">Semua</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
+                        <input type="text" id="crmSearch" class="crm-input crm-input-wide" placeholder="🔍 Nama / HP / Resi..." onkeyup="applyFilters()">
                     </div>
                     <div class="crm-form-group">
                         <label class="crm-form-label">CS</label>
@@ -624,12 +613,6 @@
                         <label class="crm-form-label">Produk</label>
                         <select id="filterProduk" class="crm-select" onchange="applyFilters()">
                             <option value="">Semua Produk</option>
-                        </select>
-                    </div>
-                    <div class="crm-form-group">
-                        <label class="crm-form-label">Ekspedisi</label>
-                        <select id="filterEkspedisi" class="crm-select" onchange="applyFilters()">
-                            <option value="">Semua Ekspedisi</option>
                         </select>
                     </div>
                     <div class="crm-form-group">
@@ -887,39 +870,19 @@
     </div><!-- /crm-main -->
 </div><!-- /crm-layout -->
 
-<!-- ═══ EDIT MODAL ═══ -->
-<div id="editModal" class="crm-modal hidden">
-    <div class="crm-modal-box">
-        <div class="crm-modal-title" id="editModalTitle">Edit Order</div>
-        <div class="crm-modal-sub">Update data orderan</div>
-        <div style="display:grid;gap:14px;margin-bottom:24px;">
-            <div>
-                <label class="crm-form-label">Resi</label>
-                <input type="text" id="editResi" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Status</label>
-                <select id="editStatus" class="crm-select" style="width:100%;margin-top:5px;">
-                    <option>Pending</option><option>Processing</option><option>Shipped</option>
-                    <option>Delivered</option><option>Cancelled</option>
-                </select>
-            </div>
-            <div>
-                <label class="crm-form-label">Team</label>
-                <input type="text" id="editTeam" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Update CRM</label>
-                <input type="text" id="editCRM" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Retur</label>
-                <input type="text" id="editRetur" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
+<!-- ═══ DETAIL MODAL ═══ -->
+<div id="editModal" class="crm-modal hidden" onclick="if(event.target===this)closeEditModal()">
+    <div class="crm-modal-box" style="max-width:540px;max-height:80vh;overflow-y:auto;">
+        <div class="crm-modal-title" id="editModalTitle">Detail Pelanggan</div>
+        <div id="detailInfo" style="margin-bottom:16px;"></div>
+        <div id="detailRepeats" style="margin-bottom:16px;"></div>
+        <div>
+            <label class="crm-form-label">Catatan</label>
+            <textarea id="editCatatan" class="crm-input" style="width:100%;margin-top:5px;height:80px;resize:vertical;"></textarea>
         </div>
-        <div style="display:flex;gap:12px;">
-            <button onclick="updateOrder()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">💾 Simpan</button>
-            <button onclick="closeEditModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Batal</button>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+            <button onclick="saveNotes()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">💾 Simpan Catatan</button>
+            <button onclick="closeEditModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Tutup</button>
         </div>
     </div>
 </div>
@@ -1590,71 +1553,29 @@
             document.getElementById('crmTbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
             return;
         }
-        const assignedData = assignmentDates[currentUser.username] || [];
-        if (!assignedData.length) {
-            document.getElementById('crmTbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Belum ada assignment.</td></tr>';
-            return;
-        }
-
         document.getElementById('crmTbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
-
-        // Coba baca dari crm_customer_orders dulu (sbApp)
         let page = 0, hasMore = true;
         while (hasMore) {
-            const { data } = await sbApp.from('crm_customer_orders')
+            const { data, error } = await sbApp.from('crm_customers')
                 .select('*')
-                .eq('crm_name', currentUser.username)
+                .eq('crm', currentUser.username)
+                .order('tgl', { ascending: false })
                 .range(page*1000, (page+1)*1000-1);
+            if (error) { console.error('loadOrders error:', error); break; }
             if (data && data.length > 0) {
-                const normalized = data.map(o => ({
-                    ...o,
-                    id:         o.orderan_id,
-                    hp:         o.no_hp,
-                    created_at: o.tgl_created,
-                }));
-                allOrders = allOrders.concat(normalized);
+                allOrders = allOrders.concat(data);
                 hasMore = data.length === 1000;
                 page++;
             } else hasMore = false;
         }
-
-        // Fallback ke all_orderan kalau crm_customer_orders kosong
-        if (!allOrders.length) {
-            const uniqueCS = [...new Set(assignedData.map(a => a.cs))];
-            const dates   = assignedData.map(a => ({ from: a.dateFrom, to: a.dateTo }));
-            const minDate = dates.reduce((m,r) => r.from < m ? r.from : m, dates[0].from);
-            const maxDate = dates.reduce((m,r) => r.to > m ? r.to : m, dates[0].to);
-            const fromUTC = new Date(minDate + 'T00:00:00+07:00').toISOString();
-            const toUTC   = new Date(maxDate + 'T23:59:59+07:00').toISOString();
-            let pg2 = 0, more2 = true;
-            while (more2) {
-                const csFilter = uniqueCS.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
-                const { data } = await sbData.from('all_orderan').select('*')
-                    .ilike('sumber','Validasi').or(csFilter)
-                    .gte('created_at', fromUTC).lte('created_at', toUTC)
-                    .range(pg2*1000, (pg2+1)*1000-1);
-                if (data && data.length > 0) { allOrders = allOrders.concat(data); more2 = data.length === 1000; pg2++; }
-                else more2 = false;
-            }
-        }
-
-        const matching = allOrders.filter(o => {
-            const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
-            if (!d) return false;
-            const p = extractProduk(o.jumlah, o.nama) || o.produk;
-            return assignedData.some(a => normEq(a.cs, o.cs) && d >= a.dateFrom && d <= a.dateTo && (!p || normEq(a.produk, p)));
-        });
-
-        orders = Array.from(new Map(matching.map(i => [i.id, i])).values());
-        orders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-        populateFilterDropdowns(assignedData);
+        orders = allOrders;
+        populateFilterDropdowns(assignmentDates[currentUser.username] || []);
         applyFilters();
         renderDashboard();
     }
 
     function populateFilterDropdowns(assignedData) {
-        // Deduplikasi case-insensitive: "ghazi" dan "Ghazi" jadi 1 opsi "Ghazi"
         const csMap = {}, produkMap = {};
         assignedData.forEach(a => {
             const ck = (a.cs||'').trim().toLowerCase();
@@ -1666,31 +1587,22 @@
             Object.values(csMap).sort().map(c=>`<option value="${c}">${c}</option>`).join('');
         document.getElementById('filterProduk').innerHTML = '<option value="">Semua Produk</option>' +
             Object.values(produkMap).sort().map(p=>`<option value="${p}">${p}</option>`).join('');
-        const eksMap = {};
-        orders.forEach(o => { const e = extractEkspedisi(o.pembayaran); if(e) eksMap[e.toLowerCase()] = e.toUpperCase(); });
-        document.getElementById('filterEkspedisi').innerHTML = '<option value="">Semua Ekspedisi</option>' +
-            Object.values(eksMap).sort().map(e=>`<option value="${e}">${e}</option>`).join('');
     }
 
     function applyFilters() {
-        const q    = document.getElementById('crmSearch').value.toLowerCase();
-        const st   = document.getElementById('crmFilter').value;
-        const tgl  = document.getElementById('filterTanggalAssign').value;
-        const cs   = document.getElementById('filterCS').value;
-        const pr   = document.getElementById('filterProduk').value;
-        const eks  = document.getElementById('filterEkspedisi').value;
-        const ad   = assignmentDates[currentUser.username] || [];
+        const q   = document.getElementById('crmSearch').value.toLowerCase();
+        const tgl = document.getElementById('filterTanggalAssign').value;
+        const cs  = document.getElementById('filterCS').value;
+        const pr  = document.getElementById('filterProduk').value;
+        const ad  = assignmentDates[currentUser.username] || [];
 
         filteredOrders = orders.filter(o => {
-            if (q && !(o.nama?.toLowerCase().includes(q) || o.hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
-            if (st !== 'all' && o.status !== st) return false;
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.no_hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
             if (tgl) {
-                const p = o.produk || extractProduk(o.jumlah, o.nama);
-                if (!ad.some(a => normEq(a.cs, o.cs) && normEq(a.produk, p) && a.assignedAt === tgl)) return false;
+                if (!ad.some(a => normEq(a.cs, o.nama_cs) && normEq(a.produk, o.produk) && a.assignedAt === tgl)) return false;
             }
-            if (cs  && !normEq(o.cs, cs)) return false;
-            if (pr  && !normEq(extractProduk(o.jumlah, o.nama), pr)) return false;
-            if (eks && !normEq(extractEkspedisi(o.pembayaran), eks)) return false;
+            if (cs && !normEq(o.nama_cs, cs)) return false;
+            if (pr && !normEq(o.produk, pr)) return false;
             return true;
         });
         currentPage = 1;
@@ -1723,9 +1635,8 @@
     }
 
     function clearFilters() {
-        ['filterTanggalAssign','filterCS','filterProduk','filterEkspedisi'].forEach(id => document.getElementById(id).value = '');
+        ['filterTanggalAssign','filterCS','filterProduk'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('crmSearch').value = '';
-        document.getElementById('crmFilter').value = 'all';
         applyFilters();
     }
 
@@ -1734,7 +1645,6 @@
         if (document.getElementById('filterTanggalAssign').value) active.push('Tanggal');
         if (document.getElementById('filterCS').value) active.push('CS');
         if (document.getElementById('filterProduk').value) active.push('Produk');
-        if (document.getElementById('filterEkspedisi').value) active.push('Ekspedisi');
         document.getElementById('filterInfo').textContent = active.length ? `Filter aktif: ${active.join(', ')}` : '';
     }
 
@@ -1775,9 +1685,10 @@
 
     function updateStats() {
         document.getElementById('statTotal').textContent     = filteredOrders.length;
-        document.getElementById('statPending').textContent   = filteredOrders.filter(o=>o.status==='Pending').length;
-        document.getElementById('statDelivered').textContent = filteredOrders.filter(o=>o.status==='Delivered').length;
-        document.getElementById('statCancelled').textContent = filteredOrders.filter(o=>o.status==='Cancelled').length;
+        const repeats = filteredOrders.reduce((s,o) => s + (Array.isArray(o.repeat_orders) ? o.repeat_orders.length : 0), 0);
+        document.getElementById('statPending').textContent   = repeats;
+        document.getElementById('statDelivered').textContent = '-';
+        document.getElementById('statCancelled').textContent = '-';
     }
 
     function renderTable() {
@@ -1787,28 +1698,30 @@
             return;
         }
         tb.innerHTML = filtered.map(o => {
-            const produk   = o.produk || extractProduk(o.jumlah, o.nama) || '-';
-            const qty      = o.quantity || '-';
-            const totalCOD = o.total_pembayaran ? 'Rp' + Number(o.total_pembayaran).toLocaleString('id-ID') : '-';
-            const tgl      = o.created_at
-                ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
-                : '-';
-            const checked  = selectedOrders.has(o.id);
+            const produk     = o.produk || '-';
+            const qty        = o.qty || '-';
+            const totalCOD   = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
+            const tgl        = o.tgl || '-';
+            const repeatCount = Array.isArray(o.repeat_orders) ? o.repeat_orders.length : 0;
+            const checked    = selectedOrders.has(o.id);
+            const namaBadge  = repeatCount
+                ? `<span style="margin-left:6px;background:#FEF3C7;color:#D97706;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">${repeatCount}x repeat</span>`
+                : '';
             return `<tr style="${checked?'background:#F9FAFB;':''}">
                 <td><input type="checkbox" ${checked?'checked':''} onchange="toggleOrderSelection(${o.id})"></td>
                 <td style="font-size:11px;color:#6B7280;white-space:nowrap;">${tgl}</td>
-                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(o.nama||'-')}</td>
-                <td style="font-size:12px;">${escapeHtml(o.no_hp||o.hp||'-')}</td>
-                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.kelurahan||'-')}</td>
-                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.kecamatan||'-')}</td>
-                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.kabupaten||'-')}</td>
-                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.provinsi||'-')}</td>
-                <td style="font-size:12px;">${escapeHtml(o.cs||'-')}</td>
+                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(o.nama||'-')}${namaBadge}</td>
+                <td style="font-size:12px;">${escapeHtml(o.no_hp||'-')}</td>
+                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.desa||'-')}</td>
+                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.kec||'-')}</td>
+                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.kab||'-')}</td>
+                <td style="font-size:11px;color:#6B7280;">${escapeHtml(o.prov||'-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.nama_cs||'-')}</td>
                 <td style="font-size:11px;font-weight:600;">${escapeHtml(o.resi||'-')}</td>
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
                 <td style="font-size:12px;text-align:center;">${qty}</td>
                 <td style="font-size:12px;font-weight:600;">${totalCOD}</td>
-                <td><button onclick="openEditModal(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Edit</button></td>
+                <td><button onclick="openDetailModal(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
             </tr>`;
         }).join('');
         updateSelectedCount();
@@ -1822,25 +1735,20 @@
 
     function _buildExportRows(list) {
         const headers = ['Tgl','NAMA','NO HP','DESA','KEC','KAB','PROV','NAMA CS','RESI','PRODUK','QTY','TOTAL COD'];
-        const rows = list.map(o => {
-            const tgl = o.created_at
-                ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
-                : '';
-            return [
-                tgl,
-                o.nama          || '',
-                o.no_hp || o.hp || '',
-                o.kelurahan     || '',
-                o.kecamatan     || '',
-                o.kabupaten     || '',
-                o.provinsi      || '',
-                o.cs            || '',
-                o.resi          || '',
-                o.produk || extractProduk(o.jumlah, o.nama) || '',
-                o.quantity      || '',
-                o.total_pembayaran || ''
-            ];
-        });
+        const rows = list.map(o => [
+            o.tgl       || '',
+            o.nama      || '',
+            o.no_hp     || '',
+            o.desa      || '',
+            o.kec       || '',
+            o.kab       || '',
+            o.prov      || '',
+            o.nama_cs   || '',
+            o.resi      || '',
+            o.produk    || '',
+            o.qty       || '',
+            o.total_cod || ''
+        ]);
         return [headers, ...rows];
     }
 
@@ -1865,33 +1773,66 @@
         alert(`✅ ${filteredOrders.length} orderan berhasil di-download!`);
     }
 
-    function openEditModal(id) {
+    function openDetailModal(id) {
         const o = orders.find(x=>x.id===id); if(!o) return;
         editId = id;
-        document.getElementById('editModalTitle').textContent = `Edit — ${o.nama||id}`;
-        document.getElementById('editResi').value   = o.resi   ||'';
-        document.getElementById('editStatus').value = o.status ||'Pending';
-        document.getElementById('editTeam').value   = o.team   ||'';
-        document.getElementById('editCRM').value    = o.crm    ||'';
-        document.getElementById('editRetur').value  = o.retur  ||'';
+        document.getElementById('editModalTitle').textContent = o.nama || 'Detail Pelanggan';
+
+        // Info utama
+        const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
+        document.getElementById('detailInfo').innerHTML = `
+            <div style="background:#F9FAFB;border-radius:10px;padding:14px;font-size:13px;display:grid;gap:6px;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">No HP</span><strong>${escapeHtml(o.no_hp||'-')}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Alamat</span><span style="text-align:right;max-width:300px;">${escapeHtml([o.desa,o.kec,o.kab,o.prov].filter(Boolean).join(', ')||'-')}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">CS</span><strong>${escapeHtml(o.nama_cs||'-')}</strong></div>
+                <hr style="border:none;border-top:1px solid #E5E7EB;margin:4px 0;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Tgl Order</span><strong>${o.tgl||'-'}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Produk</span><strong>${escapeHtml(o.produk||'-')}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Qty</span><strong>${o.qty||'-'}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Total COD</span><strong style="color:#10B981;">${totalCOD}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Resi</span><strong>${escapeHtml(o.resi||'-')}</strong></div>
+                ${o.keluhan ? `<div style="display:flex;justify-content:space-between;"><span style="color:#6B7280;">Keluhan</span><span style="text-align:right;max-width:280px;">${escapeHtml(o.keluhan)}</span></div>` : ''}
+            </div>`;
+
+        // Repeat orders
+        const repeats = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
+        if (repeats.length) {
+            document.getElementById('detailRepeats').innerHTML = `
+                <div style="font-size:12px;font-weight:700;color:#D97706;margin-bottom:8px;">🔁 Repeat Order (${repeats.length}x)</div>
+                ${repeats.map((r,i) => {
+                    const tot = r.total_cod ? 'Rp' + Number(r.total_cod).toLocaleString('id-ID') : '-';
+                    return `<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:10px;margin-bottom:6px;font-size:12px;">
+                        <div style="font-weight:700;color:#D97706;margin-bottom:4px;">Repeat ${i+1} — ${r.tgl||'-'}</div>
+                        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                            <span>Produk: <strong>${escapeHtml(r.produk||'-')}</strong></span>
+                            <span>Qty: <strong>${r.qty||'-'}</strong></span>
+                            <span>Total: <strong>${tot}</strong></span>
+                            <span>Resi: <strong>${escapeHtml(r.resi||'-')}</strong></span>
+                        </div>
+                    </div>`;
+                }).join('')}`;
+        } else {
+            document.getElementById('detailRepeats').innerHTML = '';
+        }
+
+        document.getElementById('editCatatan').value = o.catatan || '';
         document.getElementById('editModal').classList.remove('hidden');
     }
+
+    function openEditModal(id) { openDetailModal(id); }
     function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
-    async function updateOrder() {
-        const updates = {
-            resi:   document.getElementById('editResi').value,
-            status: document.getElementById('editStatus').value,
-            team:   document.getElementById('editTeam').value,
-            crm:    document.getElementById('editCRM').value,
-            retur:  document.getElementById('editRetur').value
-        };
-        const { error } = await sbApp.from('crm_customer_orders').update(updates).eq('orderan_id', editId);
-        if (error) { alert('Gagal update: ' + error.message); return; }
-        await loadOrders();
+    async function saveNotes() {
+        const catatan = document.getElementById('editCatatan').value;
+        const { error } = await sbApp.from('crm_customers').update({ catatan }).eq('id', editId);
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+        const idx = orders.findIndex(o => o.id === editId);
+        if (idx >= 0) orders[idx].catatan = catatan;
         closeEditModal();
-        alert('✅ Berhasil diupdate!');
+        alert('✅ Catatan tersimpan!');
     }
+
+    async function updateOrder() { await saveNotes(); }
 
     // Sync ulang semua data dari server (assignment + orders + pelanggan)
     async function syncAll() {
@@ -1929,13 +1870,6 @@
         populateBatchDropdown();
         await loadOrders();
 
-        // Auto-refresh setiap 2 menit di background
-        setInterval(syncAll, 2 * 60 * 1000);
-
-        // Refresh juga saat user kembali ke tab ini
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') syncAll();
-        });
     };
 
     // ════════════════════════════════════════
