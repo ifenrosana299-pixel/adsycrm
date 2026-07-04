@@ -1179,7 +1179,7 @@
                     }));
                     const csKeyFirst = (first.cs||'').trim().toLowerCase();
                     return {
-                        nama:          norm(first.nama)           || null,
+                        nama:          norm((first.nama||'').split('|')[0]) || null,
                         no_hp:         first.hp                   || null,
                         alamat:        first.alamat               || null,
                         kelurahan:     first.kelurahan            || null,
