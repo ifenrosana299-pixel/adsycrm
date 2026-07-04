@@ -6,6 +6,43 @@
     <title>CRM Adsy - Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── DATE RANGE PICKER (Assignment) ── */
+        .drp-trigger { display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:10px; border:1px solid #E5E7EB; background:#fff; color:#374151; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
+        .drp-trigger:hover { border-color:#4F46E5; color:#4F46E5; }
+        .drp-trigger .drp-icon { color:#4F46E5; }
+        .drp-wrap { position:relative; display:inline-block; }
+        .drp-dropdown { position:absolute; top:calc(100% + 8px); left:0; z-index:2000; background:#fff; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,.12); display:none; overflow:hidden; min-width:500px; }
+        .drp-dropdown.open { display:flex; }
+        .drp-presets { width:145px; border-right:1px solid #F3F4F6; padding:10px 0; flex-shrink:0; }
+        .drp-preset { display:block; width:100%; text-align:left; padding:8px 16px; font-size:12px; color:#6B7280; border:none; background:none; cursor:pointer; transition:all .12s; }
+        .drp-preset:hover { background:#EEF2FF; color:#4F46E5; }
+        .drp-preset.active { color:#4F46E5; font-weight:600; background:#EEF2FF; }
+        .drp-cal { padding:16px; flex:1; }
+        .drp-cal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .drp-cal-title { font-size:14px; font-weight:600; color:#1F2937; }
+        .drp-nav { width:28px; height:28px; border-radius:7px; border:1px solid #E5E7EB; background:none; color:#6B7280; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .12s; }
+        .drp-nav:hover { border-color:#4F46E5; color:#4F46E5; }
+        .drp-days-hdr { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:6px; }
+        .drp-days-hdr span { text-align:center; font-size:11px; font-weight:600; color:#9CA3AF; padding:4px 0; }
+        .drp-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        .drp-day { height:32px; border-radius:7px; border:none; background:none; color:#374151; font-size:12px; cursor:pointer; transition:all .12s; display:flex; align-items:center; justify-content:center; }
+        .drp-day:hover:not(.other-month) { background:#EEF2FF; color:#4F46E5; }
+        .drp-day.other-month { color:#D1D5DB; }
+        .drp-day.today { font-weight:700; color:#4F46E5; }
+        .drp-day.selected { background:#4F46E5!important; color:#fff!important; font-weight:600; border-radius:7px; }
+        .drp-day.in-range { background:#EEF2FF; border-radius:0; color:#374151; }
+        .drp-day.range-start { border-radius:7px 0 0 7px; background:#4F46E5; color:#fff; font-weight:600; }
+        .drp-day.range-end { border-radius:0 7px 7px 0; background:#4F46E5; color:#fff; font-weight:600; }
+        .drp-day.range-start.range-end { border-radius:7px; }
+        .drp-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid #F3F4F6; }
+        .drp-selected-txt { font-size:11px; color:#9CA3AF; }
+        .drp-selected-txt span { color:#374151; font-weight:500; }
+        .drp-apply { padding:6px 16px; border-radius:7px; border:none; background:#4F46E5; color:#fff; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+        .drp-apply:hover { opacity:.85; }
+        .drp-cancel { padding:6px 12px; border-radius:7px; border:1px solid #E5E7EB; background:none; color:#6B7280; font-size:12px; cursor:pointer; }
+        .drp-cancel:hover { border-color:#EF4444; color:#EF4444; }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
@@ -79,9 +116,36 @@
 
                 <div class="card">
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <button id="datePickerTrigger2" onclick="toggleDatePicker(this)" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 13px;">
-                            📅 <span id="datePickerLabel2">Pilih Tanggal</span> ▼
-                        </button>
+                        <div class="drp-wrap">
+                            <button class="drp-trigger" onclick="aDrpToggle()" id="aDrp-trigger">
+                                <span class="drp-icon">🗓</span>
+                                <span id="aDrp-label">Hari Ini</span>
+                                <span style="color:#9CA3AF;">▾</span>
+                            </button>
+                            <div class="drp-dropdown" id="aDrp-dropdown">
+                                <div class="drp-presets">
+                                    <button class="drp-preset active" onclick="aDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                    <button class="drp-preset" onclick="aDrpPresetYesterday(this)">Kemarin</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="aDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="aDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="aDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="aDrpPresetThisMonth(this)">Bulan Ini</button>
+                                    <button class="drp-preset" onclick="aDrpPresetLastMonth(this)">Bulan Lalu</button>
+                                </div>
+                                <div style="display:flex;flex-direction:column;flex:1;">
+                                    <div class="drp-cal" id="aDrp-cal"></div>
+                                    <div class="drp-footer">
+                                        <div class="drp-selected-txt"><span id="aDrp-sel-start">—</span> → <span id="aDrp-sel-end">—</span></div>
+                                        <div style="display:flex;gap:6px;">
+                                            <button class="drp-cancel" onclick="aDrpClose()">Batal</button>
+                                            <button class="drp-apply" onclick="aDrpApply()">Terapkan</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <button onclick="loadCSByDateRange()" class="btn btn-primary">🔍 Load CS</button>
                         <button onclick="loadAllCSNow()" class="btn btn-secondary">📋 Semua CS</button>
                     </div>
@@ -1466,6 +1530,18 @@
             drpApplyToInputs();
             syncDateLabel2();
 
+            // Init aDrp default hari ini — sync ke adminDateFrom/To nanti di aDrpApply
+            aDrpSelStart = new Date(); aDrpSelStart.setHours(0,0,0,0);
+            aDrpSelEnd   = new Date(); aDrpSelEnd.setHours(23,59,59,999);
+            aDrpViewYear  = aDrpSelStart.getFullYear();
+            aDrpViewMonth = aDrpSelStart.getMonth();
+            aDrpUpdateLabel();
+            // Langsung terapkan ke inputs supaya stat cards & Load CS siap pakai
+            const _pad = n => String(n).padStart(2,'0');
+            const _fmt = d => `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
+            document.getElementById('adminDateFrom').value = _fmt(aDrpSelStart);
+            document.getElementById('adminDateTo').value   = _fmt(aDrpSelEnd);
+
             // Load data — pakai try-catch supaya adminShowSection tetap jalan walau error
             try {
                 await loadUsers();
@@ -1477,6 +1553,145 @@
 
             adminShowSection('dashboard');
         };
+
+        // ══════════════════════════════════════════
+        // HELPERS DRP
+        // ══════════════════════════════════════════
+        function aDrpFmtDate(d) {
+            if (!d) return '—';
+            return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+        }
+
+        function aDrpMakeCalendar() {
+            const DRP_M = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const DRP_D = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+            const firstDay    = new Date(aDrpViewYear, aDrpViewMonth, 1).getDay();
+            const startPad    = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInMonth = new Date(aDrpViewYear, aDrpViewMonth+1, 0).getDate();
+            const prevDays    = new Date(aDrpViewYear, aDrpViewMonth, 0).getDate();
+            const today       = new Date(); today.setHours(0,0,0,0);
+
+            let html = `<div class="drp-cal-hdr">
+                <button class="drp-nav" onclick="aDrpNav(-1)">‹</button>
+                <div class="drp-cal-title">${DRP_M[aDrpViewMonth]} ${aDrpViewYear}</div>
+                <button class="drp-nav" onclick="aDrpNav(1)">›</button>
+            </div>
+            <div class="drp-days-hdr">${DRP_D.map(d=>`<span>${d}</span>`).join('')}</div>
+            <div class="drp-days">`;
+
+            for (let i=startPad;i>0;i--)
+                html += `<button class="drp-day other-month">${prevDays-i+1}</button>`;
+
+            for (let d=1;d<=daysInMonth;d++) {
+                const cur     = new Date(aDrpViewYear, aDrpViewMonth, d);
+                const isToday = cur.getTime()===today.getTime();
+                const isStart = aDrpSelStart && cur.getTime()===new Date(aDrpSelStart.getFullYear(),aDrpSelStart.getMonth(),aDrpSelStart.getDate()).getTime();
+                const isEnd   = aDrpSelEnd   && cur.getTime()===new Date(aDrpSelEnd.getFullYear(),aDrpSelEnd.getMonth(),aDrpSelEnd.getDate()).getTime();
+                const inRange = aDrpSelStart && aDrpSelEnd && cur>aDrpSelStart && cur<aDrpSelEnd;
+                let cls = 'drp-day';
+                if (isStart && isEnd) cls += ' selected';
+                else if (isStart) cls += ' range-start';
+                else if (isEnd)   cls += ' range-end';
+                else if (inRange) cls += ' in-range';
+                if (isToday) cls += ' today';
+                html += `<button class="${cls}" onclick="aDrpClickDay(${aDrpViewYear},${aDrpViewMonth},${d})">${d}</button>`;
+            }
+
+            const total = startPad + daysInMonth;
+            const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+            for (let d=1;d<=rem;d++)
+                html += `<button class="drp-day other-month">${d}</button>`;
+
+            html += '</div>';
+            document.getElementById('aDrp-cal').innerHTML = html;
+        }
+
+        // ══════════════════════════════════════════
+        // DATE RANGE PICKER — ASSIGNMENT (prefix: aDrp)
+        // ══════════════════════════════════════════
+        let aDrpSelStart=null, aDrpSelEnd=null;
+        let aDrpViewYear=new Date().getFullYear(), aDrpViewMonth=new Date().getMonth();
+
+        function aDrpToggle() {
+            const dd = document.getElementById('aDrp-dropdown');
+            dd.classList.toggle('open');
+            if (dd.classList.contains('open')) { aDrpMakeCalendar(); document.addEventListener('click', aDrpOutside); }
+            else document.removeEventListener('click', aDrpOutside);
+        }
+        function aDrpClose() {
+            document.getElementById('aDrp-dropdown').classList.remove('open');
+            document.removeEventListener('click', aDrpOutside);
+        }
+        function aDrpOutside(e) {
+            const dd=document.getElementById('aDrp-dropdown'), tr=document.getElementById('aDrp-trigger');
+            if (!dd.contains(e.target) && !tr.contains(e.target)) aDrpClose();
+        }
+        function aDrpPreset(days, label, btn) {
+            aDrpSelStart = new Date(Date.now()-(days-1)*864e5); aDrpSelStart.setHours(0,0,0,0);
+            aDrpSelEnd   = new Date(); aDrpSelEnd.setHours(23,59,59,999);
+            document.querySelectorAll('#aDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            aDrpUpdateSel(); aDrpMakeCalendar();
+        }
+        function aDrpPresetYesterday(btn) {
+            aDrpSelStart = new Date(Date.now()-864e5); aDrpSelStart.setHours(0,0,0,0);
+            aDrpSelEnd   = new Date(Date.now()-864e5); aDrpSelEnd.setHours(23,59,59,999);
+            document.querySelectorAll('#aDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            aDrpUpdateSel(); aDrpMakeCalendar();
+        }
+        function aDrpPresetThisMonth(btn) {
+            aDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            aDrpSelEnd   = new Date(); aDrpSelEnd.setHours(23,59,59,999);
+            document.querySelectorAll('#aDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            aDrpUpdateSel(); aDrpMakeCalendar();
+        }
+        function aDrpPresetLastMonth(btn) {
+            const n=new Date();
+            aDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
+            aDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); aDrpSelEnd.setHours(23,59,59,999);
+            document.querySelectorAll('#aDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            aDrpUpdateSel(); aDrpMakeCalendar();
+        }
+        function aDrpUpdateSel() {
+            document.getElementById('aDrp-sel-start').textContent = aDrpFmtDate(aDrpSelStart);
+            document.getElementById('aDrp-sel-end').textContent   = aDrpFmtDate(aDrpSelEnd);
+        }
+        function aDrpUpdateLabel() {
+            if (!aDrpSelStart) return;
+            const s = aDrpFmtDate(aDrpSelStart);
+            const e = aDrpFmtDate(aDrpSelEnd);
+            document.getElementById('aDrp-label').textContent = s === e ? s : `${s} — ${e}`;
+        }
+        function aDrpApply() {
+            if (!aDrpSelStart) return;
+            // Update hidden inputs yang dipakai loadCSByDateRange & updateAssignmentStats
+            const pad = n => String(n).padStart(2,'0');
+            const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            document.getElementById('adminDateFrom').value = fmt(aDrpSelStart);
+            document.getElementById('adminDateTo').value   = fmt(aDrpSelEnd || aDrpSelStart);
+            aDrpUpdateLabel();
+            aDrpClose();
+            updateAssignmentStats();
+        }
+        function aDrpClickDay(y,m,d) {
+            const clicked = new Date(y,m,d);
+            if (!aDrpSelStart || (aDrpSelStart && aDrpSelEnd)) {
+                aDrpSelStart=clicked; aDrpSelEnd=null;
+            } else {
+                if (clicked < aDrpSelStart) { aDrpSelEnd=aDrpSelStart; aDrpSelStart=clicked; }
+                else aDrpSelEnd=clicked;
+            }
+            aDrpUpdateSel(); aDrpMakeCalendar();
+        }
+        function aDrpNav(dir) {
+            aDrpViewMonth += dir;
+            if (aDrpViewMonth>11){aDrpViewMonth=0;aDrpViewYear++;}
+            if (aDrpViewMonth<0) {aDrpViewMonth=11;aDrpViewYear--;}
+            aDrpMakeCalendar();
+        }
     </script>
 </body>
 </html>
