@@ -1122,29 +1122,21 @@
                     return;
                 }
 
-                // Build set of assigned produk per CS (cs_lower → Set<produk_upper>)
+                // Build map: cs_name_lower → produk (dari assignment)
+                // Produk diambil dari assignment, bukan dari extractProduk
                 const csProdukMap = {};
                 assignmentList.forEach(a => {
                     const csKey = (a.csName||'').trim().toLowerCase();
-                    if (!csProdukMap[csKey]) csProdukMap[csKey] = new Set();
-                    if (a.produk) csProdukMap[csKey].add(a.produk.trim().toUpperCase());
+                    if (a.produk) csProdukMap[csKey] = a.produk.trim().toUpperCase();
                 });
 
                 // Group by no_hp + cs → 1 row per pelanggan per CS
-                // Hanya masukkan order yang produknya match dengan assignment
                 const grouped = {};
                 orderData.forEach(o => {
                     const tglWIB = o.created_at
                         ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
                         : dateFrom;
                     const csKey = (o.cs||'').trim().toLowerCase();
-                    const extractedProduk = (extractProduk(o.jumlah, o.nama)||'').toUpperCase();
-                    const allowedProduks = csProdukMap[csKey];
-                    // Skip order yang produknya tidak match assignment (kecuali produk tidak dikenali)
-                    if (allowedProduks && allowedProduks.size > 0 && extractedProduk && !allowedProduks.has(extractedProduk)) {
-                        console.log(`[Sync] Skip order produk ${extractedProduk} (CS ${o.cs} hanya handle: ${[...allowedProduks].join(',')})`);
-                        return;
-                    }
                     const key = (o.hp||'').trim() + '|' + csKey;
                     if (!grouped[key]) grouped[key] = [];
                     grouped[key].push({ ...o, tglWIB });
@@ -1162,6 +1154,7 @@
                         total_cod: o.total_pembayaran  || null,
                         keluhan:   o.keluhan           || null,
                     }));
+                    const csKeyFirst = (first.cs||'').trim().toLowerCase();
                     return {
                         nama:          norm(first.nama)           || null,
                         no_hp:         first.hp                   || null,
@@ -1174,7 +1167,7 @@
                         crm:           crmName,
                         tgl:           first.tglWIB,
                         resi:          first.resi                 || null,
-                        produk:        (extractProduk(first.jumlah, first.nama)||'').toUpperCase() || null,
+                        produk:        csProdukMap[csKeyFirst]    || null,
                         qty:           first.quantity             || null,
                         total_cod:     first.total_pembayaran     || null,
                         keluhan:       first.keluhan              || null,
