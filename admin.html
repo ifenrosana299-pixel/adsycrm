@@ -788,12 +788,7 @@
 
         function populateTeamDropdown() {
             const teamSelect = document.getElementById('adminTeamSelect');
-            // Team tetap: Ghazi, Herba, Zaydan — tambah 'Lainnya' jika ada CS yang teamnya tidak dikenal
-            const knownTeams = ['Ghazi', 'Herba', 'Zaydan'];
-            const extraTeams = [...new Set(allCS.map(cs => cs.team))]
-                .filter(t => t && t !== 'Lainnya' && !knownTeams.includes(t)).sort();
-            const hasLainnya = allCS.some(cs => cs.team === 'Lainnya');
-            const teams = [...knownTeams, ...extraTeams, ...(hasLainnya ? ['Lainnya'] : [])];
+            const teams = [...new Set(allCS.map(cs => cs.team).filter(Boolean))].sort();
             teamSelect.innerHTML = '<option value="">-- Pilih Team --</option>' +
                 teams.map(t => `<option value="${t}">${t}</option>`).join('');
             // Reset downstream setiap kali CS baru di-load
