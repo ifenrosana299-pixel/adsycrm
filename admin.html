@@ -1103,6 +1103,14 @@
                 const csNames = [...new Set(assignmentList.map(a => a.csName))];
                 console.log('[Sync] crmName:', crmName, '| csNames:', csNames, '| range:', dateFrom, '-', dateTo);
 
+                // Wipe semua record CRM ini — sync selalu fresh dari awal
+                const { error: cleanupErr } = await sbApp
+                    .from('crm_customers')
+                    .delete()
+                    .eq('crm', crmName);
+                if (cleanupErr) console.warn('[Sync] Cleanup error (non-fatal):', cleanupErr);
+                else console.log('[Sync] Cleanup done — semua record lama CRM dihapus, sync fresh.');
+
                 const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
                 const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
                 const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
@@ -1123,16 +1131,31 @@
                 }
 
                 // Build map: cs_name_lower → produk (dari assignment)
-                // Produk diambil dari assignment, bukan dari extractProduk
                 const csProdukMap = {};
                 assignmentList.forEach(a => {
                     const csKey = (a.csName||'').trim().toLowerCase();
                     if (a.produk) csProdukMap[csKey] = a.produk.trim().toUpperCase();
                 });
 
+                // Pastikan skuList ter-load untuk filter produk yang akurat
+                await loadSkuList();
+
+                // Filter: hanya order yang produknya sesuai assignment CS-nya
+                // Kalau extractProduk bisa detect produk lain → buang
+                // Kalau null (tidak terdeteksi) → include, diasumsikan produk yg di-assign
+                const filteredOrderData = orderData.filter(o => {
+                    const csKey = (o.cs||'').trim().toLowerCase();
+                    const assignedProduk = csProdukMap[csKey];
+                    if (!assignedProduk) return true; // CS tidak di-map, lolos
+                    const orderProduk = extractProduk(o.jumlah, o.nama);
+                    if (!orderProduk) return true; // Tidak bisa detect, include
+                    return orderProduk === assignedProduk; // Buang jika beda produk
+                });
+                console.log('[Sync] Setelah filter produk:', filteredOrderData.length, '/', orderData.length);
+
                 // Group by no_hp + cs → 1 row per pelanggan per CS
                 const grouped = {};
-                orderData.forEach(o => {
+                filteredOrderData.forEach(o => {
                     const tglWIB = o.created_at
                         ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
                         : dateFrom;
