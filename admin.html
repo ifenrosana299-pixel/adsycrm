@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM Adsy - Admin</title>
+    <link rel="icon" type="image/png" href="img/logo-adsy.png">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
@@ -52,8 +53,13 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <div class="sidebar-brand-title">CRM Adsy</div>
-                <div class="sidebar-brand-sub">Admin Data Panel</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="img/logo-adsy.png" alt="Adsy" style="width:32px;height:32px;object-fit:contain;border-radius:6px;">
+                    <div>
+                        <div class="sidebar-brand-title">CRM Adsy</div>
+                        <div class="sidebar-brand-sub">Admin Data Panel</div>
+                    </div>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <div id="adminNav-dashboard" class="nav-item nav-active" onclick="adminShowSection('dashboard')">
