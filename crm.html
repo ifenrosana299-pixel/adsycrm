@@ -372,6 +372,42 @@
         }
         .crm-modal-title { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 4px; }
         .crm-modal-sub   { font-size: 12px; color: #9CA3AF; margin-bottom: 22px; }
+
+        /* ── DATE RANGE PICKER ── */
+        .drp-trigger { display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:10px; border:1px solid #E5E7EB; background:#fff; color:#374151; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
+        .drp-trigger:hover { border-color:#4F46E5; color:#4F46E5; }
+        .drp-trigger .drp-icon { color:#4F46E5; }
+        .drp-wrap { position:relative; display:inline-block; }
+        .drp-dropdown { position:absolute; top:calc(100% + 8px); left:0; z-index:2000; background:#fff; border:1px solid #E5E7EB; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,.12); display:none; overflow:hidden; min-width:500px; }
+        .drp-dropdown.open { display:flex; }
+        .drp-presets { width:145px; border-right:1px solid #F3F4F6; padding:10px 0; flex-shrink:0; }
+        .drp-preset { display:block; width:100%; text-align:left; padding:8px 16px; font-size:12px; color:#6B7280; border:none; background:none; cursor:pointer; transition:all .12s; }
+        .drp-preset:hover { background:#EEF2FF; color:#4F46E5; }
+        .drp-preset.active { color:#4F46E5; font-weight:600; background:#EEF2FF; }
+        .drp-cal { padding:16px; flex:1; }
+        .drp-cal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .drp-cal-title { font-size:14px; font-weight:600; color:#1F2937; }
+        .drp-nav { width:28px; height:28px; border-radius:7px; border:1px solid #E5E7EB; background:none; color:#6B7280; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .12s; }
+        .drp-nav:hover { border-color:#4F46E5; color:#4F46E5; }
+        .drp-days-hdr { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:6px; }
+        .drp-days-hdr span { text-align:center; font-size:11px; font-weight:600; color:#9CA3AF; padding:4px 0; }
+        .drp-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        .drp-day { height:32px; border-radius:7px; border:none; background:none; color:#374151; font-size:12px; cursor:pointer; transition:all .12s; display:flex; align-items:center; justify-content:center; }
+        .drp-day:hover:not(.other-month) { background:#EEF2FF; color:#4F46E5; }
+        .drp-day.other-month { color:#D1D5DB; }
+        .drp-day.today { font-weight:700; color:#4F46E5; }
+        .drp-day.selected { background:#4F46E5!important; color:#fff!important; font-weight:600; border-radius:7px; }
+        .drp-day.in-range { background:#EEF2FF; border-radius:0; color:#374151; }
+        .drp-day.range-start { border-radius:7px 0 0 7px; background:#4F46E5; color:#fff; font-weight:600; }
+        .drp-day.range-end { border-radius:0 7px 7px 0; background:#4F46E5; color:#fff; font-weight:600; }
+        .drp-day.range-start.range-end { border-radius:7px; }
+        .drp-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid #F3F4F6; }
+        .drp-selected-txt { font-size:11px; color:#9CA3AF; }
+        .drp-selected-txt span { color:#374151; font-weight:500; }
+        .drp-apply { padding:6px 16px; border-radius:7px; border:none; background:#4F46E5; color:#fff; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+        .drp-apply:hover { opacity:.85; }
+        .drp-cancel { padding:6px 12px; border-radius:7px; border:1px solid #E5E7EB; background:none; color:#6B7280; font-size:12px; cursor:pointer; }
+        .drp-cancel:hover { border-color:#EF4444; color:#EF4444; }
     </style>
 </head>
 <body>
@@ -483,9 +519,42 @@
 
             <!-- ═══ DASHBOARD ═══ -->
             <section id="crmSec-dashboard" class="crm-section crm-sec-active">
-                <div class="crm-page-title">
-                    <div class="crm-page-title-icon">📦</div>
-                    <h2>Dashboard</h2>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">📦</div>
+                        <h2>Dashboard</h2>
+                    </div>
+                    <div class="drp-wrap">
+                        <button class="drp-trigger" onclick="dDrpToggle()" id="dDrp-trigger">
+                            <span class="drp-icon">📅</span>
+                            <span id="dDrp-label">30 Hari Terakhir</span>
+                            <span style="color:#9CA3AF;">▾</span>
+                        </button>
+                        <div class="drp-dropdown" id="dDrp-dropdown" style="left:auto;right:0;">
+                            <div class="drp-presets">
+                                <button class="drp-preset" onclick="dDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                <button class="drp-preset" onclick="dDrpPresetYesterday(this)">Kemarin</button>
+                                <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                <button class="drp-preset" onclick="dDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
+                                <button class="drp-preset" onclick="dDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
+                                <button class="drp-preset active" onclick="dDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                <button class="drp-preset" onclick="dDrpPreset(90,'90 Hari Terakhir',this)">90 Hari Terakhir</button>
+                                <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                <button class="drp-preset" onclick="dDrpPresetThisMonth(this)">Bulan Ini</button>
+                                <button class="drp-preset" onclick="dDrpPresetLastMonth(this)">Bulan Lalu</button>
+                            </div>
+                            <div style="display:flex;flex-direction:column;flex:1;">
+                                <div class="drp-cal" id="dDrp-cal"></div>
+                                <div class="drp-footer">
+                                    <div class="drp-selected-txt"><span id="dDrp-sel-start">—</span> → <span id="dDrp-sel-end">—</span></div>
+                                    <div style="display:flex;gap:6px;">
+                                        <button class="drp-cancel" onclick="dDrpClose()">Batal</button>
+                                        <button class="drp-apply" onclick="dDrpApply()">Terapkan</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Banner -->
@@ -624,7 +693,38 @@
                     </div>
                     <div class="crm-form-group">
                         <label class="crm-form-label">Tgl Assignment</label>
-                        <input type="date" id="filterTanggalAssign" class="crm-input" style="margin-top:5px;" onchange="applyFilters()">
+                        <div class="drp-wrap" style="margin-top:5px;">
+                            <button class="drp-trigger" onclick="pDrpToggle()" id="pDrp-trigger">
+                                <span class="drp-icon">📅</span>
+                                <span id="pDrp-label">Semua Periode</span>
+                                <span style="color:#9CA3AF;">▾</span>
+                            </button>
+                            <div class="drp-dropdown" id="pDrp-dropdown">
+                                <div class="drp-presets">
+                                    <button class="drp-preset" onclick="pDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                    <button class="drp-preset" onclick="pDrpPresetYesterday(this)">Kemarin</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="pDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="pDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="pDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="pDrpPresetThisMonth(this)">Bulan Ini</button>
+                                    <button class="drp-preset" onclick="pDrpPresetLastMonth(this)">Bulan Lalu</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="pDrpClear(this)">Semua Periode</button>
+                                </div>
+                                <div style="display:flex;flex-direction:column;flex:1;">
+                                    <div class="drp-cal" id="pDrp-cal"></div>
+                                    <div class="drp-footer">
+                                        <div class="drp-selected-txt"><span id="pDrp-sel-start">—</span> → <span id="pDrp-sel-end">—</span></div>
+                                        <div style="display:flex;gap:6px;">
+                                            <button class="drp-cancel" onclick="pDrpClose()">Batal</button>
+                                            <button class="drp-apply" onclick="pDrpApply()">Terapkan</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div style="display:flex;align-items:flex-end;">
                         <button onclick="clearFilters()" class="crm-btn crm-btn-secondary">✖ Reset</button>
@@ -1046,12 +1146,11 @@
 
     // ── DASHBOARD ──
     function renderDashboard() {
-        // Filter by date picker jika diset
-        const from = document.getElementById('adminDateFrom')?.value;
-        const to   = document.getElementById('adminDateTo')?.value;
-        const display = (from && to) ? orders.filter(o => {
-            const d = o.created_at ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10) : null;
-            return d && d >= from && d <= to;
+        // Filter by dDrp date range — pakai tgl (tanggal order, YYYY-MM-DD string)
+        const display = (dFilterStart && dFilterEnd) ? orders.filter(o => {
+            if (!o.tgl) return true;
+            const d = new Date(o.tgl + 'T00:00:00');
+            return d >= dFilterStart && d <= dFilterEnd;
         }) : orders;
 
         const total     = display.length;
@@ -1580,18 +1679,18 @@
             } else hasMore = false;
         }
         orders = allOrders;
-        populateFilterDropdowns(assignmentDates[currentUser.username] || []);
+        populateFilterDropdowns();
         applyFilters();
         renderDashboard();
     }
 
-    function populateFilterDropdowns(assignedData) {
+    function populateFilterDropdowns() {
         const csMap = {}, produkMap = {};
-        assignedData.forEach(a => {
-            const ck = (a.cs||'').trim().toLowerCase();
-            if (ck && !csMap[ck]) csMap[ck] = norm(a.cs);
-            const pk = (a.produk||'').trim().toLowerCase();
-            if (pk && !produkMap[pk]) produkMap[pk] = (a.produk||'').trim().toUpperCase();
+        orders.forEach(o => {
+            const ck = (o.nama_cs||'').trim().toLowerCase();
+            if (ck && !csMap[ck]) csMap[ck] = norm(o.nama_cs);
+            const pk = (o.produk||'').trim().toLowerCase();
+            if (pk && !produkMap[pk]) produkMap[pk] = (o.produk||'').trim().toUpperCase();
         });
         document.getElementById('filterCS').innerHTML = '<option value="">Semua CS</option>' +
             Object.values(csMap).sort().map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -1601,18 +1700,16 @@
 
     function applyFilters() {
         const q   = document.getElementById('crmSearch').value.toLowerCase();
-        const tgl = document.getElementById('filterTanggalAssign').value;
         const cs  = document.getElementById('filterCS').value;
         const pr  = document.getElementById('filterProduk').value;
         const ad  = assignmentDates[currentUser.username] || [];
 
         filteredOrders = orders.filter(o => {
             if (q && !(o.nama?.toLowerCase().includes(q) || o.no_hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
-            if (tgl) {
-                const assignedWIB = o.created_at
-                    ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
-                    : null;
-                if (assignedWIB !== tgl) return false;
+            if (pFilterStart && pFilterEnd) {
+                if (!o.tgl) return true;
+                const tglDate = new Date(o.tgl + 'T00:00:00');
+                if (tglDate < pFilterStart || tglDate > pFilterEnd) return false;
             }
             if (cs && !normEq(o.nama_cs, cs)) return false;
             if (pr && !normEq(o.produk, pr)) return false;
@@ -1648,14 +1745,19 @@
     }
 
     function clearFilters() {
-        ['filterTanggalAssign','filterCS','filterProduk'].forEach(id => document.getElementById(id).value = '');
+        ['filterCS','filterProduk'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('crmSearch').value = '';
+        pFilterStart = null; pFilterEnd = null;
+        pDrpSelStart = null; pDrpSelEnd = null;
+        const lbl = document.getElementById('pDrp-label');
+        if (lbl) lbl.textContent = 'Semua Periode';
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b => b.classList.remove('active'));
         applyFilters();
     }
 
     function updateFilterInfo() {
         const active = [];
-        if (document.getElementById('filterTanggalAssign').value) active.push('Tanggal');
+        if (pFilterStart) active.push('Tanggal');
         if (document.getElementById('filterCS').value) active.push('CS');
         if (document.getElementById('filterProduk').value) active.push('Produk');
         document.getElementById('filterInfo').textContent = active.length ? `Filter aktif: ${active.join(', ')}` : '';
@@ -1870,6 +1972,234 @@
     // Refresh dashboard setiap kali date range picker di-apply
     document.addEventListener('dateRangeApplied', () => renderDashboard());
 
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — SHARED HELPERS
+    // ══════════════════════════════════════════
+    // DRP_MONTHS & DRP_DAYS sudah didefinisikan di shared.js — tidak perlu redeclare di sini
+
+    function drpFmtDate(d) {
+        if (!d) return '—';
+        return d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+    }
+
+    function drpMakeCalendar(calId, selStart, selEnd, clickFn, navFn, viewYear, viewMonth) {
+        const firstDay    = new Date(viewYear, viewMonth, 1).getDay();
+        const startPad    = firstDay === 0 ? 6 : firstDay - 1;
+        const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+        const prevDays    = new Date(viewYear, viewMonth, 0).getDate();
+        const today       = new Date(); today.setHours(0,0,0,0);
+
+        let html = `<div class="drp-cal-hdr">
+            <button class="drp-nav" onclick="${navFn}(-1)">‹</button>
+            <div class="drp-cal-title">${DRP_MONTHS[viewMonth]} ${viewYear}</div>
+            <button class="drp-nav" onclick="${navFn}(1)">›</button>
+        </div>
+        <div class="drp-days-hdr">${DRP_DAYS.map(d=>`<span>${d}</span>`).join('')}</div>
+        <div class="drp-days">`;
+
+        for (let i=startPad;i>0;i--)
+            html += `<button class="drp-day other-month">${prevDays-i+1}</button>`;
+
+        for (let d=1;d<=daysInMonth;d++) {
+            const cur     = new Date(viewYear, viewMonth, d);
+            const isToday = cur.getTime()===today.getTime();
+            const isStart = selStart && cur.getTime()===new Date(selStart.getFullYear(),selStart.getMonth(),selStart.getDate()).getTime();
+            const isEnd   = selEnd   && cur.getTime()===new Date(selEnd.getFullYear(),selEnd.getMonth(),selEnd.getDate()).getTime();
+            const inRange = selStart && selEnd && cur>selStart && cur<selEnd;
+            let cls = 'drp-day';
+            if (isStart && isEnd) cls += ' selected';
+            else if (isStart) cls += ' range-start';
+            else if (isEnd)   cls += ' range-end';
+            else if (inRange) cls += ' in-range';
+            if (isToday) cls += ' today';
+            html += `<button class="${cls}" onclick="${clickFn}(${viewYear},${viewMonth},${d})">${d}</button>`;
+        }
+
+        const total = startPad + daysInMonth;
+        const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+        for (let d=1;d<=rem;d++)
+            html += `<button class="drp-day other-month">${d}</button>`;
+
+        html += '</div>';
+        document.getElementById(calId).innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — PESANAN (prefix: pDrp)
+    // ══════════════════════════════════════════
+    let pDrpSelStart=null, pDrpSelEnd=null;
+    let pDrpViewYear=new Date().getFullYear(), pDrpViewMonth=new Date().getMonth();
+    let pFilterStart=null, pFilterEnd=null;
+
+    function pDrpToggle() {
+        const dd = document.getElementById('pDrp-dropdown');
+        dd.classList.toggle('open');
+        if (dd.classList.contains('open')) { pDrpRender(); document.addEventListener('click', pDrpOutside); }
+        else document.removeEventListener('click', pDrpOutside);
+    }
+    function pDrpClose() {
+        document.getElementById('pDrp-dropdown').classList.remove('open');
+        document.removeEventListener('click', pDrpOutside);
+    }
+    function pDrpOutside(e) {
+        const dd=document.getElementById('pDrp-dropdown'), tr=document.getElementById('pDrp-trigger');
+        if (!dd.contains(e.target) && !tr.contains(e.target)) pDrpClose();
+    }
+    function pDrpPreset(days, label, btn) {
+        pDrpSelStart = new Date(Date.now()-(days-1)*864e5); pDrpSelStart.setHours(0,0,0,0);
+        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        pDrpUpdateSel(); pDrpRender();
+    }
+    function pDrpPresetYesterday(btn) {
+        pDrpSelStart = new Date(Date.now()-864e5); pDrpSelStart.setHours(0,0,0,0);
+        pDrpSelEnd   = new Date(Date.now()-864e5); pDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        pDrpUpdateSel(); pDrpRender();
+    }
+    function pDrpPresetThisMonth(btn) {
+        pDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        pDrpUpdateSel(); pDrpRender();
+    }
+    function pDrpPresetLastMonth(btn) {
+        const n=new Date();
+        pDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
+        pDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); pDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        pDrpUpdateSel(); pDrpRender();
+    }
+    function pDrpClear(btn) {
+        pDrpSelStart=null; pDrpSelEnd=null; pFilterStart=null; pFilterEnd=null;
+        document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('pDrp-label').textContent = 'Semua Periode';
+        document.getElementById('pDrp-sel-start').textContent = '—';
+        document.getElementById('pDrp-sel-end').textContent   = '—';
+        pDrpClose();
+        applyFilters();
+    }
+    function pDrpUpdateSel() {
+        document.getElementById('pDrp-sel-start').textContent = drpFmtDate(pDrpSelStart);
+        document.getElementById('pDrp-sel-end').textContent   = drpFmtDate(pDrpSelEnd);
+    }
+    function pDrpApply() {
+        if (!pDrpSelStart) return;
+        pFilterStart = new Date(pDrpSelStart); pFilterStart.setHours(0,0,0,0);
+        pFilterEnd   = pDrpSelEnd ? new Date(pDrpSelEnd) : new Date(pDrpSelStart);
+        pFilterEnd.setHours(23,59,59,999);
+        document.getElementById('pDrp-label').textContent = `${drpFmtDate(pFilterStart)} — ${drpFmtDate(pFilterEnd)}`;
+        pDrpClose();
+        applyFilters();
+    }
+    function pDrpClickDay(y,m,d) {
+        const clicked = new Date(y,m,d);
+        if (!pDrpSelStart || (pDrpSelStart && pDrpSelEnd)) {
+            pDrpSelStart=clicked; pDrpSelEnd=null;
+        } else {
+            if (clicked < pDrpSelStart) { pDrpSelEnd=pDrpSelStart; pDrpSelStart=clicked; }
+            else pDrpSelEnd=clicked;
+        }
+        pDrpUpdateSel(); pDrpRender();
+    }
+    function pDrpRender() {
+        drpMakeCalendar('pDrp-cal', pDrpSelStart, pDrpSelEnd, 'pDrpClickDay', 'pDrpNav', pDrpViewYear, pDrpViewMonth);
+    }
+    function pDrpNav(dir) {
+        pDrpViewMonth += dir;
+        if (pDrpViewMonth>11){pDrpViewMonth=0;pDrpViewYear++;}
+        if (pDrpViewMonth<0) {pDrpViewMonth=11;pDrpViewYear--;}
+        pDrpRender();
+    }
+
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — DASHBOARD (prefix: dDrp)
+    // ══════════════════════════════════════════
+    let dDrpSelStart=null, dDrpSelEnd=null;
+    let dDrpViewYear=new Date().getFullYear(), dDrpViewMonth=new Date().getMonth();
+    let dFilterStart=new Date(Date.now()-29*864e5), dFilterEnd=new Date();
+
+    function dDrpToggle() {
+        const dd = document.getElementById('dDrp-dropdown');
+        dd.classList.toggle('open');
+        if (dd.classList.contains('open')) { dDrpRender(); document.addEventListener('click', dDrpOutside); }
+        else document.removeEventListener('click', dDrpOutside);
+    }
+    function dDrpClose() {
+        document.getElementById('dDrp-dropdown').classList.remove('open');
+        document.removeEventListener('click', dDrpOutside);
+    }
+    function dDrpOutside(e) {
+        const dd=document.getElementById('dDrp-dropdown'), tr=document.getElementById('dDrp-trigger');
+        if (!dd.contains(e.target) && !tr.contains(e.target)) dDrpClose();
+    }
+    function dDrpPreset(days, label, btn) {
+        dDrpSelStart = new Date(Date.now()-(days-1)*864e5); dDrpSelStart.setHours(0,0,0,0);
+        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        dDrpUpdateSel(); dDrpRender();
+    }
+    function dDrpPresetYesterday(btn) {
+        dDrpSelStart = new Date(Date.now()-864e5); dDrpSelStart.setHours(0,0,0,0);
+        dDrpSelEnd   = new Date(Date.now()-864e5); dDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        dDrpUpdateSel(); dDrpRender();
+    }
+    function dDrpPresetThisMonth(btn) {
+        dDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        dDrpUpdateSel(); dDrpRender();
+    }
+    function dDrpPresetLastMonth(btn) {
+        const n=new Date();
+        dDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
+        dDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); dDrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        dDrpUpdateSel(); dDrpRender();
+    }
+    function dDrpUpdateSel() {
+        document.getElementById('dDrp-sel-start').textContent = drpFmtDate(dDrpSelStart);
+        document.getElementById('dDrp-sel-end').textContent   = drpFmtDate(dDrpSelEnd);
+    }
+    function dDrpApply() {
+        if (!dDrpSelStart) return;
+        dFilterStart = new Date(dDrpSelStart); dFilterStart.setHours(0,0,0,0);
+        dFilterEnd   = dDrpSelEnd ? new Date(dDrpSelEnd) : new Date(dDrpSelStart);
+        dFilterEnd.setHours(23,59,59,999);
+        document.getElementById('dDrp-label').textContent = `${drpFmtDate(dFilterStart)} — ${drpFmtDate(dFilterEnd)}`;
+        dDrpClose();
+        renderDashboard();
+    }
+    function dDrpClickDay(y,m,d) {
+        const clicked = new Date(y,m,d);
+        if (!dDrpSelStart || (dDrpSelStart && dDrpSelEnd)) {
+            dDrpSelStart=clicked; dDrpSelEnd=null;
+        } else {
+            if (clicked < dDrpSelStart) { dDrpSelEnd=dDrpSelStart; dDrpSelStart=clicked; }
+            else dDrpSelEnd=clicked;
+        }
+        dDrpUpdateSel(); dDrpRender();
+    }
+    function dDrpRender() {
+        drpMakeCalendar('dDrp-cal', dDrpSelStart, dDrpSelEnd, 'dDrpClickDay', 'dDrpNav', dDrpViewYear, dDrpViewMonth);
+    }
+    function dDrpNav(dir) {
+        dDrpViewMonth += dir;
+        if (dDrpViewMonth>11){dDrpViewMonth=0;dDrpViewYear++;}
+        if (dDrpViewMonth<0) {dDrpViewMonth=11;dDrpViewYear--;}
+        dDrpRender();
+    }
+
     // ── INIT ──
     window.onload = async function() {
         await initSupabase();
@@ -1884,7 +2214,6 @@
         document.getElementById('crmTopUsername').textContent = currentUser.username.toUpperCase();
 
         await loadAssignments();
-        populateBatchDropdown();
         await loadOrders();
 
     };
