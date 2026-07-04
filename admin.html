@@ -74,6 +74,9 @@
                     <div class="section-sub">Assign Customer Service ke CRM berdasarkan produk & periode</div>
                 </div>
 
+                <!-- Stat cards berdasarkan filter tanggal assignment -->
+                <div id="assignmentSectionStats" style="margin-bottom: 20px;"></div>
+
                 <div class="card">
                     <div style="margin-bottom: 20px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 2px solid #e2e8f0;">
                         <label class="form-label">📅 Filter CS: Tanggal + Sumber Validasi</label>
@@ -946,14 +949,15 @@
         }
 
         async function updateAssignmentStats() {
-            const statsDiv = document.getElementById('assignmentStats');
-            if (!statsDiv) return;
+            const statsDiv     = document.getElementById('assignmentStats');
+            const sectionStats = document.getElementById('assignmentSectionStats');
 
             const dateFrom = document.getElementById('adminDateFrom').value;
             const dateTo = document.getElementById('adminDateTo').value;
 
             if (!dateFrom || !dateTo) {
-                statsDiv.innerHTML = '';
+                if (statsDiv)     statsDiv.innerHTML = '';
+                if (sectionStats) sectionStats.innerHTML = '';
                 return;
             }
 
@@ -1043,6 +1047,30 @@
                     ` : ''}
                 </div>
             `;
+
+            // Render juga ke section Assignment (compact cards, tanpa detail)
+            if (sectionStats) {
+                const periodeLabel = dateFrom === dateTo ? dateFrom : `${dateFrom} s/d ${dateTo}`;
+                sectionStats.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 18px;">
+                            <div style="font-size: 12px; opacity: 0.85; margin-bottom: 6px;">📦 Total Orderan</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${totalOrders}</div>
+                            <div style="font-size: 11px; opacity: 0.75; margin-top: 4px;">${periodeLabel}</div>
+                        </div>
+                        <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 18px;">
+                            <div style="font-size: 12px; opacity: 0.85; margin-bottom: 6px;">✅ Sudah Ter-Assign</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${assignedOrders}</div>
+                            <div style="font-size: 11px; opacity: 0.75; margin-top: 4px;">${percentage}% dari total</div>
+                        </div>
+                        <div class="card" style="background: ${unassignedOrders > 0 ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}; color: white; border: none; padding: 18px;">
+                            <div style="font-size: 12px; opacity: 0.85; margin-bottom: 6px;">⚠️ Belum Ter-Assign</div>
+                            <div style="font-size: 32px; font-weight: 800; line-height: 1;">${unassignedOrders}</div>
+                            <div style="font-size: 11px; opacity: 0.75; margin-top: 4px;">${unassignedOrders > 0 ? 'Perlu ditangani!' : 'Semua selesai!'}</div>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         async function toggleCS(csName, product) {
