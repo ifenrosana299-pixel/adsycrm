@@ -633,11 +633,10 @@
                         </select>
                     </div>
                     <div class="crm-form-group">
-                        <label class="crm-form-label">Tgl Assign</label>
-                        <div style="display:flex;gap:6px;margin-top:5px;">
-                            <input type="date" id="filterTanggalAssign" class="crm-input" oninput="applyFilters()" onchange="applyFilters()">
-                            <button onclick="setFilterHariIni()" class="crm-btn crm-btn-secondary crm-btn-sm" style="white-space:nowrap;">Hari Ini</button>
-                        </div>
+                        <label class="crm-form-label">Batch Assignment</label>
+                        <select id="filterTanggalAssign" class="crm-select" style="margin-top:5px;" onchange="applyFilters()">
+                            <option value="">Semua Periode</option>
+                        </select>
                     </div>
                     <div style="display:flex;align-items:flex-end;">
                         <button onclick="clearFilters()" class="crm-btn crm-btn-secondary">✖ Reset</button>
@@ -1700,10 +1699,27 @@
         updateFilterInfo();
     }
 
-    function setFilterHariIni() {
-        const today = new Date(new Date().getTime() + 7*3600*1000).toISOString().slice(0,10);
-        document.getElementById('filterTanggalAssign').value = today;
-        applyFilters();
+    function populateBatchDropdown() {
+        const ad = assignmentDates[currentUser?.username] || [];
+        const sel = document.getElementById('filterTanggalAssign');
+        if (!sel) return;
+
+        // Kumpulkan batch unik berdasarkan assignedAt
+        const batches = {};
+        ad.forEach(a => {
+            if (!a.assignedAt) return;
+            if (!batches[a.assignedAt]) batches[a.assignedAt] = new Set();
+            const range = a.dateFrom === a.dateTo ? a.dateFrom : `${a.dateFrom} s/d ${a.dateTo}`;
+            batches[a.assignedAt].add(range);
+        });
+
+        const curVal = sel.value;
+        sel.innerHTML = '<option value="">Semua Periode</option>' +
+            Object.keys(batches).sort().reverse().map(assignedAt => {
+                const periods = [...batches[assignedAt]].join(', ');
+                const label = `Di-assign ${assignedAt} (${periods})`;
+                return `<option value="${assignedAt}" ${assignedAt === curVal ? 'selected' : ''}>${label}</option>`;
+            }).join('');
     }
 
     function clearFilters() {
@@ -1872,6 +1888,7 @@
         if (btn) { btn.disabled = true; label.textContent = 'Memuat...'; }
         try {
             await loadAssignments();
+            populateBatchDropdown();
             await loadOrders();       // harus duluan karena pelanggan fallback ke orders
             await loadPelanggan();
             renderDashboard();
@@ -1897,6 +1914,7 @@
         document.getElementById('crmTopUsername').textContent = currentUser.username.toUpperCase();
 
         await loadAssignments();
+        populateBatchDropdown();
         await loadOrders();
 
         // Auto-refresh setiap 2 menit di background
