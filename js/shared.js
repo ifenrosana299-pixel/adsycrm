@@ -221,8 +221,8 @@ const TR_PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan
 // Pola buat hitung step tertinggi yang PERNAH tercapai di seluruh history — dipakai supaya
 // resi Bermasalah/Retur nampilin posisi stepper yang beneran tercapai (misal OTW), bukan mentok
 // di step tetap, walau status akhirnya gagal.
-const TR_OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|on delivery|1st attempt|2nd attempt|percobaan/i;
-const TR_KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound/i;
+const TR_OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|delivery courier|diantar ke alamat|on delivery|1st attempt|2nd attempt|percobaan/i;
+const TR_KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound|sti-dest/i;
 
 function trComputeProgressStep(entries, stage) {
     if (stage === 'SAMPAI') return 5;
@@ -249,7 +249,7 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     let stage;
     if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
         stage = 'RETUR';
-    } else if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) {
+    } else if (cat === 'DELIVERED' || /diterima oleh|delivered|\bpod\b/.test(latestDesc)) {
         stage = 'SAMPAI';
     } else {
         const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
@@ -270,7 +270,8 @@ function _normalizeMengantar(json) {
     if (!json || !json.success || !json.data) return null;
     const d = json.data;
     const history = Array.isArray(d.history) ? d.history : [];
-    const entries = history.map(h => ({ desc: h.desc || '', group: h.type?.group || null, tag: h.type?.tag || null, reasonDelivery: null }));
+    // Gabung desc + code — beberapa kurir (Lion: "STI-DEST"/"POD"/"DEL") taruh sinyal penting di code, bukan desc
+    const entries = history.map(h => ({ desc: [h.desc, h.code].filter(Boolean).join(' '), group: h.type?.group || null, tag: h.type?.tag || null, reasonDelivery: null }));
     return {
         statusCategory: d.statusCategory || d.status || '',
         entries,
