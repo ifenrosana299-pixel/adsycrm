@@ -218,25 +218,52 @@ const RESI_STAGE_LABEL = {
 const TR_RETUR_PATTERN   = /retur|dikembalikan|\brts\b|\brto\b|return to sender/i;
 const TR_PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan|alamat tidak (lengkap|dikenal)|tidak ada orang|tidak ditempat|tidak dihuni|menunggu konfirmasi|disimpan di gudang|ditolak|pindah alamat|box undel/i;
 
+// Pola buat hitung step tertinggi yang PERNAH tercapai di seluruh history — dipakai supaya
+// resi Bermasalah/Retur nampilin posisi stepper yang beneran tercapai (misal OTW), bukan mentok
+// di step tetap, walau status akhirnya gagal.
+const TR_OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|on delivery|1st attempt|2nd attempt|percobaan/i;
+const TR_KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound/i;
+
+function trComputeProgressStep(entries, stage) {
+    if (stage === 'SAMPAI') return 5;
+    let step = 2; // resi sudah discan sistem kurir minimal = Dikirim
+    (entries || []).forEach(e => {
+        const d = (e.desc || '').toLowerCase();
+        if (TR_OTW_PATTERN.test(d)) step = Math.max(step, 4);
+        else if (TR_KOTA_TUJUAN_PATTERN.test(d)) step = Math.max(step, 3);
+    });
+    return step;
+}
+
 // Heuristik best-effort dari sinyal terstruktur + teks history kurir Indonesia — tuning lanjutan
 // kemungkinan masih perlu setelah lihat lebih banyak sampel data asli. Disinkronkan manual
 // dengan versi Node di api/cron-check-resi.js (tidak ada build step di project ini).
+// Return { stage, step } — step = posisi tertinggi di stepper 5 tahap yang pernah tercapai.
 function mapTrackingStage({ resi, statusCategory, entries }) {
-    if (!resi) return 'MENUNGGU_RESI';
+    if (!resi) return { stage: 'MENUNGGU_RESI', step: 1 };
     const cat = (statusCategory || '').toUpperCase();
     const arr = Array.isArray(entries) ? entries : [];
     const latest = arr.length ? arr[arr.length - 1] : null;
     const latestDesc = (latest?.desc || '').toLowerCase();
 
-    if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) return 'RETUR';
-    if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) return 'SAMPAI';
-
-    const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
-    if (hasStructuredProblem || arr.some(e => TR_PROBLEM_PATTERN.test(e.desc||''))) return 'BERMASALAH';
-
-    if (/sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier/.test(latestDesc)) return 'OTW';
-    if (/kota tujuan|gudang tujuan|tiba di kota|received at destination/.test(latestDesc)) return 'KOTA_TUJUAN';
-    return 'DIKIRIM';
+    let stage;
+    if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
+        stage = 'RETUR';
+    } else if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) {
+        stage = 'SAMPAI';
+    } else {
+        const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
+        if (hasStructuredProblem || arr.some(e => TR_PROBLEM_PATTERN.test(e.desc||''))) {
+            stage = 'BERMASALAH';
+        } else if (TR_OTW_PATTERN.test(latestDesc)) {
+            stage = 'OTW';
+        } else if (TR_KOTA_TUJUAN_PATTERN.test(latestDesc)) {
+            stage = 'KOTA_TUJUAN';
+        } else {
+            stage = 'DIKIRIM';
+        }
+    }
+    return { stage, step: trComputeProgressStep(arr, stage) };
 }
 
 function _normalizeMengantar(json) {
@@ -267,7 +294,7 @@ function _normalizePos(json) {
     };
 }
 
-// Cek satu resi ke Mengantar/POS, kembalikan { stage, detail } atau null kalau gagal/tidak dikenal
+// Cek satu resi ke Mengantar/POS, kembalikan { stage, step, detail } atau null kalau gagal/tidak dikenal
 async function checkResiTracking(resi, ekspedisi) {
     if (!resi) return null;
     const eks = (ekspedisi || '').toUpperCase();
@@ -283,7 +310,8 @@ async function checkResiTracking(resi, ekspedisi) {
             normalized = _normalizeMengantar(await r.json());
         }
         if (!normalized) return null;
-        return { stage: mapTrackingStage({ resi, ...normalized }), detail: normalized.detail };
+        const { stage, step } = mapTrackingStage({ resi, ...normalized });
+        return { stage, step, detail: normalized.detail };
     } catch (e) {
         return null;
     }
