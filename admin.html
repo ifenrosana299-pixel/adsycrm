@@ -1300,15 +1300,16 @@
                         if (a.produk) csProdukMap[csKey] = a.produk.trim().toUpperCase();
                     });
 
-                    // Filter: hanya order yang produknya sesuai assignment CS-nya
-                    // Kalau extractProduk bisa detect produk lain → buang
-                    // Kalau null (tidak terdeteksi) → include, diasumsikan produk yg di-assign
+                    // Filter: hanya order yang produknya POSITIF teridentifikasi sesuai assignment CS-nya.
+                    // Kalau extractProduk gagal detect (nama/jumlah gak ke-parse / SKU belum ada di sku_produk)
+                    // → BUANG, jangan diasumsikan cocok. CS yang closing >1 produk (mis. Herbapil & Primagold)
+                    // bisa ke-mix kalau fallback-nya "include" — order produk lain yg gagal ke-detect ikut lolos.
                     const filteredOrderData = orderData.filter(o => {
                         const csKey = (o.cs||'').trim().toLowerCase();
                         const assignedProduk = csProdukMap[csKey];
                         if (!assignedProduk) return true; // CS tidak di-map, lolos
                         const orderProduk = extractProduk(o.jumlah, o.nama);
-                        if (!orderProduk) return true; // Tidak bisa detect, include
+                        if (!orderProduk) return false; // Tidak bisa dipastikan produknya → buang, jangan ditebak
                         return orderProduk === assignedProduk; // Buang jika beda produk
                     });
                     console.log('[Sync] Setelah filter produk:', filteredOrderData.length, '/', orderData.length);

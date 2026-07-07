@@ -3226,12 +3226,15 @@
                     if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
                 });
 
+                // Kalau produk gagal dideteksi (nama/jumlah gak ke-parse / SKU belum ada di sku_produk)
+                // → BUANG, jangan diasumsikan cocok. CS yang closing >1 produk bisa ke-mix kalau
+                // fallback-nya "include" — order produk lain yg gagal ke-detect ikut lolos.
                 const filtered = orderData.filter(o => {
                     const csKey        = (o.cs || '').trim().toLowerCase();
                     const assignedProd = csProdukMap[csKey];
                     if (!assignedProd) return true;
                     const orderProd    = extractProduk(o.jumlah, o.nama);
-                    if (!orderProd) return true;
+                    if (!orderProd) return false;
                     return orderProd === assignedProd;
                 });
                 console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
