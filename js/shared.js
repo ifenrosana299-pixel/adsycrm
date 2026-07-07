@@ -279,11 +279,15 @@ function extractEkspedisi(pembayaran) {
     const words = pembayaran.trim().split(/\s+/);
     const firstWord = words[0].toUpperCase();
 
+    let eks;
     if (['COD', 'TRANSFER', 'TUNAI'].includes(firstWord)) {
-        return words[1] ? words[1].toUpperCase() : null;
+        eks = words[1] ? words[1].toUpperCase() : null;
+    } else {
+        eks = firstWord;
     }
 
-    return firstWord;
+    // "-MENG"/"-MENGANTAR" = suffix penanda booking lewat aggregator Mengantar, bukan bagian nama ekspedisi
+    return eks ? eks.replace(/-MENG(ANTAR)?$/i, '') : null;
 }
 
 // =====================
