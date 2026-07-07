@@ -2786,9 +2786,9 @@
         const today       = new Date(); today.setHours(0,0,0,0);
 
         let html = `<div class="drp-cal-hdr">
-            <button class="drp-nav" onclick="cADrpNav(-1)">‹</button>
+            <button class="drp-nav" onclick="event.stopPropagation();cADrpNav(-1)">‹</button>
             <div class="drp-cal-title">${DRP_M[cADrpViewMonth]} ${cADrpViewYear}</div>
-            <button class="drp-nav" onclick="cADrpNav(1)">›</button>
+            <button class="drp-nav" onclick="event.stopPropagation();cADrpNav(1)">›</button>
         </div>
         <div class="drp-days-hdr">${DRP_D.map(d=>`<span>${d}</span>`).join('')}</div>
         <div class="drp-days">`;
@@ -2807,7 +2807,7 @@
             else if (isEnd)   cls += ' range-end';
             else if (inRange) cls += ' in-range';
             if (isToday) cls += ' today';
-            html += `<button class="${cls}" onclick="cADrpClickDay(${cADrpViewYear},${cADrpViewMonth},${d})">${d}</button>`;
+            html += `<button class="${cls}" onclick="event.stopPropagation();cADrpClickDay(${cADrpViewYear},${cADrpViewMonth},${d})">${d}</button>`;
         }
         const total = startPad + daysInMonth;
         const rem   = total % 7 === 0 ? 0 : 7-(total%7);
