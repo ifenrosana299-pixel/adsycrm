@@ -1700,55 +1700,71 @@
             const BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             const DAY_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
+            // style helpers — sticky kiri & kanan
+            const S_HDR_TGL   = `position:sticky;left:0;z-index:4;background:#5a52d5;padding:10px 14px;text-align:left;font-weight:700;white-space:nowrap;color:white;border-right:2px solid rgba(255,255,255,0.3);`;
+            const S_HDR_TOT   = `position:sticky;right:0;z-index:4;background:#5a52d5;padding:10px 10px;text-align:center;font-weight:700;color:white;border-left:2px solid rgba(255,255,255,0.3);`;
+            const S_HDR_CRM   = `padding:10px 10px;text-align:center;font-weight:700;white-space:nowrap;color:white;border-right:1px solid rgba(255,255,255,0.15);`;
+            const S_FOOT_TGL  = `position:sticky;left:0;z-index:3;background:#f1f5f9;padding:9px 14px;font-weight:800;font-size:13px;color:#1e293b;border-right:2px solid #667eea;border-top:2px solid #667eea;`;
+            const S_FOOT_TOT  = `position:sticky;right:0;z-index:3;background:#ede9fe;padding:9px 10px;text-align:center;font-size:14px;font-weight:900;color:#4f46e5;border-left:2px solid #667eea;border-top:2px solid #667eea;`;
+            const S_FOOT_CELL = `text-align:center;padding:9px 10px;font-size:13px;font-weight:800;color:#4f46e5;background:#f1f5f9;border-top:2px solid #667eea;`;
+
             // Hitung total per CRM
             const totalPerCrm = {};
             crms.forEach(c => { totalPerCrm[c] = 0; });
 
             const rows = Object.entries(pivot).map(([tgl, crmCounts]) => {
-                const d    = new Date(tgl + 'T00:00:00');
-                const day  = DAY_ID[d.getDay()];
-                const tglNum = parseInt(tgl.slice(8));
+                const d        = new Date(tgl + 'T00:00:00');
+                const day      = DAY_ID[d.getDay()];
+                const tglNum   = parseInt(tgl.slice(8));
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const rowBg    = isWeekend ? '#f8fafc' : '#ffffff';
+
                 let rowTotal = 0;
                 const cells = crms.map(crm => {
                     const val = crmCounts[crm] || 0;
                     totalPerCrm[crm] += val;
                     rowTotal += val;
-                    return `<td style="text-align:center;padding:6px 10px;font-size:13px;${val > 0 ? 'font-weight:700;color:#1e293b;' : 'color:#cbd5e1;'}">${val || 0}</td>`;
+                    return `<td style="text-align:center;padding:7px 10px;font-size:13px;background:${rowBg};border-right:1px solid #f1f5f9;${val > 0 ? 'font-weight:700;color:#1e293b;' : 'color:#d1d5db;'}">${val}</td>`;
                 }).join('');
-                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                const rowStyle  = isWeekend ? 'background:#f8fafc;' : '';
-                return `<tr style="border-top:1px solid #f1f5f9;${rowStyle}">
-                    <td style="padding:6px 12px;font-size:13px;white-space:nowrap;color:#475569;font-weight:600;">${tglNum} ${BULAN_ID[month-1].slice(0,3)} <span style="font-size:11px;color:#94a3b8;">${day}</span></td>
+
+                const tglBg  = isWeekend ? '#f0f4ff' : '#ffffff';
+                const totBg  = isWeekend ? '#ede9fe' : '#f5f3ff';
+                const totClr = rowTotal > 0 ? '#4f46e5' : '#c4b5fd';
+
+                return `<tr style="border-top:1px solid #f1f5f9;">
+                    <td style="position:sticky;left:0;z-index:2;background:${tglBg};padding:7px 14px;font-size:13px;white-space:nowrap;color:#374151;font-weight:600;border-right:2px solid #e2e8f0;">${tglNum} ${BULAN_ID[month-1].slice(0,3)} <span style="font-size:11px;color:#9ca3af;font-weight:400;">${day}</span></td>
                     ${cells}
-                    <td style="text-align:center;padding:6px 10px;font-size:13px;font-weight:800;color:${rowTotal > 0 ? '#667eea' : '#cbd5e1'};">${rowTotal}</td>
+                    <td style="position:sticky;right:0;z-index:2;background:${totBg};text-align:center;padding:7px 12px;font-size:13px;font-weight:800;color:${totClr};border-left:2px solid #e2e8f0;">${rowTotal}</td>
                 </tr>`;
             }).join('');
 
             const grandTotal = Object.values(totalPerCrm).reduce((a,b) => a+b, 0);
-            const totalRow = crms.map(c => `<td style="text-align:center;padding:8px 10px;font-size:13px;font-weight:800;color:#667eea;">${totalPerCrm[c]}</td>`).join('');
+            const totalRow   = crms.map(c => `<td style="${S_FOOT_CELL}">${totalPerCrm[c]}</td>`).join('');
 
             return `
                 <div style="margin-bottom:12px;font-weight:800;font-size:15px;color:#1e293b;">
-                    📦 ${produk} — ${BULAN_ID[month-1]} ${year}
+                    📦 ${escapeHtml(produk)} — ${BULAN_ID[month-1]} ${year}
                     <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:12px;">${data.length} pelanggan · ${crms.length} CRM</span>
                 </div>
-                <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:${100 + crms.length * 90}px;">
-                    <thead style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">
-                        <tr>
-                            <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap;">Tanggal</th>
-                            ${crms.map(c => `<th style="padding:10px 8px;text-align:center;font-weight:700;white-space:nowrap;">${escapeHtml(c.toUpperCase())}</th>`).join('')}
-                            <th style="padding:10px 8px;text-align:center;font-weight:700;">TOTAL</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                    <tfoot style="background:#f8fafc;border-top:2px solid #667eea;">
-                        <tr>
-                            <td style="padding:8px 12px;font-weight:800;font-size:13px;color:#1e293b;">TOTAL</td>
-                            ${totalRow}
-                            <td style="text-align:center;padding:8px 10px;font-size:14px;font-weight:900;color:#667eea;">${grandTotal}</td>
-                        </tr>
-                    </tfoot>
-                </table>`;
+                <div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:12px;">
+                    <table style="border-collapse:separate;border-spacing:0;font-size:13px;min-width:${140 + crms.length * 100}px;width:100%;">
+                        <thead>
+                            <tr style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                                <th style="${S_HDR_TGL}">Tanggal</th>
+                                ${crms.map(c => `<th style="${S_HDR_CRM}">${escapeHtml(c.toUpperCase())}</th>`).join('')}
+                                <th style="${S_HDR_TOT}">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td style="${S_FOOT_TGL}">TOTAL</td>
+                                ${totalRow}
+                                <td style="${S_FOOT_TOT}">${grandTotal}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
         }
 
         async function downloadRekapExcel() {
