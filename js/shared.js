@@ -171,6 +171,27 @@ function extractProduk(jumlah, nama) {
 }
 
 // =====================
+// WIB (Waktu Indonesia Barat, UTC+7) — eksplisit, tidak bergantung ke timezone OS device
+// =====================
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+// Kalender {y,m,d} WIB dari sebuah instant (default: sekarang)
+function wibYMD(date) {
+    const shifted = new Date((date ? date.getTime() : Date.now()) + WIB_OFFSET_MS);
+    return { y: shifted.getUTCFullYear(), m: shifted.getUTCMonth(), d: shifted.getUTCDate() };
+}
+// Kalender {y,m,d} WIB hari ini + offset hari (boleh negatif), menormalisasi lintas bulan/tahun otomatis
+function wibYMDOffset(daysOffset) {
+    const t = wibYMD();
+    const probe = new Date(Date.UTC(t.y, t.m, t.d + daysOffset));
+    return { y: probe.getUTCFullYear(), m: probe.getUTCMonth(), d: probe.getUTCDate() };
+}
+// Instant UTC yang benar buat awal hari (00:00:00.000 WIB) dari kalender y-m-d
+function wibDayStart(y, m, d) { return new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - WIB_OFFSET_MS); }
+// Instant UTC yang benar buat akhir hari (23:59:59.999 WIB) dari kalender y-m-d
+function wibDayEnd(y, m, d)   { return new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - WIB_OFFSET_MS); }
+
+// =====================
 // TRACKING RESI (Mengantar / POS Indonesia)
 // =====================
 const COURIER_MAP = {
