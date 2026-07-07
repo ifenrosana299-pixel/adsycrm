@@ -7,8 +7,25 @@
     {
       "src": "/api/analyze-testimoni",
       "dest": "/api/analyze-testimoni.js"
+    },
+    {
+      "src": "/api/tracking",
+      "dest": "/api/tracking.js"
+    },
+    {
+      "src": "/api/pos-tracking",
+      "dest": "/api/pos-tracking.js"
+    },
+    {
+      "src": "/api/cron-check-resi",
+      "dest": "/api/cron-check-resi.js"
     }
   ],
+  "functions": {
+    "api/cron-check-resi.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

@@ -320,6 +320,63 @@
         /* Badge */
         .crm-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
+        /* Tracking Resi */
+        .tr-tabs { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+        .tr-tab {
+            padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700;
+            background:white; color:#6B7280; border:1.5px solid #E5E7EB; cursor:pointer;
+            display:inline-flex; align-items:center; gap:6px; transition:all .15s; white-space:nowrap;
+        }
+        .tr-tab:hover { border-color:#C7D2FE; }
+        .tr-tab.tr-tab-active { background:#4F46E5; color:white; border-color:#4F46E5; }
+        .tr-toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+        .tr-search-wrap { flex:1; min-width:220px; margin-left:auto; }
+        .tr-count { font-size:12px; font-weight:700; color:#9CA3AF; white-space:nowrap; }
+
+        .tr-card {
+            background:white; border-radius:16px; padding:18px 22px; margin-bottom:14px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; transition:box-shadow .15s;
+        }
+        .tr-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+        .tr-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+        .tr-card-left { display:flex; gap:12px; align-items:flex-start; min-width:0; }
+        .tr-avatar {
+            width:40px; height:40px; border-radius:50%; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center;
+            color:white; font-weight:800; font-size:15px;
+        }
+        .tr-name { font-size:14px; font-weight:700; color:#111827; }
+        .tr-phone { font-size:12px; color:#6B7280; margin-top:1px; }
+        .tr-meta { display:flex; gap:6px; align-items:center; margin-top:6px; flex-wrap:wrap; }
+        .tr-produk { font-size:12px; color:#6B7280; margin-top:6px; }
+        .tr-price { font-size:15px; font-weight:800; color:#111827; text-align:right; white-space:nowrap; }
+        .tr-date  { font-size:11px; color:#9CA3AF; text-align:right; margin-top:2px; white-space:nowrap; }
+        .tr-resi  { font-size:11px; font-weight:700; color:#4B5563; background:#F3F4F6; padding:3px 9px; border-radius:6px; margin-top:6px; display:inline-block; }
+
+        .tr-stepper { display:flex; align-items:flex-start; margin-top:16px; max-width:520px; }
+        .tr-step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; }
+        .tr-step-circle {
+            width:22px; height:22px; border-radius:50%; background:#E5E7EB; color:#9CA3AF;
+            display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
+            z-index:1;
+        }
+        .tr-step-label { font-size:10.5px; color:#9CA3AF; margin-top:6px; font-weight:600; white-space:nowrap; }
+        .tr-step-line { position:absolute; top:11px; left:50%; width:100%; height:2px; background:#E5E7EB; z-index:0; }
+        .tr-step:last-child .tr-step-line { display:none; }
+        .tr-step-done .tr-step-circle { background:#10B981; color:white; }
+        .tr-step-done .tr-step-label { color:#10B981; }
+        .tr-step-done .tr-step-line { background:#10B981; }
+        .tr-step-active .tr-step-circle { background:#4F46E5; color:white; }
+        .tr-step-active .tr-step-label { color:#4F46E5; font-weight:800; }
+        .tr-step-problem .tr-step-circle { background:#DC2626; color:white; }
+        .tr-step-problem .tr-step-label { color:#DC2626; font-weight:800; }
+
+        .tr-repeat-wrap { margin-top:10px; padding-top:10px; border-top:1px dashed #E5E7EB; }
+        .tr-repeat-row { font-size:11.5px; color:#6B7280; padding:5px 0; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+
+        .tr-history-item { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #F3F4F6; align-items:flex-start; }
+        .tr-history-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+
         /* Toolbar */
         .crm-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
         .crm-toolbar-right { margin-left: auto; font-size: 13px; font-weight: 600; color: #6366F1; }
@@ -437,6 +494,9 @@
             <div class="crm-nav-label">Data Utama</div>
             <div class="crm-nav-item" id="crmNavItem-pesanan" onclick="crmShow('pesanan', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span> Pesanan
+            </div>
+            <div class="crm-nav-item" id="crmNavItem-trackingResi" onclick="crmShow('trackingResi', this)">
+                <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> Tracking Resi
             </div>
             <div class="crm-nav-item" id="crmNavItem-produk" onclick="crmShow('produk', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span> Produk
@@ -763,6 +823,28 @@
                 </div>
 
                 <div class="crm-pagination" id="crmPagination"></div>
+            </section>
+
+            <!-- ═══ TRACKING RESI ═══ -->
+            <section id="crmSec-trackingResi" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">📦</div>
+                        <h2>Tracking Resi</h2>
+                    </div>
+                    <button onclick="trRefreshAll()" id="trRefreshBtn" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh Semua</button>
+                </div>
+                <div style="font-size:12.5px;color:#9CA3AF;margin-bottom:18px;">Monitor status pengiriman semua order</div>
+
+                <div class="tr-toolbar">
+                    <div class="tr-tabs" id="trTabs"></div>
+                    <div class="tr-search-wrap">
+                        <input type="text" id="trSearch" class="crm-input" style="width:100%;" placeholder="🔍 Cari nama / resi / produk..." onkeyup="trApplyFilter()">
+                    </div>
+                    <div class="tr-count" id="trCount">0 pesanan</div>
+                </div>
+
+                <div id="trList"></div>
             </section>
 
             <!-- ═══ PRODUK ═══ -->
@@ -1093,6 +1175,19 @@
     </div>
 </div>
 
+<!-- ═══ TRACKING RESI DETAIL MODAL ═══ -->
+<div id="trModal" class="crm-modal hidden" onclick="if(event.target===this)trCloseModal()">
+    <div class="crm-modal-box" style="max-width:520px;max-height:82vh;overflow-y:auto;">
+        <div class="crm-modal-title" id="trModalTitle">Detail Pengiriman</div>
+        <div class="crm-modal-sub" id="trModalSub"></div>
+        <div id="trModalBody"></div>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+            <button onclick="trCloseModal()" class="crm-btn crm-btn-secondary" style="flex:1;">Tutup</button>
+            <button onclick="trManualCheckFromModal()" class="crm-btn crm-btn-primary" style="flex:1;">🔄 Cek Ulang</button>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ UPLOAD MODAL ═══ -->
 <div id="uploadModal" class="crm-modal hidden">
     <div class="crm-modal-box">
@@ -1194,7 +1289,7 @@
 
 <script src="js/shared.js"></script>
 <script>
-    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
+    const CRM_SECTIONS = ['dashboard','pesanan','trackingResi','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
 
@@ -1215,6 +1310,7 @@
         if (sec) sec.classList.add('crm-sec-active');
         if (el) el.classList.add('crm-active');
 
+        if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
@@ -2058,6 +2154,200 @@
 
     async function updateOrder() { await saveNotes(); }
 
+    // ════════════════════════════════════════
+    // TRACKING RESI
+    // ════════════════════════════════════════
+    const TR_STEP_LABELS = ['Konfirmasi','Dikirim','Kota Tujuan','OTW','Sampai'];
+    const TR_STAGE_META = {
+        MENUNGGU_RESI: { label:'⏳ Menunggu Resi', bg:'#FEF3C7', color:'#D97706', step:1 },
+        BELUM_DICEK:   { label:'🔍 Belum Dicek',   bg:'#F3F4F6', color:'#6B7280', step:1 },
+        DIKIRIM:       { label:'🚚 Dikirim',        bg:'#DBEAFE', color:'#2563EB', step:2 },
+        KOTA_TUJUAN:   { label:'🏙️ Kota Tujuan',   bg:'#E0E7FF', color:'#4F46E5', step:3 },
+        OTW:           { label:'🛵 OTW',            bg:'#FCE7F3', color:'#DB2777', step:4 },
+        SAMPAI:        { label:'✅ Sampai',          bg:'#D1FAE5', color:'#059669', step:5 },
+        BERMASALAH:    { label:'⚠️ Bermasalah',     bg:'#FEE2E2', color:'#DC2626', step:2, problem:true },
+        RETUR:         { label:'↩️ Retur',           bg:'#FEE2E2', color:'#B91C1C', step:2, problem:true },
+    };
+    const TR_AVATAR_PALETTE = ['#4F46E5','#059669','#D97706','#DC2626','#0EA5E9','#7C3AED','#0891B2','#65A30D','#C026D3','#E11D48'];
+    const TR_TABS = [
+        { key:'SEMUA', label:'Semua' },
+        { key:'MENUNGGU_RESI', label:'⏳ Menunggu Resi' },
+        { key:'DIKIRIM', label:'🚚 Dikirim' },
+        { key:'KOTA_TUJUAN', label:'🏙️ Kota Tujuan' },
+        { key:'OTW', label:'🛵 OTW' },
+        { key:'SAMPAI', label:'✅ Sampai' },
+        { key:'BERMASALAH', label:'⚠️ Bermasalah' },
+        { key:'RETUR', label:'↩️ Retur' },
+    ];
+    let trFilterStage  = 'SEMUA';
+    let trModalOrderId = null;
+
+    function trAvatarColor(name) {
+        const s = name || '?';
+        let hash = 0;
+        for (let i=0; i<s.length; i++) hash = (hash*31 + s.charCodeAt(i)) % 1000000007;
+        return TR_AVATAR_PALETTE[Math.abs(hash) % TR_AVATAR_PALETTE.length];
+    }
+
+    function trEffectiveStage(o) {
+        if (!o.resi) return 'MENUNGGU_RESI';
+        if (!o.status_resi || !TR_STAGE_META[o.status_resi]) return 'BELUM_DICEK';
+        return o.status_resi;
+    }
+
+    function renderTrackingResi() {
+        document.getElementById('trTabs').innerHTML = TR_TABS.map(t =>
+            `<div class="tr-tab ${trFilterStage===t.key?'tr-tab-active':''}" onclick="trSetFilter('${t.key}')">${t.label}</div>`
+        ).join('');
+        trApplyFilter();
+    }
+
+    function trSetFilter(key) { trFilterStage = key; renderTrackingResi(); }
+
+    function trApplyFilter() {
+        const q = (document.getElementById('trSearch').value || '').toLowerCase();
+        const list = orders.filter(o => {
+            if (trFilterStage !== 'SEMUA' && trEffectiveStage(o) !== trFilterStage) return false;
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.resi?.toLowerCase().includes(q) || o.produk?.toLowerCase().includes(q))) return false;
+            return true;
+        });
+        document.getElementById('trCount').textContent = `${list.length} pesanan`;
+        document.getElementById('trList').innerHTML = list.length
+            ? list.map(o => trCardHtml(o)).join('')
+            : '<div class="tr-card" style="text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
+    }
+
+    function trStepperHtml(stage) {
+        const meta = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const allDone = stage === 'SAMPAI';
+        return `<div class="tr-stepper">${TR_STEP_LABELS.map((label, i) => {
+            const idx = i + 1;
+            let cls = 'tr-step';
+            if (allDone || idx < meta.step) cls += ' tr-step-done';
+            else if (idx === meta.step) cls += meta.problem ? ' tr-step-problem' : ' tr-step-active';
+            const icon = (allDone || idx < meta.step) ? '✓' : idx;
+            return `<div class="${cls}"><div class="tr-step-line"></div><div class="tr-step-circle">${icon}</div><div class="tr-step-label">${label}</div></div>`;
+        }).join('')}</div>`;
+    }
+
+    function trCardHtml(o) {
+        const stage   = trEffectiveStage(o);
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const initial = (o.nama || '?').trim().charAt(0).toUpperCase();
+        const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
+        const repeats  = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
+
+        return `<div class="tr-card" onclick="trOpenDetail(${o.id})">
+            <div class="tr-card-top">
+                <div class="tr-card-left">
+                    <div class="tr-avatar" style="background:${trAvatarColor(o.nama)};">${escapeHtml(initial)}</div>
+                    <div>
+                        <div class="tr-name">${escapeHtml(o.nama||'-')}</div>
+                        <div class="tr-phone">${escapeHtml(o.no_hp||'-')}</div>
+                        <div class="tr-meta">
+                            <span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span>
+                            ${o.ekspedisi ? `<span class="crm-badge" style="background:#F3F4F6;color:#6B7280;">${escapeHtml(o.ekspedisi)}</span>` : ''}
+                        </div>
+                        <div class="tr-produk">${escapeHtml(o.produk||'-')} × ${o.qty||'-'}</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="tr-price">${totalCOD}</div>
+                    <div class="tr-date">${o.tgl||'-'}</div>
+                    ${o.resi ? `<div class="tr-resi">${escapeHtml(o.resi)}${o.ekspedisi ? ' · '+escapeHtml(o.ekspedisi) : ''}</div>` : ''}
+                </div>
+            </div>
+            ${trStepperHtml(stage)}
+            ${repeats.length ? `<div class="tr-repeat-wrap">${repeats.map((r,i) => {
+                const rStage = r.resi ? (TR_STAGE_META[r.status_resi] ? r.status_resi : 'BELUM_DICEK') : 'MENUNGGU_RESI';
+                const rMeta  = TR_STAGE_META[rStage] || TR_STAGE_META.BELUM_DICEK;
+                return `<div class="tr-repeat-row">
+                    <span>🔁 Repeat ${i+1} — ${r.tgl||'-'} ${r.resi ? '· '+escapeHtml(r.resi) : ''}</span>
+                    <span class="crm-badge" style="background:${rMeta.bg};color:${rMeta.color};">${rMeta.label}</span>
+                </div>`;
+            }).join('')}</div>` : ''}
+        </div>`;
+    }
+
+    function trOpenDetail(id) {
+        trModalOrderId = id;
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        document.getElementById('trModalTitle').textContent = o.nama || 'Detail Pengiriman';
+        document.getElementById('trModalSub').textContent = (o.resi ? o.resi + ' · ' : '') + (o.ekspedisi || '');
+
+        const stage   = trEffectiveStage(o);
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const detail  = o.status_resi_detail || null;
+        const history = detail && Array.isArray(detail.history) ? detail.history.slice().reverse() : [];
+
+        let historyHtml = '<div style="font-size:12px;color:#9CA3AF;margin-top:12px;">Belum ada history — klik "Cek Ulang".</div>';
+        if (history.length) {
+            historyHtml = `<div style="margin-top:14px;">${history.map((h,i) => `
+                <div class="tr-history-item">
+                    <div class="tr-history-dot" style="background:${i===0?meta.color:'#E5E7EB'};"></div>
+                    <div>
+                        <div style="font-size:12.5px;${i===0?'font-weight:700;':''}">${escapeHtml(h.desc || h.content || h.content2 || '-')}</div>
+                        <div style="font-size:11px;color:#9CA3AF;margin-top:2px;">${escapeHtml(h.date || '')}${h.location_name ? ' · '+escapeHtml(h.location_name) : ''}</div>
+                    </div>
+                </div>`).join('')}</div>`;
+        }
+
+        document.getElementById('trModalBody').innerHTML = `
+            <div style="margin-top:10px;"><span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span></div>
+            ${trStepperHtml(stage)}
+            ${historyHtml}
+        `;
+        document.getElementById('trModal').classList.remove('hidden');
+    }
+
+    function trCloseModal() { document.getElementById('trModal').classList.add('hidden'); }
+
+    async function trManualCheckFromModal() {
+        const o = orders.find(x => x.id === trModalOrderId);
+        if (!o) return;
+        if (!o.resi) { alert('Belum ada resi untuk order ini.'); return; }
+        const result = await checkResiTracking(o.resi, o.ekspedisi);
+        if (!result) { alert('Gagal cek resi — pastikan ekspedisi terisi & resi valid.'); return; }
+        o.status_resi = result.stage;
+        o.status_resi_updated_at = new Date().toISOString();
+        o.status_resi_detail = result.detail;
+        await sbApp.from('crm_customers').update({
+            status_resi: o.status_resi, status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+        }).eq('id', o.id);
+        trOpenDetail(o.id);
+        trApplyFilter();
+    }
+
+    async function trRefreshAll() {
+        const btn = document.getElementById('trRefreshBtn');
+        const origLabel = btn.textContent;
+        btn.disabled = true;
+        try {
+            const targets = orders.filter(o => o.resi && o.status_resi !== 'SAMPAI' && o.status_resi !== 'RETUR');
+            const BATCH = 5;
+            for (let i=0; i<targets.length; i+=BATCH) {
+                const batch = targets.slice(i, i+BATCH);
+                await Promise.all(batch.map(async o => {
+                    const result = await checkResiTracking(o.resi, o.ekspedisi);
+                    if (!result) return;
+                    o.status_resi = result.stage;
+                    o.status_resi_updated_at = new Date().toISOString();
+                    o.status_resi_detail = result.detail;
+                    await sbApp.from('crm_customers').update({
+                        status_resi: o.status_resi, status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+                    }).eq('id', o.id);
+                }));
+                btn.textContent = `Mengecek... (${Math.min(i+BATCH,targets.length)}/${targets.length})`;
+            }
+            trApplyFilter();
+            alert(`✅ Selesai cek ${targets.length} resi!`);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = origLabel;
+        }
+    }
+
     // Sync ulang semua data dari server (assignment + orders + pelanggan)
     async function syncAll() {
         const btn   = document.getElementById('syncBtn');
@@ -2731,6 +3021,7 @@
                 const first = orders[0];
                 const repeats = orders.slice(1).map(o => ({
                     tgl: o.tglWIB, resi: o.resi||null,
+                    ekspedisi: extractEkspedisi(o.pembayaran||'')||null,
                     produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
                     qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
                 }));
@@ -2747,6 +3038,7 @@
                     crm:           crmName,
                     tgl:           first.tglWIB,
                     resi:          first.resi                || null,
+                    ekspedisi:     extractEkspedisi(first.pembayaran||'') || null,
                     produk:        csProdukMap[csKey]        || null,
                     qty:           first.quantity            || null,
                     total_cod:     first.total_pembayaran    || null,

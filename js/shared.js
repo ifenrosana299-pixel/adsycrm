@@ -170,6 +170,88 @@ function extractProduk(jumlah, nama) {
     return null;
 }
 
+// =====================
+// TRACKING RESI (Mengantar / POS Indonesia)
+// =====================
+const COURIER_MAP = {
+    'JNE':'JNE','JNT':'JT','SiCepat':'SiCepat','Lion':'lion',
+    'SAP':'SAP','Anteraja':'anteraja','Ninja':'Ninja','IDX':'iDexpress',
+    'SICEPAT':'SiCepat','ANTERAJA':'anteraja','NINJA':'Ninja','LION':'lion'
+};
+
+const RESI_STAGE_LABEL = {
+    MENUNGGU_RESI: '⏳ Menunggu Resi',
+    DIKIRIM:       '🚚 Dikirim',
+    KOTA_TUJUAN:   '🏙️ Kota Tujuan',
+    OTW:           '🛵 OTW',
+    SAMPAI:        '✅ Sampai',
+    BERMASALAH:    '⚠️ Bermasalah',
+    RETUR:         '↩️ Retur'
+};
+
+// Heuristik best-effort dari teks history kurir Indonesia — tuning lanjutan
+// kemungkinan perlu setelah lihat sampel data asli. Disinkronkan manual
+// dengan versi Node di api/cron-check-resi.js (tidak ada build step di project ini).
+function mapTrackingStage({ resi, statusCategory, latestDesc }) {
+    const cat  = (statusCategory || '').toUpperCase();
+    const desc = (latestDesc || '').toLowerCase();
+
+    if (!resi) return 'MENUNGGU_RESI';
+    if (cat.includes('RETUR') || cat.includes('RETURN') || desc.includes('retur') || desc.includes('dikembalikan')) return 'RETUR';
+    if (/gagal|kendala|bermasalah|tidak ditemukan|alamat tidak lengkap|tidak ada orang/.test(desc)) return 'BERMASALAH';
+    if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(desc)) return 'SAMPAI';
+    if (/sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b/.test(desc)) return 'OTW';
+    if (/kota tujuan|gudang tujuan|tiba di kota|received at destination/.test(desc)) return 'KOTA_TUJUAN';
+    return 'DIKIRIM';
+}
+
+function _normalizeMengantar(json) {
+    if (!json || !json.success || !json.data) return null;
+    const d = json.data;
+    const history = Array.isArray(d.history) ? d.history : [];
+    const latest  = history.length ? history[history.length - 1] : null;
+    return {
+        statusCategory: d.statusCategory || d.status || '',
+        latestDesc: latest ? (latest.desc || '') : '',
+        detail: { history, receiver: d.RECEIVER_NAME || null, city: d.RECEIVER_CITY || null }
+    };
+}
+
+function _normalizePos(json) {
+    if (!json || !json.success || !json.data) return null;
+    const d = json.data;
+    const history = Array.isArray(d.connote_history) ? d.connote_history : [];
+    const last    = history.length ? history[history.length - 1] : null;
+    const latestDesc = last ? [last.content, last.content2, last.reason_delivery].filter(Boolean).join(' ') : '';
+    return {
+        statusCategory: d.connote_state || '',
+        latestDesc,
+        detail: { history, receiver: d.connote_receiver_name || null, city: null }
+    };
+}
+
+// Cek satu resi ke Mengantar/POS, kembalikan { stage, detail } atau null kalau gagal/tidak dikenal
+async function checkResiTracking(resi, ekspedisi) {
+    if (!resi) return null;
+    const eks = (ekspedisi || '').toUpperCase();
+    try {
+        let normalized;
+        if (eks === 'POS' || eks.includes('POS')) {
+            const r = await fetch('/api/pos-tracking?resi=' + encodeURIComponent(resi));
+            normalized = _normalizePos(await r.json());
+        } else {
+            const courier = COURIER_MAP[ekspedisi] || COURIER_MAP[eks] || ekspedisi;
+            if (!courier) return null;
+            const r = await fetch('/api/tracking?tracking_number=' + encodeURIComponent(resi) + '&courier=' + encodeURIComponent(courier));
+            normalized = _normalizeMengantar(await r.json());
+        }
+        if (!normalized) return null;
+        return { stage: mapTrackingStage({ resi, ...normalized }), detail: normalized.detail };
+    } catch (e) {
+        return null;
+    }
+}
+
 function extractEkspedisi(pembayaran) {
     if (!pembayaran) return null;
 
