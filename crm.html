@@ -1277,7 +1277,7 @@
         tb.innerHTML = recent.map(o => {
             const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime() + 7*3600*1000).toISOString().slice(0,10) : null;
             const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
-            const produk = extractProduk(o.jumlah, o.nama) || '-';
+            const produk = o.produk || extractProduk(o.jumlah, o.nama) || '-';
             const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status] || '#9CA3AF';
             return `<tr>
                 <td style="font-size:12px;color:#9CA3AF;white-space:nowrap;">${tgl}</td>
@@ -1298,7 +1298,7 @@
         }
         const pm = {};
         orders.forEach(o => {
-            const p = extractProduk(o.jumlah, o.nama) || 'Lainnya';
+            const p = o.produk || extractProduk(o.jumlah, o.nama) || 'Lainnya';
             if (!pm[p]) pm[p] = { total:0, pending:0, delivered:0, cancelled:0 };
             pm[p].total++;
             if (o.status === 'Pending')   pm[p].pending++;
