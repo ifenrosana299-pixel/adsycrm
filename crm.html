@@ -3021,9 +3021,28 @@
 
         alert(`✅ Tersimpan!\n${assignmentList.length} CS+Produk\nPeriode: ${dateFrom} - ${dateTo}`);
 
-        // Sync ke crm_customers di background
-        cASyncCustomers(assignmentList, dateFrom, dateTo)
+        // Sync ke crm_customers di background — sync SELURUH assignment CRM ini (semua periode),
+        // bukan cuma yang baru disimpan.
+        caSyncAllCustomersForCRM(currentUser.username)
             .catch(e => console.error('[cA Sync] Error:', e));
+    }
+
+    // ── Ambil SEMUA assignment aktif milik CRM ini (semua periode/CS), lalu sync ──
+    async function caSyncAllCustomersForCRM(crmName) {
+        const { data: allAssignments, error } = await sbApp.from('crm_assignments')
+            .select('cs_name, produk, date_from, date_to')
+            .eq('crm_name', crmName);
+        if (error) { console.error('[cA Sync] Gagal load assignment CRM:', error); return; }
+        if (!allAssignments || !allAssignments.length) return;
+
+        const byPeriod = {};
+        allAssignments.forEach(a => {
+            const key = a.date_from + '|' + a.date_to;
+            if (!byPeriod[key]) byPeriod[key] = { dateFrom: a.date_from, dateTo: a.date_to, items: [] };
+            byPeriod[key].items.push({ csName: a.cs_name, produk: a.produk });
+        });
+
+        await cASyncCustomers(Object.values(byPeriod), crmName);
     }
 
     async function cAUpdateStats() {
@@ -3164,97 +3183,127 @@
     }
 
     // ── Sync orders ke crm_customers ──
-    async function cASyncCustomers(assignmentList, dateFrom, dateTo) {
+    // periodGroups: [{ dateFrom, dateTo, items: [{csName, produk}] }, ...] — hasil sync gabungan SEMUA
+    // assignment aktif milik crmName, supaya wipe-and-rebuild di bawah tidak menghapus periode lain.
+    async function cASyncCustomers(periodGroups, crmName) {
         try {
-            const crmName  = currentUser.username;
-            const csNames  = [...new Set(assignmentList.map(a => a.csName))];
-            console.log('[cA Sync] crmName:', crmName, '| cs:', csNames, '| range:', dateFrom, '-', dateTo);
-
-            const { error: cleanupErr } = await sbApp.from('crm_customers').delete().eq('crm', crmName);
-            if (cleanupErr) console.warn('[cA Sync] Cleanup warn:', cleanupErr);
-
-            const csFilter    = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
-            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
-
-            const { data: orderData } = await cAFetchAll((from, to) =>
-                sbData.from('all_orderan').select('*')
-                    .or(csFilter)
-                    .gte('created_at', dateFromUTC)
-                    .lte('created_at', dateToUTC)
-                    .range(from, to));
-
-            if (!orderData || !orderData.length) {
-                console.warn('[cA Sync] Tidak ada order, sync dibatalkan.');
-                return;
-            }
-
-            const csProdukMap = {};
-            assignmentList.forEach(a => {
-                const key = (a.csName || '').trim().toLowerCase();
-                if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
-            });
+            console.log('[cA Sync] crmName:', crmName, '| jumlah periode:', periodGroups.length);
 
             await loadSkuList();
 
-            const filtered = orderData.filter(o => {
-                const csKey        = (o.cs || '').trim().toLowerCase();
-                const assignedProd = csProdukMap[csKey];
-                if (!assignedProd) return true;
-                const orderProd    = extractProduk(o.jumlah, o.nama);
-                if (!orderProd) return true;
-                return orderProd === assignedProd;
-            });
-            console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
+            // Ambil row lama CRM ini — dipakai utk (a) merge histori tracking resi per repeat_orders
+            // biar ga ke-timpa kosong, dan (b) hapus row yang udah ga dicover assignment manapun lagi.
+            // TIDAK delete-semua-dulu, supaya kolom yang diisi manual (catatan, perkembangan, status_resi,
+            // dst — semua kolom di luar payload upsert di bawah) tidak ikut hilang tiap kali simpan assignment.
+            const { data: existingRows, error: existingErr } = await sbApp
+                .from('crm_customers')
+                .select('id, no_hp, nama_cs, tgl, repeat_orders')
+                .eq('crm', crmName);
+            if (existingErr) console.warn('[cA Sync] Gagal load existing rows (non-fatal):', existingErr);
+            const existingMap = {};
+            (existingRows || []).forEach(r => { existingMap[r.no_hp + '|' + r.nama_cs + '|' + r.tgl] = r; });
 
-            const grouped = {};
-            filtered.forEach(o => {
-                const tglWIB = o.created_at
-                    ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
-                    : dateFrom;
-                const key = (o.hp || '').trim() + '|' + (o.cs || '').trim().toLowerCase();
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push({ ...o, tglWIB });
-            });
+            let totalUpserted = 0;
+            for (const { dateFrom, dateTo, items } of periodGroups) {
+                const csNames = [...new Set(items.map(a => a.csName))];
+                const csFilter    = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
+                const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+                const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
 
-            const rows = Object.values(grouped).map(orders => {
-                orders.sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
-                const first = orders[0];
-                const repeats = orders.slice(1).map(o => ({
-                    tgl: o.tglWIB, resi: o.resi||null,
-                    ekspedisi: extractEkspedisi(o.pembayaran||'')||null,
-                    produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
-                    qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
-                }));
-                const csKey = (first.cs || '').trim().toLowerCase();
-                return {
-                    nama:          norm((first.nama || '').split('|')[0]) || null,
-                    no_hp:         first.hp                  || null,
-                    alamat:        first.alamat              || null,
-                    kelurahan:     first.kelurahan           || null,
-                    kecamatan:     first.kecamatan          || null,
-                    kabupaten:     norm(first.kabupaten)     || null,
-                    provinsi:      norm(first.provinsi)      || null,
-                    nama_cs:       norm(first.cs)            || null,
-                    crm:           crmName,
-                    tgl:           first.tglWIB,
-                    resi:          first.resi                || null,
-                    ekspedisi:     extractEkspedisi(first.pembayaran||'') || null,
-                    produk:        csProdukMap[csKey]        || null,
-                    qty:           first.quantity            || null,
-                    total_cod:     first.total_pembayaran    || null,
-                    keluhan:       first.keluhan             || null,
-                    repeat_orders: repeats,
-                };
-            });
+                const { data: orderData } = await cAFetchAll((from, to) =>
+                    sbData.from('all_orderan').select('*')
+                        .or(csFilter)
+                        .gte('created_at', dateFromUTC)
+                        .lte('created_at', dateToUTC)
+                        .range(from, to));
 
-            for (let i = 0; i < rows.length; i += 100) {
-                const { error } = await sbApp.from('crm_customers').upsert(rows.slice(i, i+100), {
-                    onConflict: 'no_hp,nama_cs,tgl', ignoreDuplicates: false
+                console.log('[cA Sync] periode', dateFrom, '-', dateTo, '| orderData count:', orderData?.length);
+                if (!orderData || !orderData.length) continue;
+
+                const csProdukMap = {};
+                items.forEach(a => {
+                    const key = (a.csName || '').trim().toLowerCase();
+                    if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
                 });
-                if (error) console.error('[cA Sync] Upsert error batch', i, error);
+
+                const filtered = orderData.filter(o => {
+                    const csKey        = (o.cs || '').trim().toLowerCase();
+                    const assignedProd = csProdukMap[csKey];
+                    if (!assignedProd) return true;
+                    const orderProd    = extractProduk(o.jumlah, o.nama);
+                    if (!orderProd) return true;
+                    return orderProd === assignedProd;
+                });
+                console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
+
+                const grouped = {};
+                filtered.forEach(o => {
+                    const tglWIB = o.created_at
+                        ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                        : dateFrom;
+                    const key = (o.hp || '').trim() + '|' + (o.cs || '').trim().toLowerCase();
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push({ ...o, tglWIB });
+                });
+
+                const rows = Object.values(grouped).map(orders => {
+                    orders.sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
+                    const first = orders[0];
+                    const key = (first.hp||'').trim() + '|' + (norm(first.cs)||'') + '|' + first.tglWIB;
+                    const oldRepeats = Array.isArray(existingMap[key]?.repeat_orders) ? existingMap[key].repeat_orders : [];
+
+                    const repeats = orders.slice(1).map(o => {
+                        const base = {
+                            tgl: o.tglWIB, resi: o.resi||null,
+                            ekspedisi: extractEkspedisi(o.pembayaran||'')||null,
+                            produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
+                            qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
+                        };
+                        // Merge histori tracking resi lama (matching by resi) biar status yang udah
+                        // pernah dicek (cron/manual) ga ke-reset kosong tiap resync.
+                        const oldRep = base.resi ? oldRepeats.find(r => r.resi === base.resi) : null;
+                        return oldRep ? {
+                            ...base,
+                            status_resi:            oldRep.status_resi            ?? null,
+                            status_resi_step:       oldRep.status_resi_step       ?? null,
+                            status_resi_updated_at: oldRep.status_resi_updated_at ?? null,
+                            status_resi_detail:     oldRep.status_resi_detail     ?? null,
+                        } : base;
+                    });
+                    const csKey = (first.cs || '').trim().toLowerCase();
+                    return {
+                        nama:          norm((first.nama || '').split('|')[0]) || null,
+                        no_hp:         first.hp                  || null,
+                        alamat:        first.alamat              || null,
+                        kelurahan:     first.kelurahan           || null,
+                        kecamatan:     first.kecamatan          || null,
+                        kabupaten:     norm(first.kabupaten)     || null,
+                        provinsi:      norm(first.provinsi)      || null,
+                        nama_cs:       norm(first.cs)            || null,
+                        crm:           crmName,
+                        tgl:           first.tglWIB,
+                        resi:          first.resi                || null,
+                        ekspedisi:     extractEkspedisi(first.pembayaran||'') || null,
+                        produk:        csProdukMap[csKey]        || null,
+                        qty:           first.quantity            || null,
+                        total_cod:     first.total_pembayaran    || null,
+                        keluhan:       first.keluhan             || null,
+                        repeat_orders: repeats,
+                    };
+                });
+
+                for (let i = 0; i < rows.length; i += 100) {
+                    const { error } = await sbApp.from('crm_customers').upsert(rows.slice(i, i+100), {
+                        onConflict: 'no_hp,nama_cs,tgl', ignoreDuplicates: false
+                    });
+                    if (error) console.error('[cA Sync] Upsert error batch', i, error);
+                    else totalUpserted += rows.slice(i, i+100).length;
+                }
             }
-            console.log('[cA Sync] Selesai:', rows.length, 'baris.');
+
+            // Tidak ada auto-delete di sini — sync murni upsert (tambah/update). Row lama yang sudah
+            // tidak dicover assignment manapun TETAP dibiarkan, hanya bisa dihapus manual.
+            console.log('[cA Sync] Selesai:', totalUpserted, 'baris total.');
         } catch(e) { console.error('[cA Sync] Exception:', e); }
     }
 
