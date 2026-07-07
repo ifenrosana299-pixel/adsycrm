@@ -2380,7 +2380,7 @@
         const startPad    = firstDay === 0 ? 6 : firstDay - 1;
         const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
         const prevDays    = new Date(viewYear, viewMonth, 0).getDate();
-        const today       = new Date(); today.setHours(0,0,0,0);
+        const todayYMD    = wibYMD();
 
         let html = `<div class="drp-cal-hdr">
             <button class="drp-nav" onclick="${navFn}(-1)">‹</button>
@@ -2395,7 +2395,7 @@
 
         for (let d=1;d<=daysInMonth;d++) {
             const cur     = new Date(viewYear, viewMonth, d);
-            const isToday = cur.getTime()===today.getTime();
+            const isToday = viewYear===todayYMD.y && viewMonth===todayYMD.m && d===todayYMD.d;
             const isStart = selStart && cur.getTime()===new Date(selStart.getFullYear(),selStart.getMonth(),selStart.getDate()).getTime();
             const isEnd   = selEnd   && cur.getTime()===new Date(selEnd.getFullYear(),selEnd.getMonth(),selEnd.getDate()).getTime();
             const inRange = selStart && selEnd && cur>selStart && cur<selEnd;
@@ -2421,10 +2421,9 @@
     // DATE RANGE PICKER — PESANAN (prefix: pDrp)
     // ══════════════════════════════════════════
     let pDrpSelStart=null, pDrpSelEnd=null;
-    let pDrpViewYear=new Date().getFullYear(), pDrpViewMonth=new Date().getMonth();
-    const _pToday = new Date(); _pToday.setHours(0,0,0,0);
-    const _pTodayEnd = new Date(); _pTodayEnd.setHours(23,59,59,999);
-    let pFilterStart=new Date(_pToday), pFilterEnd=new Date(_pTodayEnd);
+    let pDrpViewYear=wibYMD().y, pDrpViewMonth=wibYMD().m;
+    let pFilterStart = wibDayStart(wibYMD().y, wibYMD().m, wibYMD().d);
+    let pFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
 
     function pDrpToggle() {
         const dd = document.getElementById('pDrp-dropdown');
@@ -2441,30 +2440,33 @@
         if (!dd.contains(e.target) && !tr.contains(e.target)) pDrpClose();
     }
     function pDrpPreset(days, label, btn) {
-        pDrpSelStart = new Date(Date.now()-(days-1)*864e5); pDrpSelStart.setHours(0,0,0,0);
-        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        pDrpSelStart = new Date(s.y, s.m, s.d);
+        pDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetYesterday(btn) {
-        pDrpSelStart = new Date(Date.now()-864e5); pDrpSelStart.setHours(0,0,0,0);
-        pDrpSelEnd   = new Date(Date.now()-864e5); pDrpSelEnd.setHours(23,59,59,999);
+        const y = wibYMDOffset(-1);
+        pDrpSelStart = new Date(y.y, y.m, y.d);
+        pDrpSelEnd   = new Date(y.y, y.m, y.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetThisMonth(btn) {
-        pDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        pDrpSelStart = new Date(t.y, t.m, 1);
+        pDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetLastMonth(btn) {
-        const n=new Date();
-        pDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
-        pDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        pDrpSelStart = new Date(t.y, t.m-1, 1);
+        pDrpSelEnd   = new Date(t.y, t.m, 0);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
@@ -2485,9 +2487,9 @@
     }
     function pDrpApply() {
         if (!pDrpSelStart) return;
-        pFilterStart = new Date(pDrpSelStart); pFilterStart.setHours(0,0,0,0);
-        pFilterEnd   = pDrpSelEnd ? new Date(pDrpSelEnd) : new Date(pDrpSelStart);
-        pFilterEnd.setHours(23,59,59,999);
+        const endSel = pDrpSelEnd || pDrpSelStart;
+        pFilterStart = wibDayStart(pDrpSelStart.getFullYear(), pDrpSelStart.getMonth(), pDrpSelStart.getDate());
+        pFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
         document.getElementById('pDrp-label').textContent = `${drpFmtDate(pFilterStart)} — ${drpFmtDate(pFilterEnd)}`;
         pDrpClose();
         applyFilters();
@@ -2516,10 +2518,9 @@
     // DATE RANGE PICKER — DASHBOARD (prefix: dDrp)
     // ══════════════════════════════════════════
     let dDrpSelStart=null, dDrpSelEnd=null;
-    let dDrpViewYear=new Date().getFullYear(), dDrpViewMonth=new Date().getMonth();
-    const _dToday = new Date(); _dToday.setHours(0,0,0,0);
-    const _dTodayEnd = new Date(); _dTodayEnd.setHours(23,59,59,999);
-    let dFilterStart=new Date(_dToday), dFilterEnd=new Date(_dTodayEnd);
+    let dDrpViewYear=wibYMD().y, dDrpViewMonth=wibYMD().m;
+    let dFilterStart = wibDayStart(wibYMD().y, wibYMD().m, wibYMD().d);
+    let dFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
 
     function dDrpToggle() {
         const dd = document.getElementById('dDrp-dropdown');
@@ -2536,30 +2537,33 @@
         if (!dd.contains(e.target) && !tr.contains(e.target)) dDrpClose();
     }
     function dDrpPreset(days, label, btn) {
-        dDrpSelStart = new Date(Date.now()-(days-1)*864e5); dDrpSelStart.setHours(0,0,0,0);
-        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        dDrpSelStart = new Date(s.y, s.m, s.d);
+        dDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetYesterday(btn) {
-        dDrpSelStart = new Date(Date.now()-864e5); dDrpSelStart.setHours(0,0,0,0);
-        dDrpSelEnd   = new Date(Date.now()-864e5); dDrpSelEnd.setHours(23,59,59,999);
+        const y = wibYMDOffset(-1);
+        dDrpSelStart = new Date(y.y, y.m, y.d);
+        dDrpSelEnd   = new Date(y.y, y.m, y.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetThisMonth(btn) {
-        dDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        dDrpSelStart = new Date(t.y, t.m, 1);
+        dDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetLastMonth(btn) {
-        const n=new Date();
-        dDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
-        dDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        dDrpSelStart = new Date(t.y, t.m-1, 1);
+        dDrpSelEnd   = new Date(t.y, t.m, 0);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
@@ -2570,9 +2574,9 @@
     }
     function dDrpApply() {
         if (!dDrpSelStart) return;
-        dFilterStart = new Date(dDrpSelStart); dFilterStart.setHours(0,0,0,0);
-        dFilterEnd   = dDrpSelEnd ? new Date(dDrpSelEnd) : new Date(dDrpSelStart);
-        dFilterEnd.setHours(23,59,59,999);
+        const endSel = dDrpSelEnd || dDrpSelStart;
+        dFilterStart = wibDayStart(dDrpSelStart.getFullYear(), dDrpSelStart.getMonth(), dDrpSelStart.getDate());
+        dFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
         document.getElementById('dDrp-label').textContent = `${drpFmtDate(dFilterStart)} — ${drpFmtDate(dFilterEnd)}`;
         dDrpClose();
         renderDashboard();
