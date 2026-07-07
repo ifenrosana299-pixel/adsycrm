@@ -2167,15 +2167,27 @@
         RETUR:         { label:'↩️ Retur',           bg:'#FEE2E2', color:'#B91C1C', step:2, problem:true },
     };
     const TR_AVATAR_PALETTE = ['#4F46E5','#059669','#D97706','#DC2626','#0EA5E9','#7C3AED','#0891B2','#65A30D','#C026D3','#E11D48'];
+
+    // Cardstate = ringkasan 4 kategori buat tab filter & badge (stepper detail tetap 5 tahap)
+    const TR_CARDSTATE_META = {
+        ON_PROSES: { label:'🔄 On Proses', bg:'#DBEAFE', color:'#2563EB' },
+        UNDEL:     { label:'⚠️ Undel',     bg:'#FEE2E2', color:'#DC2626' },
+        RETUR:     { label:'↩️ Retur',     bg:'#FEE2E2', color:'#B91C1C' },
+        DELIVERY:  { label:'✅ Delivery',  bg:'#D1FAE5', color:'#059669' },
+    };
+    function trCardState(stage) {
+        if (stage === 'SAMPAI')     return 'DELIVERY';
+        if (stage === 'RETUR')      return 'RETUR';
+        if (stage === 'BERMASALAH') return 'UNDEL';
+        return 'ON_PROSES'; // MENUNGGU_RESI, BELUM_DICEK, DIKIRIM, KOTA_TUJUAN, OTW
+    }
+
     const TR_TABS = [
         { key:'SEMUA', label:'Semua' },
-        { key:'MENUNGGU_RESI', label:'⏳ Menunggu Resi' },
-        { key:'DIKIRIM', label:'🚚 Dikirim' },
-        { key:'KOTA_TUJUAN', label:'🏙️ Kota Tujuan' },
-        { key:'OTW', label:'🛵 OTW' },
-        { key:'SAMPAI', label:'✅ Sampai' },
-        { key:'BERMASALAH', label:'⚠️ Bermasalah' },
+        { key:'ON_PROSES', label:'🔄 On Proses' },
+        { key:'UNDEL', label:'⚠️ Undel' },
         { key:'RETUR', label:'↩️ Retur' },
+        { key:'DELIVERY', label:'✅ Delivery' },
     ];
     let trFilterStage  = 'SEMUA';
     let trModalOrderId = null;
@@ -2205,7 +2217,7 @@
     function trApplyFilter() {
         const q = (document.getElementById('trSearch').value || '').toLowerCase();
         const list = orders.filter(o => {
-            if (trFilterStage !== 'SEMUA' && trEffectiveStage(o) !== trFilterStage) return false;
+            if (trFilterStage !== 'SEMUA' && trCardState(trEffectiveStage(o)) !== trFilterStage) return false;
             if (q && !(o.nama?.toLowerCase().includes(q) || o.resi?.toLowerCase().includes(q) || o.produk?.toLowerCase().includes(q))) return false;
             return true;
         });
@@ -2230,7 +2242,7 @@
 
     function trCardHtml(o) {
         const stage   = trEffectiveStage(o);
-        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const meta    = TR_CARDSTATE_META[trCardState(stage)];
         const initial = (o.nama || '?').trim().charAt(0).toUpperCase();
         const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
         const repeats  = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
@@ -2258,7 +2270,7 @@
             ${trStepperHtml(stage)}
             ${repeats.length ? `<div class="tr-repeat-wrap">${repeats.map((r,i) => {
                 const rStage = r.resi ? (TR_STAGE_META[r.status_resi] ? r.status_resi : 'BELUM_DICEK') : 'MENUNGGU_RESI';
-                const rMeta  = TR_STAGE_META[rStage] || TR_STAGE_META.BELUM_DICEK;
+                const rMeta  = TR_CARDSTATE_META[trCardState(rStage)];
                 return `<div class="tr-repeat-row">
                     <span>🔁 Repeat ${i+1} — ${r.tgl||'-'} ${r.resi ? '· '+escapeHtml(r.resi) : ''}</span>
                     <span class="crm-badge" style="background:${rMeta.bg};color:${rMeta.color};">${rMeta.label}</span>
@@ -2275,7 +2287,7 @@
         document.getElementById('trModalSub').textContent = (o.resi ? o.resi + ' · ' : '') + (o.ekspedisi || '');
 
         const stage   = trEffectiveStage(o);
-        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const meta    = TR_CARDSTATE_META[trCardState(stage)];
         const detail  = o.status_resi_detail || null;
         const history = detail && Array.isArray(detail.history) ? detail.history.slice().reverse() : [];
 
