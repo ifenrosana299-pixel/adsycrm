@@ -16,24 +16,51 @@ const CONCURRENCY = 8;
 const RETUR_PATTERN   = /retur|dikembalikan|\brts\b|\brto\b|return to sender/i;
 const PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan|alamat tidak (lengkap|dikenal)|tidak ada orang|tidak ditempat|tidak dihuni|menunggu konfirmasi|disimpan di gudang|ditolak|pindah alamat|box undel/i;
 
+// Pola buat hitung step tertinggi yang PERNAH tercapai di seluruh history — disinkronkan manual
+// dengan js/shared.js. Dipakai supaya resi Bermasalah/Retur nampilin posisi stepper yang beneran
+// tercapai (misal OTW), bukan mentok di step tetap, walau status akhirnya gagal.
+const OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|on delivery|1st attempt|2nd attempt|percobaan/i;
+const KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound/i;
+
+function computeProgressStep(entries, stage) {
+  if (stage === 'SAMPAI') return 5;
+  let step = 2; // resi sudah discan sistem kurir minimal = Dikirim
+  (entries || []).forEach(e => {
+    const d = (e.desc || '').toLowerCase();
+    if (OTW_PATTERN.test(d)) step = Math.max(step, 4);
+    else if (KOTA_TUJUAN_PATTERN.test(d)) step = Math.max(step, 3);
+  });
+  return step;
+}
+
 // Heuristik best-effort dari sinyal terstruktur + teks history kurir Indonesia — tuning lanjutan
 // kemungkinan masih perlu setelah lihat lebih banyak sampel data asli.
+// Return { stage, step } — step = posisi tertinggi di stepper 5 tahap yang pernah tercapai.
 function mapTrackingStage({ resi, statusCategory, entries }) {
-  if (!resi) return 'MENUNGGU_RESI';
+  if (!resi) return { stage: 'MENUNGGU_RESI', step: 1 };
   const cat = (statusCategory || '').toUpperCase();
   const arr = Array.isArray(entries) ? entries : [];
   const latest = arr.length ? arr[arr.length - 1] : null;
   const latestDesc = (latest && latest.desc || '').toLowerCase();
 
-  if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => RETUR_PATTERN.test(e.desc || ''))) return 'RETUR';
-  if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) return 'SAMPAI';
-
-  const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
-  if (hasStructuredProblem || arr.some(e => PROBLEM_PATTERN.test(e.desc || ''))) return 'BERMASALAH';
-
-  if (/sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier/.test(latestDesc)) return 'OTW';
-  if (/kota tujuan|gudang tujuan|tiba di kota|received at destination/.test(latestDesc)) return 'KOTA_TUJUAN';
-  return 'DIKIRIM';
+  let stage;
+  if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => RETUR_PATTERN.test(e.desc || ''))) {
+    stage = 'RETUR';
+  } else if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) {
+    stage = 'SAMPAI';
+  } else {
+    const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
+    if (hasStructuredProblem || arr.some(e => PROBLEM_PATTERN.test(e.desc || ''))) {
+      stage = 'BERMASALAH';
+    } else if (OTW_PATTERN.test(latestDesc)) {
+      stage = 'OTW';
+    } else if (KOTA_TUJUAN_PATTERN.test(latestDesc)) {
+      stage = 'KOTA_TUJUAN';
+    } else {
+      stage = 'DIKIRIM';
+    }
+  }
+  return { stage, step: computeProgressStep(arr, stage) };
 }
 
 function normalizeMengantar(json) {
@@ -81,7 +108,8 @@ async function checkOneResi(resi, ekspedisi) {
       normalized = normalizeMengantar(await trackShipment(resi, courier));
     }
     if (!normalized) return null;
-    return { stage: mapTrackingStage({ resi, ...normalized }), detail: normalized.detail };
+    const { stage, step } = mapTrackingStage({ resi, ...normalized });
+    return { stage, step, detail: normalized.detail };
   } catch (e) {
     return null;
   }
@@ -128,6 +156,7 @@ module.exports = async function handler(req, res) {
             const result = await checkOneResi(row.resi, row.ekspedisi);
             if (result) {
               patch.status_resi = result.stage;
+              patch.status_resi_step = result.step;
               patch.status_resi_updated_at = new Date().toISOString();
               patch.status_resi_detail = result.detail;
               changed = true;
@@ -142,7 +171,7 @@ module.exports = async function handler(req, res) {
             const result = await checkOneResi(rep.resi, rep.ekspedisi);
             if (!result) { newRepeats.push(rep); continue; }
             changed = true;
-            newRepeats.push({ ...rep, status_resi: result.stage, status_resi_updated_at: new Date().toISOString(), status_resi_detail: result.detail });
+            newRepeats.push({ ...rep, status_resi: result.stage, status_resi_step: result.step, status_resi_updated_at: new Date().toISOString(), status_resi_detail: result.detail });
           }
           if (changed && repeats.length) patch.repeat_orders = newRepeats;
 
