@@ -485,11 +485,11 @@
             const teamFilter = document.getElementById('riwayatTeamFilter').value;
 
             // Query assignments
-            let query = sbApp.from('crm_assignments').select('*').order('assigned_at', { ascending: false });
+            let query = sbApp.from('crm_assignments').select('*').order('created_at', { ascending: false });
             if (crmFilter)  query = query.eq('crm_name', crmFilter);
             if (assignDate) {
-                query = query.gte('assigned_at', new Date(assignDate + 'T00:00:00+07:00').toISOString())
-                             .lte('assigned_at', new Date(assignDate + 'T23:59:59+07:00').toISOString());
+                query = query.gte('created_at', new Date(assignDate + 'T00:00:00+07:00').toISOString())
+                             .lte('created_at', new Date(assignDate + 'T23:59:59+07:00').toISOString());
             }
 
             const { data, error } = await query;
@@ -630,7 +630,7 @@
                 const dayStart = new Date(assignDate + 'T00:00:00+07:00').toISOString();
                 const dayEnd   = new Date(assignDate + 'T23:59:59+07:00').toISOString();
                 let aq = sbApp.from('crm_assignments').select('crm_name, cs_name, produk, date_from, date_to')
-                    .gte('assigned_at', dayStart).lte('assigned_at', dayEnd);
+                    .gte('created_at', dayStart).lte('created_at', dayEnd);
                 if (crmFilter) aq = aq.eq('crm_name', crmFilter);
                 const { data: assignments } = await aq;
 
