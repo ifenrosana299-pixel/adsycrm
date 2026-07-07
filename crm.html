@@ -488,6 +488,9 @@
             <div class="crm-nav-item" id="crmNavItem-testimoni" onclick="crmShow('testimoni', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> Testimoni
             </div>
+            <div class="crm-nav-item" id="crmNavItem-assignment" onclick="crmShow('assignment', this)">
+                <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span> Assignment CS
+            </div>
         </nav>
 
         <div class="crm-sidebar-footer">
@@ -1087,9 +1090,115 @@
     </div>
 </div>
 
+<!-- ===== ASSIGNMENT CS ===== -->
+<section id="crmSec-assignment" class="crm-section" style="display:none;">
+    <div style="padding:24px;">
+        <div style="margin-bottom:20px;">
+            <h2 style="font-size:20px;font-weight:800;color:#1e293b;margin:0 0 4px;">📋 Assignment CS</h2>
+            <div style="color:#64748b;font-size:14px;">Assign CS ke akunmu untuk periode tertentu</div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
+            <button id="cATab-assign" onclick="cAShowTab('assign')" style="padding:8px 20px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;background:#667eea;color:white;">Assignment</button>
+            <button id="cATab-riwayat" onclick="cAShowTab('riwayat')" style="padding:8px 20px;border-radius:8px;border:2px solid #e2e8f0;font-weight:700;font-size:13px;cursor:pointer;background:white;color:#64748b;">Riwayat</button>
+        </div>
+
+        <!-- ── ASSIGNMENT PANE ── -->
+        <div id="cAPane-assign">
+            <!-- DRP + Load CS -->
+            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;">
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PERIODE</div>
+                    <div class="drp-wrap">
+                        <button id="cADrp-trigger" class="drp-trigger" onclick="cADrpToggle();event.stopPropagation();">
+                            <span id="cADrp-label">Pilih Periode</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        </button>
+                        <div id="cADrp-dropdown" class="drp-dropdown">
+                            <div class="drp-presets">
+                                <button class="drp-preset" onclick="cADrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                <button class="drp-preset" onclick="cADrpPresetYesterday(this)">Kemarin</button>
+                                <button class="drp-preset" onclick="cADrpPreset(7,'7 Hari',this)">7 Hari</button>
+                                <button class="drp-preset" onclick="cADrpPreset(30,'30 Hari',this)">30 Hari</button>
+                                <button class="drp-preset" onclick="cADrpPresetThisMonth(this)">Bulan Ini</button>
+                                <button class="drp-preset" onclick="cADrpPresetLastMonth(this)">Bulan Lalu</button>
+                            </div>
+                            <div class="drp-cal">
+                                <div id="cADrp-cal"></div>
+                                <div style="display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;">
+                                    <span>Dari: <strong id="cADrp-sel-start">—</strong></span>
+                                    <span>S/d: <strong id="cADrp-sel-end">—</strong></span>
+                                </div>
+                                <div class="drp-footer">
+                                    <button class="drp-cancel" onclick="cADrpClose()">Batal</button>
+                                    <button class="drp-apply" onclick="cADrpApply()">Terapkan</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="cADateFrom">
+                <input type="hidden" id="cADateTo">
+                <button onclick="cALoadCSByDate()" class="crm-btn crm-btn-primary" style="height:40px;">🔄 Load CS</button>
+                <span id="cACSTotal" style="font-size:13px;color:#64748b;align-self:center;"></span>
+            </div>
+
+            <!-- Stat cards -->
+            <div id="cASectionStats" style="margin-bottom:20px;"></div>
+
+            <!-- Filter team + produk -->
+            <div id="cAFilterWrap" style="display:none;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TEAM</div>
+                    <select id="cATeamSelect" class="crm-input" style="width:160px;" onchange="cAOnTeamChange()">
+                        <option value="">-- Pilih Team --</option>
+                    </select>
+                </div>
+                <div id="cAProdukWrapper" style="display:none;">
+                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PRODUK</div>
+                    <select id="cAProdukSelect" class="crm-input" style="width:160px;" onchange="cAOnProdukChange()">
+                        <option value="">-- Semua Produk --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CS Grid -->
+            <div id="cACsSelection" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div style="font-size:13px;font-weight:600;color:#475569;">
+                        CS dipilih: <span id="cACount" style="color:#667eea;font-weight:800;">0</span>
+                    </div>
+                    <button onclick="cASaveAssignment()" class="crm-btn crm-btn-primary">💾 Simpan Assignment</button>
+                </div>
+                <div id="cACsGrid" class="cs-grid"></div>
+            </div>
+        </div>
+
+        <!-- ── RIWAYAT PANE ── -->
+        <div id="cAPane-riwayat" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:14px;font-weight:700;color:#475569;">Riwayat assignment kamu</div>
+                <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TGL ASSIGN</div>
+                    <input type="date" id="cARiwayatDate" class="crm-input" style="width:160px;">
+                </div>
+                <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-primary" style="height:40px;">🔍 Filter</button>
+                <button onclick="document.getElementById('cARiwayatDate').value='';cALoadRiwayat();" class="crm-btn crm-btn-secondary" style="height:40px;">✖ Reset</button>
+            </div>
+            <div id="cARiwayatContent">
+                <p style="color:#94a3b8;text-align:center;padding:32px;">Klik Riwayat untuk melihat data.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <script src="js/shared.js"></script>
 <script>
-    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni'];
+    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
 
@@ -2204,6 +2313,605 @@
         dDrpRender();
     }
 
+    // ══════════════════════════════════════════════════════
+    // ASSIGNMENT CS — CRM SELF-ASSIGN
+    // Semua fungsi pakai prefix cA. crm_name = currentUser.username.
+    // ══════════════════════════════════════════════════════
+
+    let cAAllCS      = [];   // { name, team, products[] }
+    let cASelectedCS = [];   // array of "csName|produk"
+
+    // ── Pagination helper ──
+    async function cAFetchAll(buildQuery) {
+        let all = [], pg = 0, more = true;
+        while (more) {
+            const { data, error } = await buildQuery(pg * 1000, (pg + 1) * 1000 - 1);
+            if (error) return { data: all, error };
+            if (data && data.length > 0) { all = all.concat(data); more = data.length === 1000; pg++; }
+            else more = false;
+        }
+        return { data: all, error: null };
+    }
+
+    // ── Tab switcher ──
+    function cAShowTab(tab) {
+        document.getElementById('cAPane-assign').style.display   = tab === 'assign'  ? '' : 'none';
+        document.getElementById('cAPane-riwayat').style.display  = tab === 'riwayat' ? '' : 'none';
+        const btnAssign  = document.getElementById('cATab-assign');
+        const btnRiwayat = document.getElementById('cATab-riwayat');
+        if (tab === 'assign') {
+            btnAssign.style.background  = '#667eea'; btnAssign.style.color  = 'white'; btnAssign.style.border = 'none';
+            btnRiwayat.style.background = 'white';   btnRiwayat.style.color = '#64748b'; btnRiwayat.style.border = '2px solid #e2e8f0';
+        } else {
+            btnRiwayat.style.background = '#667eea'; btnRiwayat.style.color = 'white'; btnRiwayat.style.border = 'none';
+            btnAssign.style.background  = 'white';   btnAssign.style.color  = '#64748b'; btnAssign.style.border = '2px solid #e2e8f0';
+            cALoadRiwayat();
+        }
+    }
+
+    // ── Load CS by date range ──
+    async function cALoadCSByDate() {
+        const dateFrom = document.getElementById('cADateFrom').value;
+        const dateTo   = document.getElementById('cADateTo').value;
+        if (!dateFrom || !dateTo) { alert('Pilih tanggal dari dan sampai!'); return; }
+
+        try {
+            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+
+            const { data: rawData, error } = await cAFetchAll((from, to) =>
+                sbData.from('all_orderan').select('cs, jumlah, nama, team')
+                    .ilike('sumber', 'Validasi')
+                    .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
+                    .range(from, to));
+            if (error) throw error;
+
+            if (!rawData.length) { alert('❌ Tidak ada data di periode tersebut!'); return; }
+
+            const csMap = {};
+            rawData.forEach(row => {
+                if (!row.cs) return;
+                const csKey = norm(row.cs);
+                if (!csMap[csKey]) csMap[csKey] = { name: norm(row.cs), team: norm(row.team) || 'Lainnya', products: new Set() };
+                const produk = extractProduk(row.jumlah, row.nama);
+                if (produk) csMap[csKey].products.add(produk.toUpperCase());
+            });
+
+            cAAllCS = Object.keys(csMap).sort().map(key => ({
+                name: csMap[key].name,
+                team: csMap[key].team,
+                products: Array.from(csMap[key].products).sort()
+            }));
+
+            document.getElementById('cACSTotal').textContent = `(${cAAllCS.length} CS ditemukan)`;
+
+            const prevTeam = document.getElementById('cATeamSelect').value;
+            cAPopulateTeam();
+            if (prevTeam) { document.getElementById('cATeamSelect').value = prevTeam; cAOnTeamChange(); }
+
+            document.getElementById('cAFilterWrap').style.display = 'flex';
+            await cAUpdateStats();
+            alert(`✅ ${cAAllCS.length} CS dari ${rawData.length} orderan\nPeriode: ${dateFrom} - ${dateTo}`);
+        } catch(e) {
+            console.error(e);
+            alert('Error: ' + e.message);
+        }
+    }
+
+    function cAPopulateTeam() {
+        const sel   = document.getElementById('cATeamSelect');
+        const teams = [...new Set(cAAllCS.map(cs => cs.team).filter(Boolean))].sort();
+        sel.innerHTML = '<option value="">-- Pilih Team --</option>' +
+            teams.map(t => `<option value="${t}">${t}</option>`).join('');
+        document.getElementById('cAProdukWrapper').style.display = 'none';
+        document.getElementById('cACsSelection').style.display   = 'none';
+        cASelectedCS = [];
+    }
+
+    function cAOnTeamChange() {
+        const team = document.getElementById('cATeamSelect').value;
+        if (!team) {
+            document.getElementById('cAProdukWrapper').style.display = 'none';
+            document.getElementById('cACsSelection').style.display   = 'none';
+            return;
+        }
+        const csInTeam  = cAAllCS.filter(cs => cs.team === team);
+        const produkSet = [...new Set(csInTeam.flatMap(cs => cs.products))].sort();
+        const produkSel = document.getElementById('cAProdukSelect');
+        produkSel.innerHTML = '<option value="">-- Semua Produk --</option>' +
+            produkSet.map(p => `<option value="${p}">${p}</option>`).join('');
+        document.getElementById('cAProdukWrapper').style.display = '';
+        document.getElementById('cACsSelection').style.display   = '';
+        cASelectedCS = [];
+        cARenderCSGrid();
+    }
+
+    function cAOnProdukChange() { cARenderCSGrid(); }
+
+    async function cARenderCSGrid() {
+        const grid = document.getElementById('cACsGrid');
+        if (!cAAllCS.length) { grid.innerHTML = '<p style="color:#94a3b8;">Tidak ada CS</p>'; return; }
+
+        const dateFrom = document.getElementById('cADateFrom').value;
+        const dateTo   = document.getElementById('cADateTo').value;
+        const alreadyAssigned = new Set();
+
+        if (dateFrom && dateTo && currentUser) {
+            const { data } = await sbApp.from('crm_assignments')
+                .select('cs_name, produk')
+                .eq('crm_name', currentUser.username)
+                .eq('date_from', dateFrom)
+                .eq('date_to', dateTo);
+            (data || []).forEach(a => alreadyAssigned.add(`${a.cs_name}|${a.produk}`));
+        }
+
+        const selectedTeam   = document.getElementById('cATeamSelect').value;
+        const selectedProduk = document.getElementById('cAProdukSelect').value;
+        const csToRender = selectedTeam ? cAAllCS.filter(cs => cs.team === selectedTeam) : cAAllCS;
+
+        const productGroups = {};
+        csToRender.forEach(csData => {
+            csData.products.forEach(product => {
+                if (selectedProduk && product !== selectedProduk) return;
+                const key = `${csData.name}|${product}`;
+                if (alreadyAssigned.has(key)) return;
+                if (!productGroups[product]) productGroups[product] = [];
+                productGroups[product].push(csData.name);
+            });
+        });
+
+        grid.innerHTML = Object.keys(productGroups).sort().map(product => {
+            const csList = productGroups[product].sort();
+            if (!csList.length) return '';
+            return `
+                <div style="margin-bottom:24px;padding:20px;background:linear-gradient(135deg,#667eea15 0%,#764ba215 100%);border-radius:16px;border:2px solid #667eea;">
+                    <div style="font-weight:800;margin-bottom:16px;color:#667eea;font-size:16px;display:flex;align-items:center;gap:8px;">
+                        📦 ${product}
+                        <span style="font-size:12px;font-weight:600;color:#64748b;">(${csList.length} CS)</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;">
+                        ${csList.map(csName => {
+                            const key = csName + '|' + product;
+                            const isSel = cASelectedCS.includes(key);
+                            return `<label class="cs-checkbox ${isSel ? 'selected' : ''}" style="font-size:13px;">
+                                <input type="checkbox" ${isSel ? 'checked' : ''} data-cs="${escapeHtml(csName)}" data-product="${escapeHtml(product)}" onchange="cAToggleCS(this.dataset.cs,this.dataset.product)">
+                                <span>CS ${escapeHtml(csName)}</span>
+                            </label>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+        }).filter(Boolean).join('');
+
+        if (!grid.innerHTML.trim()) {
+            grid.innerHTML = '<p style="color:#10b981;font-weight:600;">✅ Semua CS+Produk sudah ter-assign!</p>';
+        }
+        document.getElementById('cACount').textContent = cASelectedCS.length;
+        await cAUpdateStats();
+    }
+
+    async function cAToggleCS(csName, product) {
+        const key = csName + '|' + product;
+        cASelectedCS = cASelectedCS.includes(key) ? cASelectedCS.filter(c => c !== key) : [...cASelectedCS, key];
+        await cARenderCSGrid();
+    }
+
+    async function cASaveAssignment() {
+        if (!cASelectedCS.length) return alert('Pilih CS + Produk terlebih dahulu!');
+        const dateFrom = document.getElementById('cADateFrom').value;
+        const dateTo   = document.getElementById('cADateTo').value;
+        if (!dateFrom || !dateTo) return alert('Pilih tanggal terlebih dahulu!');
+
+        const assignmentList = cASelectedCS.map(key => {
+            const parts = key.split('|');
+            return { csName: parts[0], produk: parts[1] };
+        });
+
+        for (const item of assignmentList) {
+            await sbApp.from('crm_assignments')
+                .delete()
+                .eq('crm_name', currentUser.username)
+                .eq('cs_name', item.csName)
+                .eq('produk', item.produk)
+                .eq('date_from', dateFrom)
+                .eq('date_to', dateTo);
+        }
+
+        const assignmentData = assignmentList.map(item => ({
+            crm_name: currentUser.username,
+            cs_name:  item.csName,
+            produk:   item.produk,
+            date_from: dateFrom,
+            date_to:   dateTo
+        }));
+
+        const { error } = await sbApp.from('crm_assignments').insert(assignmentData);
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+
+        await loadAssignments();
+        await cAUpdateStats();
+        cASelectedCS = [];
+        await cARenderCSGrid();
+
+        alert(`✅ Tersimpan!\n${assignmentList.length} CS+Produk\nPeriode: ${dateFrom} - ${dateTo}`);
+
+        // Sync ke crm_customers di background
+        cASyncCustomers(assignmentList, dateFrom, dateTo)
+            .catch(e => console.error('[cA Sync] Error:', e));
+    }
+
+    async function cAUpdateStats() {
+        const sectionStats = document.getElementById('cASectionStats');
+        if (!sectionStats) return;
+        const dateFrom = document.getElementById('cADateFrom').value;
+        const dateTo   = document.getElementById('cADateTo').value;
+        if (!dateFrom || !dateTo) { sectionStats.innerHTML = ''; return; }
+
+        const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+        const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+
+        const { data: allOrders } = await cAFetchAll((from, to) =>
+            sbData.from('all_orderan').select('cs, jumlah, nama')
+                .ilike('sumber', 'Validasi')
+                .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
+                .range(from, to));
+
+        const { data: myAssignments } = await sbApp.from('crm_assignments')
+            .select('cs_name, produk')
+            .eq('crm_name', currentUser.username)
+            .eq('date_from', dateFrom)
+            .eq('date_to', dateTo);
+
+        const assignedSet = new Set();
+        (myAssignments || []).forEach(a => assignedSet.add(`${a.cs_name}|${a.produk}`));
+
+        let assigned = 0, unassigned = 0;
+        (allOrders || []).forEach(o => {
+            const produk = extractProduk(o.jumlah, o.nama);
+            if (!produk || !o.cs) return;
+            if (assignedSet.has(`${o.cs}|${produk}`)) assigned++; else unassigned++;
+        });
+        const total = assigned + unassigned;
+        const pct   = total > 0 ? ((assigned / total) * 100).toFixed(1) : 0;
+        const periodeLabel = dateFrom === dateTo ? dateFrom : `${dateFrom} s/d ${dateTo}`;
+
+        sectionStats.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:4px;">
+                <div class="crm-card" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:18px;border-radius:12px;">
+                    <div style="font-size:12px;opacity:0.85;margin-bottom:6px;">📦 Total Orderan</div>
+                    <div style="font-size:32px;font-weight:800;line-height:1;">${total}</div>
+                    <div style="font-size:11px;opacity:0.75;margin-top:4px;">${periodeLabel}</div>
+                </div>
+                <div class="crm-card" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;border:none;padding:18px;border-radius:12px;">
+                    <div style="font-size:12px;opacity:0.85;margin-bottom:6px;">✅ Sudah Ter-Assign (saya)</div>
+                    <div style="font-size:32px;font-weight:800;line-height:1;">${assigned}</div>
+                    <div style="font-size:11px;opacity:0.75;margin-top:4px;">${pct}% dari total</div>
+                </div>
+                <div class="crm-card" style="background:${unassigned > 0 ? 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)' : 'linear-gradient(135deg,#10b981 0%,#059669 100%)'};color:white;border:none;padding:18px;border-radius:12px;">
+                    <div style="font-size:12px;opacity:0.85;margin-bottom:6px;">⚠️ Belum Ter-Assign</div>
+                    <div style="font-size:32px;font-weight:800;line-height:1;">${unassigned}</div>
+                    <div style="font-size:11px;opacity:0.75;margin-top:4px;">${unassigned > 0 ? 'Perlu ditangani!' : 'Semua selesai!'}</div>
+                </div>
+            </div>`;
+    }
+
+    async function cALoadRiwayat() {
+        const el = document.getElementById('cARiwayatContent');
+        el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>';
+
+        const assignDate = document.getElementById('cARiwayatDate').value;
+
+        let query = sbApp.from('crm_assignments').select('*')
+            .eq('crm_name', currentUser.username)
+            .order('created_at', { ascending: false });
+        if (assignDate) {
+            query = query
+                .gte('created_at', new Date(assignDate + 'T00:00:00+07:00').toISOString())
+                .lte('created_at', new Date(assignDate + 'T23:59:59+07:00').toISOString());
+        }
+
+        const { data, error } = await query;
+
+        if (error || !data || !data.length) {
+            el.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Belum ada riwayat assignment.</p>';
+            return;
+        }
+
+        // Group: periode
+        const grouped = {};
+        data.forEach(a => {
+            const pKey = `${a.date_from}|${a.date_to}`;
+            if (!grouped[pKey]) grouped[pKey] = [];
+            grouped[pKey].push(a);
+        });
+
+        const html = Object.entries(grouped).map(([pKey, items]) => {
+            const [pFrom, pTo] = pKey.split('|');
+            const periode = pFrom === pTo ? pFrom : `${pFrom} s/d ${pTo}`;
+            const csRows = items.sort((a,b) => a.cs_name.localeCompare(b.cs_name)).map(a => {
+                const produkBadge = `<span style="background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${a.produk || '-'}</span>`;
+                return `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-radius:6px;background:#f8fafc;margin-bottom:4px;">
+                        <span style="font-size:13px;">${escapeHtml(a.cs_name)} <span style="color:#94a3b8;margin:0 6px;">→</span> ${produkBadge}</span>
+                        <button onclick="cADeleteById(${a.id})" class="crm-btn crm-btn-secondary crm-btn-sm" style="font-size:11px;padding:3px 8px;">Hapus</button>
+                    </div>`;
+            }).join('');
+
+            const assignedAt = items[0].created_at
+                ? new Date(new Date(items[0].created_at).getTime()+7*3600*1000).toISOString().replace('T',' ').slice(0,16)
+                : '';
+
+            return `
+                <div style="margin-bottom:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">
+                        <div style="font-weight:800;font-size:15px;color:#1e293b;">📅 ${periode}</div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="font-size:12px;color:#94a3b8;">${items.length} CS · ${assignedAt ? 'Diassign '+assignedAt : ''}</div>
+                            <button onclick="cADeleteGroup('${escapeHtml(currentUser.username)}','${pFrom}','${pTo}')" class="crm-btn crm-btn-secondary crm-btn-sm" style="font-size:11px;">🗑 Hapus Semua</button>
+                        </div>
+                    </div>
+                    <div style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;">${csRows}</div>
+                </div>`;
+        }).join('');
+
+        el.innerHTML = html;
+    }
+
+    async function cADeleteById(id) {
+        if (!confirm('Hapus assignment ini?')) return;
+        const { error } = await sbApp.from('crm_assignments').delete().eq('id', id);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+        await loadAssignments();
+        cALoadRiwayat();
+    }
+
+    async function cADeleteGroup(crmName, dateFrom, dateTo) {
+        const periode = dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`;
+        if (!confirm(`Hapus semua assignment periode ${periode}?`)) return;
+        const { error } = await sbApp.from('crm_assignments').delete()
+            .eq('crm_name', crmName)
+            .eq('date_from', dateFrom)
+            .eq('date_to', dateTo);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+        await loadAssignments();
+        cALoadRiwayat();
+    }
+
+    // ── Sync orders ke crm_customers ──
+    async function cASyncCustomers(assignmentList, dateFrom, dateTo) {
+        try {
+            const crmName  = currentUser.username;
+            const csNames  = [...new Set(assignmentList.map(a => a.csName))];
+            console.log('[cA Sync] crmName:', crmName, '| cs:', csNames, '| range:', dateFrom, '-', dateTo);
+
+            const { error: cleanupErr } = await sbApp.from('crm_customers').delete().eq('crm', crmName);
+            if (cleanupErr) console.warn('[cA Sync] Cleanup warn:', cleanupErr);
+
+            const csFilter    = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
+            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
+
+            const { data: orderData } = await cAFetchAll((from, to) =>
+                sbData.from('all_orderan').select('*')
+                    .or(csFilter)
+                    .gte('created_at', dateFromUTC)
+                    .lte('created_at', dateToUTC)
+                    .range(from, to));
+
+            if (!orderData || !orderData.length) {
+                console.warn('[cA Sync] Tidak ada order, sync dibatalkan.');
+                return;
+            }
+
+            const csProdukMap = {};
+            assignmentList.forEach(a => {
+                const key = (a.csName || '').trim().toLowerCase();
+                if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
+            });
+
+            await loadSkuList();
+
+            const filtered = orderData.filter(o => {
+                const csKey        = (o.cs || '').trim().toLowerCase();
+                const assignedProd = csProdukMap[csKey];
+                if (!assignedProd) return true;
+                const orderProd    = extractProduk(o.jumlah, o.nama);
+                if (!orderProd) return true;
+                return orderProd === assignedProd;
+            });
+            console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
+
+            const grouped = {};
+            filtered.forEach(o => {
+                const tglWIB = o.created_at
+                    ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                    : dateFrom;
+                const key = (o.hp || '').trim() + '|' + (o.cs || '').trim().toLowerCase();
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push({ ...o, tglWIB });
+            });
+
+            const rows = Object.values(grouped).map(orders => {
+                orders.sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
+                const first = orders[0];
+                const repeats = orders.slice(1).map(o => ({
+                    tgl: o.tglWIB, resi: o.resi||null,
+                    produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
+                    qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
+                }));
+                const csKey = (first.cs || '').trim().toLowerCase();
+                return {
+                    nama:          norm((first.nama || '').split('|')[0]) || null,
+                    no_hp:         first.hp                  || null,
+                    alamat:        first.alamat              || null,
+                    kelurahan:     first.kelurahan           || null,
+                    kecamatan:     first.kecamatan          || null,
+                    kabupaten:     norm(first.kabupaten)     || null,
+                    provinsi:      norm(first.provinsi)      || null,
+                    nama_cs:       norm(first.cs)            || null,
+                    crm:           crmName,
+                    tgl:           first.tglWIB,
+                    resi:          first.resi                || null,
+                    produk:        csProdukMap[csKey]        || null,
+                    qty:           first.quantity            || null,
+                    total_cod:     first.total_pembayaran    || null,
+                    keluhan:       first.keluhan             || null,
+                    repeat_orders: repeats,
+                };
+            });
+
+            for (let i = 0; i < rows.length; i += 100) {
+                const { error } = await sbApp.from('crm_customers').upsert(rows.slice(i, i+100), {
+                    onConflict: 'no_hp,nama_cs,tgl', ignoreDuplicates: false
+                });
+                if (error) console.error('[cA Sync] Upsert error batch', i, error);
+            }
+            console.log('[cA Sync] Selesai:', rows.length, 'baris.');
+        } catch(e) { console.error('[cA Sync] Exception:', e); }
+    }
+
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — ASSIGNMENT CRM (prefix: cA)
+    // ══════════════════════════════════════════
+    let cADrpSelStart=null, cADrpSelEnd=null;
+    let cADrpViewYear=new Date().getFullYear(), cADrpViewMonth=new Date().getMonth();
+
+    function cADrpFmtDate(d) {
+        if (!d) return '—';
+        return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+    }
+
+    function cADrpMakeCalendar() {
+        const DRP_M=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const DRP_D=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+        const firstDay    = new Date(cADrpViewYear, cADrpViewMonth, 1).getDay();
+        const startPad    = firstDay;  // Sun-first header: Min=0,Sen=1,...
+        const daysInMonth = new Date(cADrpViewYear, cADrpViewMonth+1, 0).getDate();
+        const prevDays    = new Date(cADrpViewYear, cADrpViewMonth, 0).getDate();
+        const today       = new Date(); today.setHours(0,0,0,0);
+
+        let html = `<div class="drp-cal-hdr">
+            <button class="drp-nav" onclick="cADrpNav(-1)">‹</button>
+            <div class="drp-cal-title">${DRP_M[cADrpViewMonth]} ${cADrpViewYear}</div>
+            <button class="drp-nav" onclick="cADrpNav(1)">›</button>
+        </div>
+        <div class="drp-days-hdr">${DRP_D.map(d=>`<span>${d}</span>`).join('')}</div>
+        <div class="drp-days">`;
+
+        for (let i=startPad;i>0;i--)
+            html += `<button class="drp-day other-month">${prevDays-i+1}</button>`;
+        for (let d=1;d<=daysInMonth;d++) {
+            const cur     = new Date(cADrpViewYear, cADrpViewMonth, d);
+            const isToday = cur.getTime()===today.getTime();
+            const isStart = cADrpSelStart && cur.getTime()===new Date(cADrpSelStart.getFullYear(),cADrpSelStart.getMonth(),cADrpSelStart.getDate()).getTime();
+            const isEnd   = cADrpSelEnd   && cur.getTime()===new Date(cADrpSelEnd.getFullYear(),cADrpSelEnd.getMonth(),cADrpSelEnd.getDate()).getTime();
+            const inRange = cADrpSelStart && cADrpSelEnd && cur>cADrpSelStart && cur<cADrpSelEnd;
+            let cls = 'drp-day';
+            if (isStart && isEnd) cls += ' selected';
+            else if (isStart) cls += ' range-start';
+            else if (isEnd)   cls += ' range-end';
+            else if (inRange) cls += ' in-range';
+            if (isToday) cls += ' today';
+            html += `<button class="${cls}" onclick="cADrpClickDay(${cADrpViewYear},${cADrpViewMonth},${d})">${d}</button>`;
+        }
+        const total = startPad + daysInMonth;
+        const rem   = total % 7 === 0 ? 0 : 7-(total%7);
+        for (let d=1;d<=rem;d++)
+            html += `<button class="drp-day other-month">${d}</button>`;
+        html += '</div>';
+        document.getElementById('cADrp-cal').innerHTML = html;
+    }
+
+    function cADrpToggle() {
+        const dd = document.getElementById('cADrp-dropdown');
+        dd.classList.toggle('open');
+        if (dd.classList.contains('open')) { cADrpMakeCalendar(); document.addEventListener('click', cADrpOutside); }
+        else document.removeEventListener('click', cADrpOutside);
+    }
+    function cADrpClose() {
+        document.getElementById('cADrp-dropdown').classList.remove('open');
+        document.removeEventListener('click', cADrpOutside);
+    }
+    function cADrpOutside(e) {
+        const dd=document.getElementById('cADrp-dropdown'), tr=document.getElementById('cADrp-trigger');
+        if (!dd.contains(e.target) && !tr.contains(e.target)) cADrpClose();
+    }
+    function cADrpPreset(days, label, btn) {
+        cADrpSelStart = new Date(Date.now()-(days-1)*864e5); cADrpSelStart.setHours(0,0,0,0);
+        cADrpSelEnd   = new Date(); cADrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#cADrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        cADrpUpdateSel(); cADrpMakeCalendar();
+    }
+    function cADrpPresetYesterday(btn) {
+        cADrpSelStart = new Date(Date.now()-864e5); cADrpSelStart.setHours(0,0,0,0);
+        cADrpSelEnd   = new Date(Date.now()-864e5); cADrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#cADrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        cADrpUpdateSel(); cADrpMakeCalendar();
+    }
+    function cADrpPresetThisMonth(btn) {
+        cADrpSelStart = new Date(new Date().getFullYear(),new Date().getMonth(),1);
+        cADrpSelEnd   = new Date(); cADrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#cADrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        cADrpUpdateSel(); cADrpMakeCalendar();
+    }
+    function cADrpPresetLastMonth(btn) {
+        const n=new Date();
+        cADrpSelStart = new Date(n.getFullYear(),n.getMonth()-1,1);
+        cADrpSelEnd   = new Date(n.getFullYear(),n.getMonth(),0); cADrpSelEnd.setHours(23,59,59,999);
+        document.querySelectorAll('#cADrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        cADrpUpdateSel(); cADrpMakeCalendar();
+    }
+    function cADrpUpdateSel() {
+        document.getElementById('cADrp-sel-start').textContent = cADrpFmtDate(cADrpSelStart);
+        document.getElementById('cADrp-sel-end').textContent   = cADrpFmtDate(cADrpSelEnd);
+    }
+    function cADrpUpdateLabel() {
+        if (!cADrpSelStart) return;
+        const s = cADrpFmtDate(cADrpSelStart);
+        const e = cADrpFmtDate(cADrpSelEnd);
+        document.getElementById('cADrp-label').textContent = s === e ? s : `${s} — ${e}`;
+    }
+    function cADrpApply() {
+        if (!cADrpSelStart) return;
+        const pad = n => String(n).padStart(2,'0');
+        const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        document.getElementById('cADateFrom').value = fmt(cADrpSelStart);
+        document.getElementById('cADateTo').value   = fmt(cADrpSelEnd || cADrpSelStart);
+        cADrpUpdateLabel();
+        cADrpClose();
+        cAUpdateStats();
+    }
+    function cADrpClickDay(y,m,d) {
+        const clicked = new Date(y,m,d);
+        if (!cADrpSelStart || (cADrpSelStart && cADrpSelEnd)) {
+            cADrpSelStart=clicked; cADrpSelEnd=null;
+        } else {
+            if (clicked < cADrpSelStart) { cADrpSelEnd=cADrpSelStart; cADrpSelStart=clicked; }
+            else cADrpSelEnd=clicked;
+        }
+        cADrpUpdateSel(); cADrpMakeCalendar();
+    }
+    function cADrpNav(dir) {
+        cADrpViewMonth += dir;
+        if (cADrpViewMonth>11){cADrpViewMonth=0;cADrpViewYear++;}
+        if (cADrpViewMonth<0) {cADrpViewMonth=11;cADrpViewYear--;}
+        cADrpMakeCalendar();
+    }
+    function cADrpInit() {
+        cADrpSelStart = new Date(); cADrpSelStart.setHours(0,0,0,0);
+        cADrpSelEnd   = new Date(); cADrpSelEnd.setHours(23,59,59,999);
+        cADrpViewYear  = cADrpSelStart.getFullYear();
+        cADrpViewMonth = cADrpSelStart.getMonth();
+        cADrpUpdateLabel();
+        const pad = n => String(n).padStart(2,'0');
+        const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        document.getElementById('cADateFrom').value = fmt(cADrpSelStart);
+        document.getElementById('cADateTo').value   = fmt(cADrpSelEnd);
+    }
+
     // ── INIT ──
     window.onload = async function() {
         await initSupabase();
@@ -2216,6 +2924,8 @@
 
         document.getElementById('crmUsername').textContent    = currentUser.username;
         document.getElementById('crmTopUsername').textContent = currentUser.username.toUpperCase();
+
+        cADrpInit();
 
         await loadAssignments();
         await loadOrders();
