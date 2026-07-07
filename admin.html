@@ -1572,7 +1572,7 @@
             const DRP_M = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
             const DRP_D = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
             const firstDay    = new Date(aDrpViewYear, aDrpViewMonth, 1).getDay();
-            const startPad    = firstDay === 0 ? 6 : firstDay - 1;
+            const startPad    = firstDay;
             const daysInMonth = new Date(aDrpViewYear, aDrpViewMonth+1, 0).getDate();
             const prevDays    = new Date(aDrpViewYear, aDrpViewMonth, 0).getDate();
             const today       = new Date(); today.setHours(0,0,0,0);
