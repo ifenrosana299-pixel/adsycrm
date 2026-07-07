@@ -272,6 +272,7 @@
                         <div style="display: flex; gap: 8px; padding-bottom: 1px;">
                             <button onclick="loadAllOrderan(1)" class="btn btn-primary">🔍 Filter</button>
                             <button onclick="clearOrderanFilter()" class="btn btn-secondary">✖ Reset</button>
+                            <button onclick="downloadOrderanExcel()" class="btn btn-success">⬇️ Download Excel</button>
                         </div>
                     </div>
                 </div>
@@ -1513,6 +1514,68 @@
             document.getElementById('orderanPagination').innerHTML = '';
             orderanSelected.clear();
             updateOrderanBulkBar();
+        }
+
+        async function downloadOrderanExcel() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ Mengambil data...';
+
+            const dateFrom   = document.getElementById('orderanDateFrom').value;
+            const dateTo     = document.getElementById('orderanDateTo').value;
+            const teamFilter = document.getElementById('orderanTeamFilter').value;
+            const searchQ    = document.getElementById('orderanSearch').value.trim();
+
+            try {
+                const { data, error } = await fetchAll((from, to) => {
+                    let q = sbData.from('all_orderan')
+                        .select('cs, team, nama, hp, jumlah, resi, pembayaran, total_pembayaran, alamat, kecamatan, kabupaten, provinsi, kodepos, created_at')
+                        .order('created_at', { ascending: false })
+                        .range(from, to);
+                    if (dateFrom) q = q.gte('created_at', new Date(dateFrom + 'T00:00:00+07:00').toISOString());
+                    if (dateTo)   q = q.lte('created_at', new Date(dateTo   + 'T23:59:59+07:00').toISOString());
+                    if (teamFilter) q = q.eq('team', teamFilter);
+                    if (searchQ)    q = q.or(`nama.ilike.%${searchQ}%,cs.ilike.%${searchQ}%,hp.ilike.%${searchQ}%,resi.ilike.%${searchQ}%`);
+                    return q;
+                });
+
+                if (error) throw error;
+                if (!data || !data.length) { alert('Tidak ada data untuk didownload.'); return; }
+
+                const rows = data.map(r => ({
+                    'Tanggal (WIB)': r.created_at
+                        ? new Date(new Date(r.created_at).getTime() + 7*3600*1000).toISOString().replace('T',' ').slice(0,16)
+                        : '',
+                    'Team':          r.team        || '',
+                    'CS':            r.cs          || '',
+                    'Nama':          r.nama        || '',
+                    'No HP':         r.hp          || '',
+                    'Jumlah/Produk': r.jumlah      || '',
+                    'Resi':          r.resi        || '',
+                    'Pembayaran':    r.pembayaran  || '',
+                    'Total':         r.total_pembayaran || '',
+                    'Alamat':        r.alamat      || '',
+                    'Kecamatan':     r.kecamatan   || '',
+                    'Kabupaten':     r.kabupaten   || '',
+                    'Provinsi':      r.provinsi    || '',
+                    'Kode Pos':      r.kodepos     || '',
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'All Orderan');
+
+                const today = new Date().toISOString().slice(0,10);
+                const suffix = dateFrom ? `_${dateFrom}${dateTo && dateTo !== dateFrom ? '_sd_' + dateTo : ''}` : '';
+                XLSX.writeFile(wb, `all_orderan${suffix}_${today}.xlsx`);
+
+                alert(`✅ ${data.length.toLocaleString()} baris berhasil didownload!`);
+            } catch(e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⬇️ Download Excel';
+            }
         }
 
         // =====================
