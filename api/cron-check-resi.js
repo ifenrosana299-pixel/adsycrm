@@ -22,8 +22,7 @@ const PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan|al
 const OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|delivery courier|diantar ke alamat|on delivery|1st attempt|2nd attempt|percobaan/i;
 const KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound|sti-dest/i;
 
-function computeProgressStep(entries, stage) {
-  if (stage === 'SAMPAI') return 5;
+function computeProgressStep(entries) {
   let step = 2; // resi sudah discan sistem kurir minimal = Dikirim
   (entries || []).forEach(e => {
     const d = (e.desc || '').toLowerCase();
@@ -42,6 +41,7 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
   const arr = Array.isArray(entries) ? entries : [];
   const latest = arr.length ? arr[arr.length - 1] : null;
   const latestDesc = (latest && latest.desc || '').toLowerCase();
+  const reachedStep = computeProgressStep(arr);
 
   let stage;
   if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => RETUR_PATTERN.test(e.desc || ''))) {
@@ -52,15 +52,15 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
     if (hasStructuredProblem || arr.some(e => PROBLEM_PATTERN.test(e.desc || ''))) {
       stage = 'BERMASALAH';
-    } else if (OTW_PATTERN.test(latestDesc)) {
+    } else if (reachedStep >= 4) {
       stage = 'OTW';
-    } else if (KOTA_TUJUAN_PATTERN.test(latestDesc)) {
+    } else if (reachedStep >= 3) {
       stage = 'KOTA_TUJUAN';
     } else {
       stage = 'DIKIRIM';
     }
   }
-  return { stage, step: computeProgressStep(arr, stage) };
+  return { stage, step: stage === 'SAMPAI' ? 5 : reachedStep };
 }
 
 function normalizeMengantar(json) {
