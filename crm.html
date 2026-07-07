@@ -2820,15 +2820,17 @@
     function cADrpToggle() {
         const dd = document.getElementById('cADrp-dropdown');
         dd.classList.toggle('open');
-        if (dd.classList.contains('open')) { cADrpMakeCalendar(); document.addEventListener('click', cADrpOutside); }
-        else document.removeEventListener('click', cADrpOutside);
+        if (dd.classList.contains('open')) { cADrpMakeCalendar(); document.addEventListener('mousedown', cADrpOutside); }
+        else document.removeEventListener('mousedown', cADrpOutside);
     }
     function cADrpClose() {
         document.getElementById('cADrp-dropdown').classList.remove('open');
-        document.removeEventListener('click', cADrpOutside);
+        document.removeEventListener('mousedown', cADrpOutside);
     }
     function cADrpOutside(e) {
         const dd=document.getElementById('cADrp-dropdown'), tr=document.getElementById('cADrp-trigger');
+        // e.target bisa sudah hilang dari DOM setelah cADrpMakeCalendar() re-render — skip jika begitu
+        if (!document.body.contains(e.target)) return;
         if (!dd.contains(e.target) && !tr.contains(e.target)) cADrpClose();
     }
     function cADrpPreset(days, label, btn) {
