@@ -1284,7 +1284,7 @@
                 <td style="font-weight:600;">${escapeHtml(o.nama||'-')}</td>
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
                 <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
-                <td style="font-size:12px;color:#6B7280;">${escapeHtml(o.cs||'-')}</td>
+                <td style="font-size:12px;color:#6B7280;">${escapeHtml(o.nama_cs||o.cs||'-')}</td>
             </tr>`;
         }).join('');
     }
