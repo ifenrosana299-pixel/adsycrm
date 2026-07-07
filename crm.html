@@ -333,8 +333,9 @@
         .tr-search-wrap { flex:1; min-width:220px; margin-left:auto; }
         .tr-count { font-size:12px; font-weight:700; color:#9CA3AF; white-space:nowrap; }
 
+        #trList { display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:14px; align-items:start; }
         .tr-card {
-            background:white; border-radius:16px; padding:18px 22px; margin-bottom:14px;
+            background:white; border-radius:16px; padding:18px 22px;
             box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; transition:box-shadow .15s;
         }
         .tr-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.10); }
@@ -835,6 +836,29 @@
                     <button onclick="trRefreshAll()" id="trRefreshBtn" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh Semua</button>
                 </div>
                 <div style="font-size:12.5px;color:#9CA3AF;margin-bottom:18px;">Monitor status pengiriman semua order</div>
+
+                <div class="crm-stats-row">
+                    <div class="crm-stat">
+                        <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="trStatTotal">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div><div class="crm-stat-label">On Proses</div><div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#DBEAFE;">🔄</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div><div class="crm-stat-label">Undel</div><div class="crm-stat-value" id="trStatUndel" style="color:#DC2626;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">⚠️</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div><div class="crm-stat-label">Retur</div><div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div><div class="crm-stat-label">Delivery</div><div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
+                    </div>
+                </div>
 
                 <div class="tr-toolbar">
                     <div class="tr-tabs" id="trTabs"></div>
@@ -2209,7 +2233,19 @@
         document.getElementById('trTabs').innerHTML = TR_TABS.map(t =>
             `<div class="tr-tab ${trFilterStage===t.key?'tr-tab-active':''}" onclick="trSetFilter('${t.key}')">${t.label}</div>`
         ).join('');
+        trUpdateStats();
         trApplyFilter();
+    }
+
+    // Rekap jumlah per cardstate — selalu dari SELURUH data (independen dari filter/search aktif)
+    function trUpdateStats() {
+        const counts = { ON_PROSES:0, UNDEL:0, RETUR:0, DELIVERY:0 };
+        orders.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
+        document.getElementById('trStatTotal').textContent     = orders.length;
+        document.getElementById('trStatOnProses').textContent  = counts.ON_PROSES;
+        document.getElementById('trStatUndel').textContent     = counts.UNDEL;
+        document.getElementById('trStatRetur').textContent     = counts.RETUR;
+        document.getElementById('trStatDelivery').textContent  = counts.DELIVERY;
     }
 
     function trSetFilter(key) { trFilterStage = key; renderTrackingResi(); }
@@ -2224,7 +2260,7 @@
         document.getElementById('trCount').textContent = `${list.length} pesanan`;
         document.getElementById('trList').innerHTML = list.length
             ? list.map(o => trCardHtml(o)).join('')
-            : '<div class="tr-card" style="text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
+            : '<div class="tr-card" style="grid-column:1/-1;text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
     }
 
     function trStepperHtml(stage) {
@@ -2326,6 +2362,7 @@
             status_resi: o.status_resi, status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
         }).eq('id', o.id);
         trOpenDetail(o.id);
+        trUpdateStats();
         trApplyFilter();
     }
 
@@ -2350,6 +2387,7 @@
                 }));
                 btn.textContent = `Mengecek... (${Math.min(i+BATCH,targets.length)}/${targets.length})`;
             }
+            trUpdateStats();
             trApplyFilter();
             alert(`✅ Selesai cek ${targets.length} resi!`);
         } finally {
