@@ -836,7 +836,40 @@
                         <div class="crm-page-title-icon">📦</div>
                         <h2>Tracking Resi</h2>
                     </div>
-                    <button onclick="trRefreshAll()" id="trRefreshBtn" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh Semua</button>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div class="drp-wrap">
+                            <button class="drp-trigger" onclick="trDrpToggle()" id="trDrp-trigger">
+                                <span class="drp-icon">📅</span>
+                                <span id="trDrp-label">Bulan Ini</span>
+                                <span style="color:#9CA3AF;">▾</span>
+                            </button>
+                            <div class="drp-dropdown" id="trDrp-dropdown" style="left:auto;right:0;">
+                                <div class="drp-presets">
+                                    <button class="drp-preset" onclick="trDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                    <button class="drp-preset" onclick="trDrpPresetYesterday(this)">Kemarin</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="trDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(90,'90 Hari Terakhir',this)">90 Hari Terakhir</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset active" onclick="trDrpPresetThisMonth(this)">Bulan Ini</button>
+                                    <button class="drp-preset" onclick="trDrpPresetLastMonth(this)">Bulan Lalu</button>
+                                </div>
+                                <div style="display:flex;flex-direction:column;flex:1;">
+                                    <div class="drp-cal" id="trDrp-cal"></div>
+                                    <div class="drp-footer">
+                                        <div class="drp-selected-txt"><span id="trDrp-sel-start">—</span> → <span id="trDrp-sel-end">—</span></div>
+                                        <div style="display:flex;gap:6px;">
+                                            <button class="drp-cancel" onclick="trDrpClose()">Batal</button>
+                                            <button class="drp-apply" onclick="trDrpApply()">Terapkan</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="trRefreshAll()" id="trRefreshBtn" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh Semua</button>
+                    </div>
                 </div>
                 <div style="font-size:12.5px;color:#9CA3AF;margin-bottom:18px;">Monitor status pengiriman semua order</div>
 
@@ -1376,10 +1409,12 @@
             return d && d >= dFilterStart && d <= dFilterEnd;
         }) : orders;
 
+        // Delivered/Cancelled dihitung dari status_resi (fitur Tracking Resi) — sebelumnya
+        // pakai field "status" yang memang tidak pernah diisi di crm_customers, jadi selalu 0.
         const total     = display.length;
-        const pending   = display.filter(o => o.status === 'Pending').length;
-        const delivered = display.filter(o => o.status === 'Delivered').length;
-        const cancelled = display.filter(o => o.status === 'Cancelled').length;
+        const delivered = display.filter(o => o.status_resi === 'SAMPAI').length;
+        const cancelled = display.filter(o => o.status_resi === 'RETUR').length;
+        const pending    = total - delivered - cancelled;
         const uniqueCustomers = new Set(display.map(o => o.hp || o.nama).filter(Boolean)).size;
 
         document.getElementById('dashTotal').textContent       = total;
@@ -1401,12 +1436,13 @@
             const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime() + 7*3600*1000).toISOString().slice(0,10) : null;
             const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
             const produk = o.produk || extractProduk(o.jumlah, o.nama) || '-';
-            const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status] || '#9CA3AF';
+            const stage  = typeof trEffectiveStage === 'function' ? trEffectiveStage(o) : (o.status_resi || 'MENUNGGU_RESI');
+            const meta   = (typeof TR_STAGE_META !== 'undefined' && TR_STAGE_META[stage]) || { label: stage, bg:'#F3F4F6', color:'#6B7280' };
             return `<tr>
                 <td style="font-size:12px;color:#9CA3AF;white-space:nowrap;">${tgl}</td>
                 <td style="font-weight:600;">${escapeHtml(o.nama||'-')}</td>
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
-                <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
+                <td><span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span></td>
                 <td style="font-size:12px;color:#6B7280;">${escapeHtml(o.nama_cs||o.cs||'-')}</td>
             </tr>`;
         }).join('');
@@ -2243,11 +2279,21 @@
         trApplyFilter();
     }
 
-    // Rekap jumlah per cardstate — selalu dari SELURUH data (independen dari filter/search aktif)
+    // Order yang jatuh dalam rentang tanggal trDrp aktif (created_at, sudah WIB-correct)
+    function trOrdersInRange() {
+        if (!trFilterStart || !trFilterEnd) return orders;
+        return orders.filter(o => {
+            const d = o.created_at ? new Date(o.created_at) : null;
+            return d && d >= trFilterStart && d <= trFilterEnd;
+        });
+    }
+
+    // Rekap jumlah per cardstate — dari data dalam rentang tanggal trDrp aktif
     function trUpdateStats() {
+        const inRange = trOrdersInRange();
         const counts = { ON_PROSES:0, UNDEL:0, RETUR:0, DELIVERY:0 };
-        orders.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
-        document.getElementById('trStatTotal').textContent     = orders.length;
+        inRange.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
+        document.getElementById('trStatTotal').textContent     = inRange.length;
         document.getElementById('trStatOnProses').textContent  = counts.ON_PROSES;
         document.getElementById('trStatUndel').textContent     = counts.UNDEL;
         document.getElementById('trStatRetur').textContent     = counts.RETUR;
@@ -2258,7 +2304,7 @@
 
     function trApplyFilter() {
         const q = (document.getElementById('trSearch').value || '').toLowerCase();
-        const list = orders.filter(o => {
+        const list = trOrdersInRange().filter(o => {
             const stage = trEffectiveStage(o);
             if (trFilterStage === 'ON_PROSES_GROUP') {
                 if (!TR_ON_PROSES_STAGES.includes(stage)) return false;
@@ -2665,6 +2711,93 @@
         if (dDrpViewMonth>11){dDrpViewMonth=0;dDrpViewYear++;}
         if (dDrpViewMonth<0) {dDrpViewMonth=11;dDrpViewYear--;}
         dDrpRender();
+    }
+
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — TRACKING RESI (prefix: trDrp) — default Bulan Ini
+    // ══════════════════════════════════════════
+    let trDrpSelStart=null, trDrpSelEnd=null;
+    let trDrpViewYear=wibYMD().y, trDrpViewMonth=wibYMD().m;
+    let trFilterStart = wibDayStart(wibYMD().y, wibYMD().m, 1);
+    let trFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
+
+    function trDrpToggle() {
+        const dd = document.getElementById('trDrp-dropdown');
+        dd.classList.toggle('open');
+        if (dd.classList.contains('open')) { trDrpRender(); document.addEventListener('click', trDrpOutside); }
+        else document.removeEventListener('click', trDrpOutside);
+    }
+    function trDrpClose() {
+        document.getElementById('trDrp-dropdown').classList.remove('open');
+        document.removeEventListener('click', trDrpOutside);
+    }
+    function trDrpOutside(e) {
+        const dd=document.getElementById('trDrp-dropdown'), tr=document.getElementById('trDrp-trigger');
+        if (!dd.contains(e.target) && !tr.contains(e.target)) trDrpClose();
+    }
+    function trDrpPreset(days, label, btn) {
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        trDrpSelStart = new Date(s.y, s.m, s.d);
+        trDrpSelEnd   = new Date(t.y, t.m, t.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetYesterday(btn) {
+        const y = wibYMDOffset(-1);
+        trDrpSelStart = new Date(y.y, y.m, y.d);
+        trDrpSelEnd   = new Date(y.y, y.m, y.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetThisMonth(btn) {
+        const t = wibYMD();
+        trDrpSelStart = new Date(t.y, t.m, 1);
+        trDrpSelEnd   = new Date(t.y, t.m, t.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetLastMonth(btn) {
+        const t = wibYMD();
+        trDrpSelStart = new Date(t.y, t.m-1, 1);
+        trDrpSelEnd   = new Date(t.y, t.m, 0);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpUpdateSel() {
+        document.getElementById('trDrp-sel-start').textContent = drpFmtDate(trDrpSelStart);
+        document.getElementById('trDrp-sel-end').textContent   = drpFmtDate(trDrpSelEnd);
+    }
+    function trDrpApply() {
+        if (!trDrpSelStart) return;
+        const endSel = trDrpSelEnd || trDrpSelStart;
+        trFilterStart = wibDayStart(trDrpSelStart.getFullYear(), trDrpSelStart.getMonth(), trDrpSelStart.getDate());
+        trFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
+        document.getElementById('trDrp-label').textContent = `${drpFmtDate(trFilterStart)} — ${drpFmtDate(trFilterEnd)}`;
+        trDrpClose();
+        trApplyFilter();
+    }
+    function trDrpClickDay(y,m,d) {
+        const clicked = new Date(y,m,d);
+        if (!trDrpSelStart || (trDrpSelStart && trDrpSelEnd)) {
+            trDrpSelStart=clicked; trDrpSelEnd=null;
+        } else {
+            if (clicked < trDrpSelStart) { trDrpSelEnd=trDrpSelStart; trDrpSelStart=clicked; }
+            else trDrpSelEnd=clicked;
+        }
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpRender() {
+        drpMakeCalendar('trDrp-cal', trDrpSelStart, trDrpSelEnd, 'trDrpClickDay', 'trDrpNav', trDrpViewYear, trDrpViewMonth);
+    }
+    function trDrpNav(dir) {
+        trDrpViewMonth += dir;
+        if (trDrpViewMonth>11){trDrpViewMonth=0;trDrpViewYear++;}
+        if (trDrpViewMonth<0) {trDrpViewMonth=11;trDrpViewYear--;}
+        trDrpRender();
     }
 
     // ══════════════════════════════════════════════════════
