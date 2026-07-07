@@ -321,6 +321,9 @@
         .crm-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
         /* Tracking Resi */
+        .tr-stat-clickable { cursor:pointer; transition:box-shadow .15s, transform .15s; }
+        .tr-stat-clickable:hover { box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+        .tr-stat-clickable.tr-stat-active { box-shadow:0 0 0 2px #4F46E5 inset; }
         .tr-tabs { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
         .tr-tab {
             padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700;
@@ -838,23 +841,23 @@
                 <div style="font-size:12.5px;color:#9CA3AF;margin-bottom:18px;">Monitor status pengiriman semua order</div>
 
                 <div class="crm-stats-row">
-                    <div class="crm-stat">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-SEMUA" onclick="trSetFilter('SEMUA')">
                         <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="trStatTotal">0</div></div>
                         <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-ON_PROSES" onclick="trSetFilter('ON_PROSES')">
                         <div><div class="crm-stat-label">On Proses</div><div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div></div>
                         <div class="crm-stat-icon" style="background:#DBEAFE;">🔄</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-UNDEL" onclick="trSetFilter('UNDEL')">
                         <div><div class="crm-stat-label">Undel</div><div class="crm-stat-value" id="trStatUndel" style="color:#DC2626;">0</div></div>
                         <div class="crm-stat-icon" style="background:#FEE2E2;">⚠️</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-RETUR" onclick="trSetFilter('RETUR')">
                         <div><div class="crm-stat-label">Retur</div><div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div></div>
                         <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
                     </div>
-                    <div class="crm-stat">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-DELIVERY" onclick="trSetFilter('DELIVERY')">
                         <div><div class="crm-stat-label">Delivery</div><div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div></div>
                         <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
                     </div>
@@ -2233,6 +2236,9 @@
         document.getElementById('trTabs').innerHTML = TR_TABS.map(t =>
             `<div class="tr-tab ${trFilterStage===t.key?'tr-tab-active':''}" onclick="trSetFilter('${t.key}')">${t.label}</div>`
         ).join('');
+        TR_TABS.forEach(t => {
+            document.getElementById('trStatCard-'+t.key)?.classList.toggle('tr-stat-active', trFilterStage===t.key);
+        });
         trUpdateStats();
         trApplyFilter();
     }
