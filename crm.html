@@ -970,6 +970,108 @@
                 </div>
             </section>
 
+            <!-- ===== ASSIGNMENT CS ===== -->
+            <section id="crmSec-assignment" class="crm-section">
+                <div style="padding:8px 0;">
+                    <div style="margin-bottom:20px;">
+                        <h2 style="font-size:20px;font-weight:800;color:#1e293b;margin:0 0 4px;">📋 Assignment CS</h2>
+                        <div style="color:#64748b;font-size:14px;">Assign CS ke akunmu untuk periode tertentu</div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
+                        <button id="cATab-assign" onclick="cAShowTab('assign')" style="padding:8px 20px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;background:#667eea;color:white;">Assignment</button>
+                        <button id="cATab-riwayat" onclick="cAShowTab('riwayat')" style="padding:8px 20px;border-radius:8px;border:2px solid #e2e8f0;font-weight:700;font-size:13px;cursor:pointer;background:white;color:#64748b;">Riwayat</button>
+                    </div>
+
+                    <!-- ── ASSIGNMENT PANE ── -->
+                    <div id="cAPane-assign">
+                        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;">
+                            <div>
+                                <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PERIODE</div>
+                                <div class="drp-wrap">
+                                    <button id="cADrp-trigger" class="drp-trigger" onclick="cADrpToggle();event.stopPropagation();">
+                                        <span id="cADrp-label">Pilih Periode</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    </button>
+                                    <div id="cADrp-dropdown" class="drp-dropdown">
+                                        <div class="drp-presets">
+                                            <button class="drp-preset" onclick="cADrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                            <button class="drp-preset" onclick="cADrpPresetYesterday(this)">Kemarin</button>
+                                            <button class="drp-preset" onclick="cADrpPreset(7,'7 Hari',this)">7 Hari</button>
+                                            <button class="drp-preset" onclick="cADrpPreset(30,'30 Hari',this)">30 Hari</button>
+                                            <button class="drp-preset" onclick="cADrpPresetThisMonth(this)">Bulan Ini</button>
+                                            <button class="drp-preset" onclick="cADrpPresetLastMonth(this)">Bulan Lalu</button>
+                                        </div>
+                                        <div class="drp-cal">
+                                            <div id="cADrp-cal"></div>
+                                            <div style="display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;">
+                                                <span>Dari: <strong id="cADrp-sel-start">—</strong></span>
+                                                <span>S/d: <strong id="cADrp-sel-end">—</strong></span>
+                                            </div>
+                                            <div class="drp-footer">
+                                                <button class="drp-cancel" onclick="cADrpClose()">Batal</button>
+                                                <button class="drp-apply" onclick="cADrpApply()">Terapkan</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="cADateFrom">
+                            <input type="hidden" id="cADateTo">
+                            <button onclick="cALoadCSByDate()" class="crm-btn crm-btn-primary" style="height:40px;">🔄 Load CS</button>
+                            <span id="cACSTotal" style="font-size:13px;color:#64748b;align-self:center;"></span>
+                        </div>
+
+                        <div id="cASectionStats" style="margin-bottom:20px;"></div>
+
+                        <div id="cAFilterWrap" style="display:none;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                            <div>
+                                <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TEAM</div>
+                                <select id="cATeamSelect" class="crm-input" style="width:160px;" onchange="cAOnTeamChange()">
+                                    <option value="">-- Pilih Team --</option>
+                                </select>
+                            </div>
+                            <div id="cAProdukWrapper" style="display:none;">
+                                <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PRODUK</div>
+                                <select id="cAProdukSelect" class="crm-input" style="width:160px;" onchange="cAOnProdukChange()">
+                                    <option value="">-- Semua Produk --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="cACsSelection" style="display:none;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                                <div style="font-size:13px;font-weight:600;color:#475569;">
+                                    CS dipilih: <span id="cACount" style="color:#667eea;font-weight:800;">0</span>
+                                </div>
+                                <button onclick="cASaveAssignment()" class="crm-btn crm-btn-primary">💾 Simpan Assignment</button>
+                            </div>
+                            <div id="cACsGrid" class="cs-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- ── RIWAYAT PANE ── -->
+                    <div id="cAPane-riwayat" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div style="font-size:14px;font-weight:700;color:#475569;">Riwayat assignment kamu</div>
+                            <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+                            <div>
+                                <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TGL ASSIGN</div>
+                                <input type="date" id="cARiwayatDate" class="crm-input" style="width:160px;">
+                            </div>
+                            <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-primary" style="height:40px;">🔍 Filter</button>
+                            <button onclick="document.getElementById('cARiwayatDate').value='';cALoadRiwayat();" class="crm-btn crm-btn-secondary" style="height:40px;">✖ Reset</button>
+                        </div>
+                        <div id="cARiwayatContent">
+                            <p style="color:#94a3b8;text-align:center;padding:32px;">Klik Riwayat untuk melihat data.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </div><!-- /crm-content -->
     </div><!-- /crm-main -->
 </div><!-- /crm-layout -->
@@ -1089,112 +1191,6 @@
         </div>
     </div>
 </div>
-
-<!-- ===== ASSIGNMENT CS ===== -->
-<section id="crmSec-assignment" class="crm-section">
-    <div style="padding:24px;">
-        <div style="margin-bottom:20px;">
-            <h2 style="font-size:20px;font-weight:800;color:#1e293b;margin:0 0 4px;">📋 Assignment CS</h2>
-            <div style="color:#64748b;font-size:14px;">Assign CS ke akunmu untuk periode tertentu</div>
-        </div>
-
-        <!-- Tabs -->
-        <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:12px;">
-            <button id="cATab-assign" onclick="cAShowTab('assign')" style="padding:8px 20px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;background:#667eea;color:white;">Assignment</button>
-            <button id="cATab-riwayat" onclick="cAShowTab('riwayat')" style="padding:8px 20px;border-radius:8px;border:2px solid #e2e8f0;font-weight:700;font-size:13px;cursor:pointer;background:white;color:#64748b;">Riwayat</button>
-        </div>
-
-        <!-- ── ASSIGNMENT PANE ── -->
-        <div id="cAPane-assign">
-            <!-- DRP + Load CS -->
-            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;">
-                <div>
-                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PERIODE</div>
-                    <div class="drp-wrap">
-                        <button id="cADrp-trigger" class="drp-trigger" onclick="cADrpToggle();event.stopPropagation();">
-                            <span id="cADrp-label">Pilih Periode</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        </button>
-                        <div id="cADrp-dropdown" class="drp-dropdown">
-                            <div class="drp-presets">
-                                <button class="drp-preset" onclick="cADrpPreset(1,'Hari Ini',this)">Hari Ini</button>
-                                <button class="drp-preset" onclick="cADrpPresetYesterday(this)">Kemarin</button>
-                                <button class="drp-preset" onclick="cADrpPreset(7,'7 Hari',this)">7 Hari</button>
-                                <button class="drp-preset" onclick="cADrpPreset(30,'30 Hari',this)">30 Hari</button>
-                                <button class="drp-preset" onclick="cADrpPresetThisMonth(this)">Bulan Ini</button>
-                                <button class="drp-preset" onclick="cADrpPresetLastMonth(this)">Bulan Lalu</button>
-                            </div>
-                            <div class="drp-cal">
-                                <div id="cADrp-cal"></div>
-                                <div style="display:flex;justify-content:space-between;padding:8px 12px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;">
-                                    <span>Dari: <strong id="cADrp-sel-start">—</strong></span>
-                                    <span>S/d: <strong id="cADrp-sel-end">—</strong></span>
-                                </div>
-                                <div class="drp-footer">
-                                    <button class="drp-cancel" onclick="cADrpClose()">Batal</button>
-                                    <button class="drp-apply" onclick="cADrpApply()">Terapkan</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <input type="hidden" id="cADateFrom">
-                <input type="hidden" id="cADateTo">
-                <button onclick="cALoadCSByDate()" class="crm-btn crm-btn-primary" style="height:40px;">🔄 Load CS</button>
-                <span id="cACSTotal" style="font-size:13px;color:#64748b;align-self:center;"></span>
-            </div>
-
-            <!-- Stat cards -->
-            <div id="cASectionStats" style="margin-bottom:20px;"></div>
-
-            <!-- Filter team + produk -->
-            <div id="cAFilterWrap" style="display:none;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
-                <div>
-                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TEAM</div>
-                    <select id="cATeamSelect" class="crm-input" style="width:160px;" onchange="cAOnTeamChange()">
-                        <option value="">-- Pilih Team --</option>
-                    </select>
-                </div>
-                <div id="cAProdukWrapper" style="display:none;">
-                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">PRODUK</div>
-                    <select id="cAProdukSelect" class="crm-input" style="width:160px;" onchange="cAOnProdukChange()">
-                        <option value="">-- Semua Produk --</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- CS Grid -->
-            <div id="cACsSelection" style="display:none;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <div style="font-size:13px;font-weight:600;color:#475569;">
-                        CS dipilih: <span id="cACount" style="color:#667eea;font-weight:800;">0</span>
-                    </div>
-                    <button onclick="cASaveAssignment()" class="crm-btn crm-btn-primary">💾 Simpan Assignment</button>
-                </div>
-                <div id="cACsGrid" class="cs-grid"></div>
-            </div>
-        </div>
-
-        <!-- ── RIWAYAT PANE ── -->
-        <div id="cAPane-riwayat" style="display:none;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <div style="font-size:14px;font-weight:700;color:#475569;">Riwayat assignment kamu</div>
-                <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
-            </div>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
-                <div>
-                    <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">TGL ASSIGN</div>
-                    <input type="date" id="cARiwayatDate" class="crm-input" style="width:160px;">
-                </div>
-                <button onclick="cALoadRiwayat()" class="crm-btn crm-btn-primary" style="height:40px;">🔍 Filter</button>
-                <button onclick="document.getElementById('cARiwayatDate').value='';cALoadRiwayat();" class="crm-btn crm-btn-secondary" style="height:40px;">✖ Reset</button>
-            </div>
-            <div id="cARiwayatContent">
-                <p style="color:#94a3b8;text-align:center;padding:32px;">Klik Riwayat untuk melihat data.</p>
-            </div>
-        </div>
-    </div>
-</section>
 
 <script src="js/shared.js"></script>
 <script>
