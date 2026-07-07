@@ -1393,7 +1393,7 @@
 
             const start = (page - 1) * orderanPageSize;
             let q = sbData.from('all_orderan')
-                .select('id, cs, team, nama, hp, jumlah, resi, pembayaran, created_at')
+                .select('id, cs, team, nama, hp, jumlah, resi, pembayaran, kelurahan, keluhan, created_at')
                 .order('created_at', { ascending: false })
                 .range(start, start + orderanPageSize - 1);
 
@@ -1440,10 +1440,13 @@
             const start = (orderanPage - 1) * orderanPageSize;
 
             const rows = data.map(r => {
-                const tgl = r.created_at
+                const tgl        = r.created_at
                     ? new Date(new Date(r.created_at).getTime() + 7*60*60*1000).toISOString().replace('T',' ').slice(0,16)
                     : '-';
-                const isChecked = orderanSelected.has(r.id);
+                const isChecked  = orderanSelected.has(r.id);
+                const namaBersih = escapeHtml((r.nama || '').split('|')[0].trim() || '-');
+                const promo      = escapeHtml(extractPromo(r.jumlah, r.nama));
+                const assignCRM  = escapeHtml(findAssignedCRM(r.cs, r.jumlah, r.nama, r.created_at));
                 return `
                     <tr style="border-top:1px solid #f1f5f9;${isChecked ? 'background:#fef2f2;' : ''}">
                         <td style="padding:8px 12px;text-align:center;">
@@ -1452,11 +1455,15 @@
                         <td style="padding:8px 12px;font-size:12px;color:#64748b;white-space:nowrap;">${tgl}</td>
                         <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.team || '-')}</td>
                         <td style="padding:8px 12px;font-size:12px;font-weight:600;">${escapeHtml(r.cs || '-')}</td>
-                        <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.nama || '-')}</td>
+                        <td style="padding:8px 12px;font-size:12px;">${namaBersih}</td>
                         <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.hp || '-')}</td>
                         <td style="padding:8px 12px;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(r.jumlah || '')}">${escapeHtml(r.jumlah || '-')}</td>
+                        <td style="padding:8px 12px;font-size:12px;">${promo ? `<span style="background:#fef9c3;color:#92400e;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">${promo}</span>` : '-'}</td>
+                        <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.kelurahan || '-')}</td>
+                        <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.keluhan || '-')}</td>
                         <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.resi || '-')}</td>
                         <td style="padding:8px 12px;font-size:12px;">${escapeHtml(r.pembayaran || '-')}</td>
+                        <td style="padding:8px 12px;font-size:12px;">${assignCRM ? `<span style="background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;">${assignCRM}</span>` : '<span style="color:#cbd5e1;font-size:11px;">—</span>'}</td>
                         <td style="padding:8px 12px;text-align:center;">
                             <button onclick="deleteOneOrderan(${r.id})" class="btn btn-danger btn-small" style="padding:3px 8px;font-size:11px;">Hapus</button>
                         </td>
@@ -1469,6 +1476,7 @@
                 <div style="font-size:13px;color:#64748b;margin-bottom:10px;">
                     Halaman <strong>${orderanPage}</strong> · menampilkan <strong>${data.length}</strong> data
                 </div>
+                <div style="overflow-x:auto;">
                 <table style="width:100%;border-collapse:collapse;font-size:13px;">
                     <thead style="background:#f8fafc;">
                         <tr>
@@ -1481,13 +1489,18 @@
                             <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Nama</th>
                             <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">No. HP</th>
                             <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Jumlah/Produk</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Promo</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Kelurahan</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Keluhan</th>
                             <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Resi</th>
                             <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Pembayaran</th>
+                            <th style="padding:10px 12px;text-align:left;font-weight:700;color:#475569;">Assign CRM</th>
                             <th style="padding:10px 12px;text-align:center;font-weight:700;color:#475569;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
-                </table>`;
+                </table>
+                </div>`;
 
             // Pagination
             let pgBtns = '';
@@ -1546,6 +1559,35 @@
             loadAllOrderan(1);
         }
 
+        // Ekstrak promo dari jumlah (setelah nama SKU)
+        function extractPromo(jumlah, nama) {
+            if (!jumlah) return '';
+            const produk = extractProduk(jumlah, nama);
+            if (!produk) return '';
+            const idx = jumlah.toUpperCase().indexOf(produk.toUpperCase());
+            if (idx === -1) return '';
+            const after = jumlah.slice(idx + produk.length).trim();
+            return after.replace(/^[\s\-\+\|,]+/, '').trim();
+        }
+
+        // Cari CRM yang assign CS ini berdasarkan produk + tanggal order
+        function findAssignedCRM(csName, jumlah, nama, created_at) {
+            if (!csName || !created_at) return '';
+            const produk = extractProduk(jumlah, nama);
+            if (!produk) return '';
+            const orderDate = new Date(new Date(created_at).getTime() + 7*3600*1000).toISOString().slice(0,10);
+            for (const [crmName, aList] of Object.entries(assignmentDates)) {
+                const match = aList.find(a =>
+                    normEq(a.cs, csName) &&
+                    normEq(a.produk, produk) &&
+                    orderDate >= a.dateFrom &&
+                    orderDate <= a.dateTo
+                );
+                if (match) return crmName;
+            }
+            return '';
+        }
+
         function clearOrderanFilter() {
             document.getElementById('orderanDateFrom').value = '';
             document.getElementById('orderanDateTo').value = '';
@@ -1570,7 +1612,7 @@
             try {
                 const { data, error } = await fetchAll((from, to) => {
                     let q = sbData.from('all_orderan')
-                        .select('cs, team, nama, hp, jumlah, resi, pembayaran, total_pembayaran, alamat, kecamatan, kabupaten, provinsi, kodepos, created_at')
+                        .select('cs, team, nama, hp, jumlah, resi, pembayaran, total_pembayaran, alamat, kelurahan, kecamatan, kabupaten, provinsi, kodepos, keluhan, created_at')
                         .order('created_at', { ascending: false })
                         .range(from, to);
                     if (dateFrom) q = q.gte('created_at', new Date(dateFrom + 'T00:00:00+07:00').toISOString());
@@ -1587,19 +1629,23 @@
                     'Tanggal (WIB)': r.created_at
                         ? new Date(new Date(r.created_at).getTime() + 7*3600*1000).toISOString().replace('T',' ').slice(0,16)
                         : '',
-                    'Team':          r.team        || '',
-                    'CS':            r.cs          || '',
-                    'Nama':          r.nama        || '',
-                    'No HP':         r.hp          || '',
-                    'Jumlah/Produk': r.jumlah      || '',
-                    'Resi':          r.resi        || '',
-                    'Pembayaran':    r.pembayaran  || '',
-                    'Total':         r.total_pembayaran || '',
-                    'Alamat':        r.alamat      || '',
-                    'Kecamatan':     r.kecamatan   || '',
-                    'Kabupaten':     r.kabupaten   || '',
-                    'Provinsi':      r.provinsi    || '',
-                    'Kode Pos':      r.kodepos     || '',
+                    'Team':          r.team                                  || '',
+                    'CS':            r.cs                                    || '',
+                    'Assign CRM':    findAssignedCRM(r.cs, r.jumlah, r.nama, r.created_at),
+                    'Nama':          (r.nama || '').split('|')[0].trim()     || '',
+                    'No HP':         r.hp                                    || '',
+                    'Jumlah/Produk': r.jumlah                               || '',
+                    'Promo':         extractPromo(r.jumlah, r.nama),
+                    'Resi':          r.resi                                  || '',
+                    'Pembayaran':    r.pembayaran                            || '',
+                    'Total':         r.total_pembayaran                      || '',
+                    'Kelurahan':     r.kelurahan                             || '',
+                    'Keluhan':       r.keluhan                               || '',
+                    'Alamat':        r.alamat                                || '',
+                    'Kecamatan':     r.kecamatan                             || '',
+                    'Kabupaten':     r.kabupaten                             || '',
+                    'Provinsi':      r.provinsi                              || '',
+                    'Kode Pos':      r.kodepos                               || '',
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(rows);
