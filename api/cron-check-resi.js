@@ -9,18 +9,30 @@ const COURIER_MAP = {
 const ROWS_PER_RUN = 300; // batasi per invocation biar tidak kena timeout serverless
 const CONCURRENCY = 8;
 
-// Heuristik best-effort dari teks history kurir Indonesia — tuning lanjutan
-// kemungkinan perlu setelah lihat sampel data asli.
-function mapTrackingStage({ resi, statusCategory, latestDesc }) {
-  const cat = (statusCategory || '').toUpperCase();
-  const desc = (latestDesc || '').toLowerCase();
+// Sinyal "bermasalah" terstruktur per kurir (bukan tebak kata) — disinkronkan manual dengan js/shared.js:
+// - JNE (via Mengantar): history[].type.group === 'UNDELIVERED' atau type.tag === 'actionRequired'
+// - POS Indonesia: history[].reason_delivery terisi
+// Kurir lain (J&T dkk) belum expose field terstruktur di Mengantar, jadi fallback ke keyword.
+const RETUR_PATTERN   = /retur|dikembalikan|\brts\b|\brto\b|return to sender/i;
+const PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan|alamat tidak (lengkap|dikenal)|tidak ada orang|tidak ditempat|tidak dihuni|menunggu konfirmasi|disimpan di gudang|ditolak|pindah alamat|box undel/i;
 
+// Heuristik best-effort dari sinyal terstruktur + teks history kurir Indonesia — tuning lanjutan
+// kemungkinan masih perlu setelah lihat lebih banyak sampel data asli.
+function mapTrackingStage({ resi, statusCategory, entries }) {
   if (!resi) return 'MENUNGGU_RESI';
-  if (cat.includes('RETUR') || cat.includes('RETURN') || desc.includes('retur') || desc.includes('dikembalikan')) return 'RETUR';
-  if (/gagal|kendala|bermasalah|tidak ditemukan|alamat tidak lengkap|tidak ada orang/.test(desc)) return 'BERMASALAH';
-  if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(desc)) return 'SAMPAI';
-  if (/sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b/.test(desc)) return 'OTW';
-  if (/kota tujuan|gudang tujuan|tiba di kota|received at destination/.test(desc)) return 'KOTA_TUJUAN';
+  const cat = (statusCategory || '').toUpperCase();
+  const arr = Array.isArray(entries) ? entries : [];
+  const latest = arr.length ? arr[arr.length - 1] : null;
+  const latestDesc = (latest && latest.desc || '').toLowerCase();
+
+  if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => RETUR_PATTERN.test(e.desc || ''))) return 'RETUR';
+  if (cat === 'DELIVERED' || /diterima oleh|delivered/.test(latestDesc)) return 'SAMPAI';
+
+  const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
+  if (hasStructuredProblem || arr.some(e => PROBLEM_PATTERN.test(e.desc || ''))) return 'BERMASALAH';
+
+  if (/sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier/.test(latestDesc)) return 'OTW';
+  if (/kota tujuan|gudang tujuan|tiba di kota|received at destination/.test(latestDesc)) return 'KOTA_TUJUAN';
   return 'DIKIRIM';
 }
 
@@ -28,10 +40,15 @@ function normalizeMengantar(json) {
   if (!json || !json.success || !json.data) return null;
   const d = json.data;
   const history = Array.isArray(d.history) ? d.history : [];
-  const latest = history.length ? history[history.length - 1] : null;
+  const entries = history.map(h => ({
+    desc: h.desc || '',
+    group: (h.type && h.type.group) || null,
+    tag: (h.type && h.type.tag) || null,
+    reasonDelivery: null
+  }));
   return {
     statusCategory: d.statusCategory || d.status || '',
-    latestDesc: latest ? (latest.desc || '') : '',
+    entries,
     detail: { history, receiver: d.RECEIVER_NAME || null, city: d.RECEIVER_CITY || null }
   };
 }
@@ -40,11 +57,14 @@ function normalizePos(json) {
   if (!json || !json.success || !json.data) return null;
   const d = json.data;
   const history = Array.isArray(d.connote_history) ? d.connote_history : [];
-  const last = history.length ? history[history.length - 1] : null;
-  const latestDesc = last ? [last.content, last.content2, last.reason_delivery].filter(Boolean).join(' ') : '';
+  const entries = history.map(h => ({
+    desc: [h.content, h.content2].filter(Boolean).join(' '),
+    group: null, tag: null,
+    reasonDelivery: h.reason_delivery || null
+  }));
   return {
     statusCategory: d.connote_state || '',
-    latestDesc,
+    entries,
     detail: { history, receiver: d.connote_receiver_name || null, city: null }
   };
 }
