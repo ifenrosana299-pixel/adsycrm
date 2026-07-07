@@ -845,11 +845,11 @@
                         <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="trStatTotal">0</div></div>
                         <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
                     </div>
-                    <div class="crm-stat tr-stat-clickable" id="trStatCard-ON_PROSES" onclick="trSetFilter('ON_PROSES')">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-ON_PROSES" onclick="trSetFilter('ON_PROSES_GROUP')">
                         <div><div class="crm-stat-label">On Proses</div><div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div></div>
                         <div class="crm-stat-icon" style="background:#DBEAFE;">🔄</div>
                     </div>
-                    <div class="crm-stat tr-stat-clickable" id="trStatCard-UNDEL" onclick="trSetFilter('UNDEL')">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-UNDEL" onclick="trSetFilter('BERMASALAH')">
                         <div><div class="crm-stat-label">Undel</div><div class="crm-stat-value" id="trStatUndel" style="color:#DC2626;">0</div></div>
                         <div class="crm-stat-icon" style="background:#FEE2E2;">⚠️</div>
                     </div>
@@ -857,7 +857,7 @@
                         <div><div class="crm-stat-label">Retur</div><div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div></div>
                         <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
                     </div>
-                    <div class="crm-stat tr-stat-clickable" id="trStatCard-DELIVERY" onclick="trSetFilter('DELIVERY')">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-DELIVERY" onclick="trSetFilter('SAMPAI')">
                         <div><div class="crm-stat-label">Delivery</div><div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div></div>
                         <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
                     </div>
@@ -2195,13 +2195,7 @@
     };
     const TR_AVATAR_PALETTE = ['#4F46E5','#059669','#D97706','#DC2626','#0EA5E9','#7C3AED','#0891B2','#65A30D','#C026D3','#E11D48'];
 
-    // Cardstate = ringkasan 4 kategori buat tab filter & badge (stepper detail tetap 5 tahap)
-    const TR_CARDSTATE_META = {
-        ON_PROSES: { label:'🔄 On Proses', bg:'#DBEAFE', color:'#2563EB' },
-        UNDEL:     { label:'⚠️ Undel',     bg:'#FEE2E2', color:'#DC2626' },
-        RETUR:     { label:'↩️ Retur',     bg:'#FEE2E2', color:'#B91C1C' },
-        DELIVERY:  { label:'✅ Delivery',  bg:'#D1FAE5', color:'#059669' },
-    };
+    // Bucket ringkasan 4 kategori buat angka stat card (Total/On Proses/Undel/Retur/Delivery)
     function trCardState(stage) {
         if (stage === 'SAMPAI')     return 'DELIVERY';
         if (stage === 'RETUR')      return 'RETUR';
@@ -2211,11 +2205,17 @@
 
     const TR_TABS = [
         { key:'SEMUA', label:'Semua' },
-        { key:'ON_PROSES', label:'🔄 On Proses' },
-        { key:'UNDEL', label:'⚠️ Undel' },
+        { key:'MENUNGGU_RESI', label:'⏳ Menunggu Resi' },
+        { key:'DIKIRIM', label:'🚚 Dikirim' },
+        { key:'KOTA_TUJUAN', label:'🏙️ Kota Tujuan' },
+        { key:'OTW', label:'🛵 OTW' },
+        { key:'SAMPAI', label:'✅ Sampai' },
+        { key:'BERMASALAH', label:'⚠️ Bermasalah' },
         { key:'RETUR', label:'↩️ Retur' },
-        { key:'DELIVERY', label:'✅ Delivery' },
     ];
+    // Peta klik stat-card (ringkasan 5 angka) -> filter tab yang sesuai
+    const TR_STAT_CARD_FILTER = { SEMUA:'SEMUA', ON_PROSES:'ON_PROSES_GROUP', UNDEL:'BERMASALAH', RETUR:'RETUR', DELIVERY:'SAMPAI' };
+    const TR_ON_PROSES_STAGES = ['MENUNGGU_RESI','BELUM_DICEK','DIKIRIM','KOTA_TUJUAN','OTW'];
     let trFilterStage  = 'SEMUA';
     let trModalOrderId = null;
 
@@ -2236,8 +2236,8 @@
         document.getElementById('trTabs').innerHTML = TR_TABS.map(t =>
             `<div class="tr-tab ${trFilterStage===t.key?'tr-tab-active':''}" onclick="trSetFilter('${t.key}')">${t.label}</div>`
         ).join('');
-        TR_TABS.forEach(t => {
-            document.getElementById('trStatCard-'+t.key)?.classList.toggle('tr-stat-active', trFilterStage===t.key);
+        Object.entries(TR_STAT_CARD_FILTER).forEach(([cardKey, filterKey]) => {
+            document.getElementById('trStatCard-'+cardKey)?.classList.toggle('tr-stat-active', trFilterStage===filterKey);
         });
         trUpdateStats();
         trApplyFilter();
@@ -2259,7 +2259,12 @@
     function trApplyFilter() {
         const q = (document.getElementById('trSearch').value || '').toLowerCase();
         const list = orders.filter(o => {
-            if (trFilterStage !== 'SEMUA' && trCardState(trEffectiveStage(o)) !== trFilterStage) return false;
+            const stage = trEffectiveStage(o);
+            if (trFilterStage === 'ON_PROSES_GROUP') {
+                if (!TR_ON_PROSES_STAGES.includes(stage)) return false;
+            } else if (trFilterStage !== 'SEMUA' && stage !== trFilterStage) {
+                return false;
+            }
             if (q && !(o.nama?.toLowerCase().includes(q) || o.resi?.toLowerCase().includes(q) || o.produk?.toLowerCase().includes(q))) return false;
             return true;
         });
@@ -2269,22 +2274,23 @@
             : '<div class="tr-card" style="grid-column:1/-1;text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
     }
 
-    function trStepperHtml(stage) {
+    function trStepperHtml(stage, stepOverride) {
         const meta = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const step = stepOverride || meta.step;
         const allDone = stage === 'SAMPAI';
         return `<div class="tr-stepper">${TR_STEP_LABELS.map((label, i) => {
             const idx = i + 1;
             let cls = 'tr-step';
-            if (allDone || idx < meta.step) cls += ' tr-step-done';
-            else if (idx === meta.step) cls += meta.problem ? ' tr-step-problem' : ' tr-step-active';
-            const icon = (allDone || idx < meta.step) ? '✓' : idx;
+            if (allDone || idx < step) cls += ' tr-step-done';
+            else if (idx === step) cls += meta.problem ? ' tr-step-problem' : ' tr-step-active';
+            const icon = (allDone || idx < step) ? '✓' : idx;
             return `<div class="${cls}"><div class="tr-step-line"></div><div class="tr-step-circle">${icon}</div><div class="tr-step-label">${label}</div></div>`;
         }).join('')}</div>`;
     }
 
     function trCardHtml(o) {
         const stage   = trEffectiveStage(o);
-        const meta    = TR_CARDSTATE_META[trCardState(stage)];
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
         const initial = (o.nama || '?').trim().charAt(0).toUpperCase();
         const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
         const repeats  = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
@@ -2309,10 +2315,10 @@
                     ${o.resi ? `<div class="tr-resi">${escapeHtml(o.resi)}${o.ekspedisi ? ' · '+escapeHtml(o.ekspedisi) : ''}</div>` : ''}
                 </div>
             </div>
-            ${trStepperHtml(stage)}
+            ${trStepperHtml(stage, o.status_resi_step)}
             ${repeats.length ? `<div class="tr-repeat-wrap">${repeats.map((r,i) => {
                 const rStage = r.resi ? (TR_STAGE_META[r.status_resi] ? r.status_resi : 'BELUM_DICEK') : 'MENUNGGU_RESI';
-                const rMeta  = TR_CARDSTATE_META[trCardState(rStage)];
+                const rMeta  = TR_STAGE_META[rStage] || TR_STAGE_META.BELUM_DICEK;
                 return `<div class="tr-repeat-row">
                     <span>🔁 Repeat ${i+1} — ${r.tgl||'-'} ${r.resi ? '· '+escapeHtml(r.resi) : ''}</span>
                     <span class="crm-badge" style="background:${rMeta.bg};color:${rMeta.color};">${rMeta.label}</span>
@@ -2329,7 +2335,7 @@
         document.getElementById('trModalSub').textContent = (o.resi ? o.resi + ' · ' : '') + (o.ekspedisi || '');
 
         const stage   = trEffectiveStage(o);
-        const meta    = TR_CARDSTATE_META[trCardState(stage)];
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
         const detail  = o.status_resi_detail || null;
         const history = detail && Array.isArray(detail.history) ? detail.history.slice().reverse() : [];
 
@@ -2347,7 +2353,7 @@
 
         document.getElementById('trModalBody').innerHTML = `
             <div style="margin-top:10px;"><span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span></div>
-            ${trStepperHtml(stage)}
+            ${trStepperHtml(stage, o.status_resi_step)}
             ${historyHtml}
         `;
         document.getElementById('trModal').classList.remove('hidden');
@@ -2362,10 +2368,12 @@
         const result = await checkResiTracking(o.resi, o.ekspedisi);
         if (!result) { alert('Gagal cek resi — pastikan ekspedisi terisi & resi valid.'); return; }
         o.status_resi = result.stage;
+        o.status_resi_step = result.step;
         o.status_resi_updated_at = new Date().toISOString();
         o.status_resi_detail = result.detail;
         await sbApp.from('crm_customers').update({
-            status_resi: o.status_resi, status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+            status_resi: o.status_resi, status_resi_step: o.status_resi_step,
+            status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
         }).eq('id', o.id);
         trOpenDetail(o.id);
         trUpdateStats();
@@ -2385,10 +2393,12 @@
                     const result = await checkResiTracking(o.resi, o.ekspedisi);
                     if (!result) return;
                     o.status_resi = result.stage;
+                    o.status_resi_step = result.step;
                     o.status_resi_updated_at = new Date().toISOString();
                     o.status_resi_detail = result.detail;
                     await sbApp.from('crm_customers').update({
-                        status_resi: o.status_resi, status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+                        status_resi: o.status_resi, status_resi_step: o.status_resi_step,
+                        status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
                     }).eq('id', o.id);
                 }));
                 btn.textContent = `Mengecek... (${Math.min(i+BATCH,targets.length)}/${targets.length})`;
