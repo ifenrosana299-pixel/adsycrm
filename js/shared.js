@@ -224,8 +224,8 @@ const TR_PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan
 const TR_OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|delivery courier|diantar ke alamat|on delivery|1st attempt|2nd attempt|percobaan/i;
 const TR_KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound|sti-dest/i;
 
-function trComputeProgressStep(entries, stage) {
-    if (stage === 'SAMPAI') return 5;
+// Step tertinggi (2-4) yang PERNAH tercapai di seluruh history — bukan cuma entry terakhir.
+function trComputeProgressStep(entries) {
     let step = 2; // resi sudah discan sistem kurir minimal = Dikirim
     (entries || []).forEach(e => {
         const d = (e.desc || '').toLowerCase();
@@ -238,6 +238,8 @@ function trComputeProgressStep(entries, stage) {
 // Heuristik best-effort dari sinyal terstruktur + teks history kurir Indonesia — tuning lanjutan
 // kemungkinan masih perlu setelah lihat lebih banyak sampel data asli. Disinkronkan manual
 // dengan versi Node di api/cron-check-resi.js (tidak ada build step di project ini).
+// Status OTW/Kota Tujuan diturunkan dari step tertinggi yang pernah tercapai (scan seluruh
+// history), BUKAN cuma entry terakhir — supaya konsisten dengan posisi stepper yang ditampilkan.
 // Return { stage, step } — step = posisi tertinggi di stepper 5 tahap yang pernah tercapai.
 function mapTrackingStage({ resi, statusCategory, entries }) {
     if (!resi) return { stage: 'MENUNGGU_RESI', step: 1 };
@@ -245,6 +247,7 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     const arr = Array.isArray(entries) ? entries : [];
     const latest = arr.length ? arr[arr.length - 1] : null;
     const latestDesc = (latest?.desc || '').toLowerCase();
+    const reachedStep = trComputeProgressStep(arr);
 
     let stage;
     if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
@@ -255,15 +258,15 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
         const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
         if (hasStructuredProblem || arr.some(e => TR_PROBLEM_PATTERN.test(e.desc||''))) {
             stage = 'BERMASALAH';
-        } else if (TR_OTW_PATTERN.test(latestDesc)) {
+        } else if (reachedStep >= 4) {
             stage = 'OTW';
-        } else if (TR_KOTA_TUJUAN_PATTERN.test(latestDesc)) {
+        } else if (reachedStep >= 3) {
             stage = 'KOTA_TUJUAN';
         } else {
             stage = 'DIKIRIM';
         }
     }
-    return { stage, step: trComputeProgressStep(arr, stage) };
+    return { stage, step: stage === 'SAMPAI' ? 5 : reachedStep };
 }
 
 function _normalizeMengantar(json) {
