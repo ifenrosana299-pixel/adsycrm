@@ -74,6 +74,9 @@
                 <div id="adminNav-orderan" class="nav-item" onclick="adminShowSection('orderan')">
                     <span class="nav-icon">🗂️</span> All Orderan
                 </div>
+                <div id="adminNav-rekap" class="nav-item" onclick="adminShowSection('rekap')">
+                    <span class="nav-icon">📈</span> Rekap CRM
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <div class="sidebar-username" id="adminUsername"></div>
@@ -295,6 +298,43 @@
                 <div id="orderanPagination" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px;"></div>
             </div>
 
+            <!-- ===== REKAP CRM ===== -->
+            <div id="adminSec-rekap" class="admin-section">
+                <div class="section-header">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <div class="section-title">📈 Rekap CRM</div>
+                            <div class="section-sub">Jumlah pelanggan per CRM per hari, by produk</div>
+                        </div>
+                        <button onclick="downloadRekapExcel()" class="btn btn-success">⬇️ Download Excel (Semua Produk)</button>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Bulan</label>
+                            <input type="month" id="rekapBulan" class="form-input" style="width:160px;">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Produk</label>
+                            <select id="rekapProduk" class="form-select" style="width:180px;">
+                                <option value="">-- Pilih Produk --</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;gap:8px;padding-bottom:1px;">
+                            <button onclick="loadRekap()" class="btn btn-primary">🔍 Tampilkan</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div id="rekapTableWrap" style="overflow-x:auto;">
+                    <p style="color:#94a3b8;text-align:center;padding:32px;">Pilih bulan & produk lalu klik Tampilkan.</p>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -318,7 +358,7 @@
         // ADMIN SIDEBAR NAV
         // =====================
         function adminShowSection(section) {
-            ['dashboard', 'assignment', 'riwayat', 'orderan'].forEach(s => {
+            ['dashboard', 'assignment', 'riwayat', 'orderan', 'rekap'].forEach(s => {
                 const sec = document.getElementById('adminSec-' + s);
                 const nav = document.getElementById('adminNav-' + s);
                 if (sec) sec.style.display = 'none';
@@ -332,6 +372,7 @@
             if (section === 'dashboard') loadDashboard();
             if (section === 'riwayat')   loadRiwayat();
             if (section === 'orderan')   loadAllOrderan();
+            if (section === 'rekap')     initRekap();
         }
 
         // ===== DASHBOARD =====
@@ -1575,6 +1616,226 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = '⬇️ Download Excel';
+            }
+        }
+
+        // =====================
+        // REKAP CRM
+        // =====================
+
+        function initRekap() {
+            // Set default bulan = bulan ini
+            const rekapBulan = document.getElementById('rekapBulan');
+            if (!rekapBulan.value) {
+                const now = new Date();
+                rekapBulan.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            }
+            // Populate produk dropdown dari skuList
+            const sel = document.getElementById('rekapProduk');
+            if (sel.options.length <= 1) {
+                skuList.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.nama_produk.toUpperCase();
+                    opt.textContent = s.nama_produk.toUpperCase();
+                    sel.appendChild(opt);
+                });
+            }
+        }
+
+        async function loadRekap() {
+            const bulan  = document.getElementById('rekapBulan').value;
+            const produk = document.getElementById('rekapProduk').value;
+            const wrap   = document.getElementById('rekapTableWrap');
+
+            if (!bulan)  { alert('Pilih bulan terlebih dahulu!'); return; }
+            if (!produk) { alert('Pilih produk terlebih dahulu!'); return; }
+
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>';
+
+            const [year, month] = bulan.split('-').map(Number);
+            const dateFrom = `${year}-${String(month).padStart(2,'0')}-01`;
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const dateTo   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+
+            const { data, error } = await sbApp.from('crm_customers')
+                .select('crm, tgl')
+                .eq('produk', produk)
+                .gte('tgl', dateFrom)
+                .lte('tgl', dateTo)
+                .not('crm', 'is', null)
+                .not('tgl', 'is', null);
+
+            if (error) { wrap.innerHTML = `<p style="color:#ef4444;text-align:center;padding:32px;">Error: ${error.message}</p>`; return; }
+            if (!data || !data.length) { wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Tidak ada data untuk periode & produk ini.</p>'; return; }
+
+            wrap.innerHTML = buildRekapTable(data, produk, year, month, daysInMonth);
+        }
+
+        function buildRekapPivot(data, year, month, daysInMonth) {
+            // pivot[tgl][crm] = count
+            const pivot = {};
+            const crmSet = new Set();
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const tgl = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                pivot[tgl] = {};
+            }
+
+            data.forEach(r => {
+                const tgl = r.tgl.slice(0,10);
+                const crm = r.crm || '—';
+                crmSet.add(crm);
+                if (!pivot[tgl]) pivot[tgl] = {};
+                pivot[tgl][crm] = (pivot[tgl][crm] || 0) + 1;
+            });
+
+            const crms = [...crmSet].sort();
+            return { pivot, crms };
+        }
+
+        function buildRekapTable(data, produk, year, month, daysInMonth) {
+            const { pivot, crms } = buildRekapPivot(data, year, month, daysInMonth);
+            if (!crms.length) return '<p style="color:#94a3b8;text-align:center;padding:32px;">Tidak ada data.</p>';
+
+            const BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const DAY_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+            // Hitung total per CRM
+            const totalPerCrm = {};
+            crms.forEach(c => { totalPerCrm[c] = 0; });
+
+            const rows = Object.entries(pivot).map(([tgl, crmCounts]) => {
+                const d    = new Date(tgl + 'T00:00:00');
+                const day  = DAY_ID[d.getDay()];
+                const tglNum = parseInt(tgl.slice(8));
+                let rowTotal = 0;
+                const cells = crms.map(crm => {
+                    const val = crmCounts[crm] || 0;
+                    totalPerCrm[crm] += val;
+                    rowTotal += val;
+                    return `<td style="text-align:center;padding:6px 10px;font-size:13px;${val > 0 ? 'font-weight:700;color:#1e293b;' : 'color:#cbd5e1;'}">${val || 0}</td>`;
+                }).join('');
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const rowStyle  = isWeekend ? 'background:#f8fafc;' : '';
+                return `<tr style="border-top:1px solid #f1f5f9;${rowStyle}">
+                    <td style="padding:6px 12px;font-size:13px;white-space:nowrap;color:#475569;font-weight:600;">${tglNum} ${BULAN_ID[month-1].slice(0,3)} <span style="font-size:11px;color:#94a3b8;">${day}</span></td>
+                    ${cells}
+                    <td style="text-align:center;padding:6px 10px;font-size:13px;font-weight:800;color:${rowTotal > 0 ? '#667eea' : '#cbd5e1'};">${rowTotal}</td>
+                </tr>`;
+            }).join('');
+
+            const grandTotal = Object.values(totalPerCrm).reduce((a,b) => a+b, 0);
+            const totalRow = crms.map(c => `<td style="text-align:center;padding:8px 10px;font-size:13px;font-weight:800;color:#667eea;">${totalPerCrm[c]}</td>`).join('');
+
+            return `
+                <div style="margin-bottom:12px;font-weight:800;font-size:15px;color:#1e293b;">
+                    📦 ${produk} — ${BULAN_ID[month-1]} ${year}
+                    <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:12px;">${data.length} pelanggan · ${crms.length} CRM</span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:${100 + crms.length * 90}px;">
+                    <thead style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">
+                        <tr>
+                            <th style="padding:10px 12px;text-align:left;font-weight:700;white-space:nowrap;">Tanggal</th>
+                            ${crms.map(c => `<th style="padding:10px 8px;text-align:center;font-weight:700;white-space:nowrap;">${escapeHtml(c.toUpperCase())}</th>`).join('')}
+                            <th style="padding:10px 8px;text-align:center;font-weight:700;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot style="background:#f8fafc;border-top:2px solid #667eea;">
+                        <tr>
+                            <td style="padding:8px 12px;font-weight:800;font-size:13px;color:#1e293b;">TOTAL</td>
+                            ${totalRow}
+                            <td style="text-align:center;padding:8px 10px;font-size:14px;font-weight:900;color:#667eea;">${grandTotal}</td>
+                        </tr>
+                    </tfoot>
+                </table>`;
+        }
+
+        async function downloadRekapExcel() {
+            const bulan = document.getElementById('rekapBulan').value;
+            if (!bulan) { alert('Pilih bulan terlebih dahulu!'); return; }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ Menyiapkan...';
+
+            const [year, month] = bulan.split('-').map(Number);
+            const daysInMonth   = new Date(year, month, 0).getDate();
+            const dateFrom = `${year}-${String(month).padStart(2,'0')}-01`;
+            const dateTo   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+            const BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const DAY_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+            try {
+                // Ambil semua produk yang ada di bulan ini
+                const { data: allData, error } = await sbApp.from('crm_customers')
+                    .select('crm, tgl, produk')
+                    .gte('tgl', dateFrom)
+                    .lte('tgl', dateTo)
+                    .not('crm', 'is', null)
+                    .not('tgl', 'is', null)
+                    .not('produk', 'is', null);
+
+                if (error) throw error;
+                if (!allData || !allData.length) { alert('Tidak ada data untuk bulan ini.'); return; }
+
+                // Group by produk
+                const byProduk = {};
+                allData.forEach(r => {
+                    const p = r.produk.toUpperCase();
+                    if (!byProduk[p]) byProduk[p] = [];
+                    byProduk[p].push(r);
+                });
+
+                const wb = XLSX.utils.book_new();
+
+                Object.entries(byProduk).sort(([a],[b]) => a.localeCompare(b)).forEach(([produk, rows]) => {
+                    const { pivot, crms } = buildRekapPivot(rows, year, month, daysInMonth);
+
+                    const totalPerCrm = {};
+                    crms.forEach(c => { totalPerCrm[c] = 0; });
+
+                    // Header row
+                    const header = ['Tanggal', ...crms.map(c => c.toUpperCase()), 'TOTAL'];
+                    const sheetRows = [header];
+
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const tgl    = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const dayObj = new Date(tgl + 'T00:00:00');
+                        const label  = `${d} ${BULAN_ID[month-1].slice(0,3)} ${DAY_ID[dayObj.getDay()]}`;
+                        const crmCounts = pivot[tgl] || {};
+                        let rowTotal = 0;
+                        const cells = crms.map(c => {
+                            const v = crmCounts[c] || 0;
+                            totalPerCrm[c] += v;
+                            rowTotal += v;
+                            return v;
+                        });
+                        sheetRows.push([label, ...cells, rowTotal]);
+                    }
+
+                    // Total row
+                    const grandTotal = crms.reduce((s,c) => s + totalPerCrm[c], 0);
+                    sheetRows.push(['TOTAL', ...crms.map(c => totalPerCrm[c]), grandTotal]);
+
+                    const ws = XLSX.utils.aoa_to_sheet(sheetRows);
+
+                    // Column widths
+                    ws['!cols'] = [{ wch: 18 }, ...crms.map(() => ({ wch: 12 })), { wch: 10 }];
+
+                    // Sheet name max 31 chars
+                    const sheetName = produk.slice(0, 31);
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                });
+
+                const filename = `rekap_crm_${BULAN_ID[month-1].toLowerCase()}_${year}.xlsx`;
+                XLSX.writeFile(wb, filename);
+                alert(`✅ Download selesai!\n${Object.keys(byProduk).length} produk · ${BULAN_ID[month-1]} ${year}`);
+            } catch(e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⬇️ Download Excel (Semua Produk)';
             }
         }
 
