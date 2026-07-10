@@ -259,7 +259,12 @@ function trComputeProgressStep(entries) {
         if (_trIsPickupPhase(e)) return;
         const d = (e.desc || '').toLowerCase();
         if (TR_OTW_PATTERN.test(d)) step = Math.max(step, 4);
-        else if (TR_KOTA_TUJUAN_PATTERN.test(d)) step = Math.max(step, 3);
+        // e.atDestination = sinyal terstruktur POS (bandingin kode cabang event vs kode cabang
+        // tujuan order) — teks POS pake "tiba di Cabang X", bukan "tiba di kota" kayak di pattern,
+        // jadi gak kedeteksi kalau cuma andelin regex. Ketauan dari resi asli BAC04072635010ACF3B9:
+        // entry "tiba di Cabang KAB. LUWU TIMUR" di KCP MALILI (nopen 91981, PERSIS destination_nopen
+        // order) itu beneran nyampe cabang tujuan akhir, bukan cuma numpang lewat hub transit.
+        else if (e.atDestination || TR_KOTA_TUJUAN_PATTERN.test(d)) step = Math.max(step, 3);
     });
     return step;
 }
@@ -281,11 +286,11 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     let stage;
     if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
         stage = 'RETUR';
-    } else if (cat === 'DELIVERED' || (/diterima oleh|delivered|\bpod\b/.test(latestDesc) && !_trIsSelfReceipt(latest)) || _trHasReceivedBy(latest)) {
+    } else if (cat === 'DELIVERED' || (/diterima oleh|\bdelivered\b|\bpod\b/.test(latestDesc) && !_trIsSelfReceipt(latest)) || _trHasReceivedBy(latest)) {
         stage = 'SAMPAI';
     } else {
         const hasStructuredProblem = arr.some(e => !_trIsPickupPhase(e) && (e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery));
-        if (hasStructuredProblem || arr.some(e => !_trIsPickupPhase(e) && TR_PROBLEM_PATTERN.test(e.desc||''))) {
+        if (hasStructuredProblem || arr.some(e => !_trIsPickupPhase(e) && !e.isPos && TR_PROBLEM_PATTERN.test(e.desc||''))) {
             stage = 'BERMASALAH';
         } else if (reachedStep >= 4) {
             stage = 'OTW';
@@ -323,9 +328,19 @@ function _normalizePos(json) {
     if (!json || !json.success || !json.data) return null;
     const d = json.data;
     const history = Array.isArray(d.connote_history) ? d.connote_history : [];
+    // reasonDelivery = ANY percobaan antar yang gagal/di-reschedule (field reason_delivery keisi) —
+    // by design langsung dianggep BERMASALAH dari percobaan pertama gagal (keputusan user: biar CS
+    // bisa proaktif follow up ke pembeli, bukan nunggu kurir nyerah total/FAILEDTODELIVERED).
+    // isPos = true -> desc-nya di-skip dari tebak-kata TR_PROBLEM_PATTERN generik (dipinjem dari
+    // kosakata JNE) — soalnya problem POS udah ditentuin murni dari reasonDelivery di atas, gak
+    // perlu tebak dari teks bebas lagi (mencegah jalur lain nyasar kayak "tidak ditempat").
+    // destNopen = kode cabang tujuan akhir order (bukan kprk/hub induk) — dipakai bandingin ke
+    // nopen tiap event INLOCATION buat mastiin "tiba di cabang TUJUAN" vs cuma numpang lewat hub.
+    const destNopen = d.connote_customfield?.destination_nopen || null;
     const entries = history.map(h => ({
         desc: [h.content, h.content2].filter(Boolean).join(' '),
-        group: null, tag: null,
+        group: null, tag: null, isPos: true,
+        atDestination: !!(destNopen && h.state === 'INLOCATION' && h.nopen === destNopen),
         reasonDelivery: h.reason_delivery || null
     }));
     return {
