@@ -224,10 +224,31 @@ const TR_PROBLEM_PATTERN = /gagal|kendala|bermasalah|problematic|tidak ditemukan
 const TR_OTW_PATTERN         = /sedang diantar|dalam pengantaran|out for delivery|kurir menuju|\botw\b|akan dikirim ke alamat penerima|with delivery courier|delivery courier|diantar ke alamat|on delivery|1st attempt|2nd attempt|percobaan/i;
 const TR_KOTA_TUJUAN_PATTERN = /kota tujuan|gudang tujuan|tiba di kota|received at destination|received at warehouse|process and forward|inbound|sti-dest/i;
 
+// Entry fase PICKUP (jemput dari pengirim di kota asal) — kata "gagal"/"percobaan" di fase ini
+// (mis. gagal dijemput, retry penjemputan) soal ambil paket dari toko, BUKAN soal antar ke
+// penerima. Ketauan dari resi Lion asli (C1QSTIEB): "GAGAL DIJEMPUT...PERCOBAAN PENJEMPUTAN
+// ULANG" kepancing regex OTW/Bermasalah padahal paket belum sampai kota tujuan sama sekali.
+function _trIsPickupPhase(e) {
+    return !!(e && e.code && /pickup/i.test(e.code));
+}
+
+// "Diterima oleh X" cuma sinyal SAMPAI kalau X itu PENERIMA, bukan nama counter/kota asal sendiri.
+// Ketauan dari resi J&T asli (JJ6000055580): "Paket telah diterima oleh KULONPROGO" — itu counter
+// cabang asal nerima buat manifest, sama sekali belum dikirim, tapi teksnya identik pola sama
+// "diterima oleh <penerima>" yang beneran delivered.
+function _trIsSelfReceipt(e) {
+    if (!e || !e.place) return false;
+    const m = /diterima oleh\s+(.+)/i.exec(e.descOnly || '');
+    if (!m) return false;
+    const norm = s => (s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return norm(m[1]) === norm(e.place);
+}
+
 // Step tertinggi (2-4) yang PERNAH tercapai di seluruh history — bukan cuma entry terakhir.
 function trComputeProgressStep(entries) {
     let step = 2; // resi sudah discan sistem kurir minimal = Dikirim
     (entries || []).forEach(e => {
+        if (_trIsPickupPhase(e)) return;
         const d = (e.desc || '').toLowerCase();
         if (TR_OTW_PATTERN.test(d)) step = Math.max(step, 4);
         else if (TR_KOTA_TUJUAN_PATTERN.test(d)) step = Math.max(step, 3);
@@ -252,11 +273,11 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     let stage;
     if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
         stage = 'RETUR';
-    } else if (cat === 'DELIVERED' || /diterima oleh|delivered|\bpod\b/.test(latestDesc)) {
+    } else if (cat === 'DELIVERED' || (/diterima oleh|delivered|\bpod\b/.test(latestDesc) && !_trIsSelfReceipt(latest))) {
         stage = 'SAMPAI';
     } else {
-        const hasStructuredProblem = arr.some(e => e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery);
-        if (hasStructuredProblem || arr.some(e => TR_PROBLEM_PATTERN.test(e.desc||''))) {
+        const hasStructuredProblem = arr.some(e => !_trIsPickupPhase(e) && (e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery));
+        if (hasStructuredProblem || arr.some(e => !_trIsPickupPhase(e) && TR_PROBLEM_PATTERN.test(e.desc||''))) {
             stage = 'BERMASALAH';
         } else if (reachedStep >= 4) {
             stage = 'OTW';
@@ -273,8 +294,15 @@ function _normalizeMengantar(json) {
     if (!json || !json.success || !json.data) return null;
     const d = json.data;
     const history = Array.isArray(d.history) ? d.history : [];
-    // Gabung desc + code — beberapa kurir (Lion: "STI-DEST"/"POD"/"DEL") taruh sinyal penting di code, bukan desc
-    const entries = history.map(h => ({ desc: [h.desc, h.code].filter(Boolean).join(' '), group: h.type?.group || null, tag: h.type?.tag || null, reasonDelivery: null }));
+    // Gabung desc + code — beberapa kurir (Lion: "STI-DEST"/"POD"/"DEL") taruh sinyal penting di code, bukan desc.
+    // descOnly/code/place dipisah lagi buat _trIsPickupPhase()/_trIsSelfReceipt() yang butuh field asli.
+    const entries = history.map(h => ({
+        desc: [h.desc, h.code].filter(Boolean).join(' '),
+        descOnly: h.desc || '',
+        code: h.code || null,
+        place: h.counter_name || h.city_name || null,
+        group: h.type?.group || null, tag: h.type?.tag || null, reasonDelivery: null
+    }));
     return {
         statusCategory: d.statusCategory || d.status || '',
         entries,
