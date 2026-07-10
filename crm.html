@@ -3163,23 +3163,64 @@
     }
 
     async function cADeleteById(id) {
-        if (!confirm('Hapus assignment ini?')) return;
+        if (!confirm('Hapus assignment ini?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)')) return;
+        const { data: row } = await sbApp.from('crm_assignments').select('crm_name').eq('id', id).single();
         const { error } = await sbApp.from('crm_assignments').delete().eq('id', id);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
+        if (row?.crm_name) await caPruneOrphanCustomers(row.crm_name);
         await loadAssignments();
         cALoadRiwayat();
     }
 
     async function cADeleteGroup(crmName, dateFrom, dateTo) {
         const periode = dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`;
-        if (!confirm(`Hapus semua assignment periode ${periode}?`)) return;
+        if (!confirm(`Hapus semua assignment periode ${periode}?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)`)) return;
         const { error } = await sbApp.from('crm_assignments').delete()
             .eq('crm_name', crmName)
             .eq('date_from', dateFrom)
             .eq('date_to', dateTo);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
+        await caPruneOrphanCustomers(crmName);
         await loadAssignments();
         cALoadRiwayat();
+    }
+
+    // Hapus row crm_customers milik crmName yang udah gak dicover assignment aktif manapun
+    // (dipanggil abis assignment dihapus, biar Pesanan/Tracking selalu sinkron sama assignment yang beneran aktif).
+    // Assignment dengan produk kosong dianggap "cover semua produk" utk CS+periode itu — sama kayak
+    // logika filter produk di cASyncCustomers.
+    async function caPruneOrphanCustomers(crmName) {
+        const { data: activeAssignments, error: aErr } = await sbApp.from('crm_assignments')
+            .select('cs_name, produk, date_from, date_to')
+            .eq('crm_name', crmName);
+        if (aErr) { console.error('[cA Prune] Gagal load assignment aktif:', aErr); return; }
+
+        const isCovered = (namaCs, produk, tgl) => (activeAssignments || []).some(a =>
+            normEq(a.cs_name, namaCs) &&
+            (!a.produk || normEq(a.produk, produk)) &&
+            tgl >= a.date_from && tgl <= a.date_to
+        );
+
+        let page = 0, hasMore = true, toDelete = [];
+        while (hasMore) {
+            const { data, error } = await sbApp.from('crm_customers')
+                .select('id, nama_cs, produk, tgl')
+                .eq('crm', crmName)
+                .range(page*1000, (page+1)*1000-1);
+            if (error) { console.error('[cA Prune] Gagal load crm_customers:', error); break; }
+            if (data && data.length) {
+                data.forEach(r => { if (!isCovered(r.nama_cs, r.produk, r.tgl)) toDelete.push(r.id); });
+                hasMore = data.length === 1000;
+                page++;
+            } else hasMore = false;
+        }
+
+        if (!toDelete.length) return;
+        for (let i = 0; i < toDelete.length; i += 100) {
+            const { error } = await sbApp.from('crm_customers').delete().in('id', toDelete.slice(i, i+100));
+            if (error) console.error('[cA Prune] Gagal hapus batch', i, error);
+        }
+        console.log('[cA Prune] Hapus', toDelete.length, 'row orphan dari crm_customers untuk', crmName);
     }
 
     // ── Sync orders ke crm_customers ──
