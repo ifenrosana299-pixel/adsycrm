@@ -232,6 +232,14 @@ function _trIsPickupPhase(e) {
     return !!(e && e.code && /pickup/i.test(e.code));
 }
 
+// Field `receiver` di history J&T cuma keisi PAS beneran udah diterima penerima (entry lain
+// selalu kosong) — sinyal lebih reliable daripada tebak kata, soalnya J&T juga punya format
+// "Paket telah diterima" TANPA kata "oleh X" (ketauan dari resi asli JJ6000043832), yang bikin
+// regex "diterima oleh" gak nangkep dan salah kebaca OTW/status lama.
+function _trHasReceivedBy(e) {
+    return !!(e && e.receivedBy);
+}
+
 // "Diterima oleh X" cuma sinyal SAMPAI kalau X itu PENERIMA, bukan nama counter/kota asal sendiri.
 // Ketauan dari resi J&T asli (JJ6000055580): "Paket telah diterima oleh KULONPROGO" — itu counter
 // cabang asal nerima buat manifest, sama sekali belum dikirim, tapi teksnya identik pola sama
@@ -273,7 +281,7 @@ function mapTrackingStage({ resi, statusCategory, entries }) {
     let stage;
     if (cat.includes('RETUR') || cat.includes('RETURN') || arr.some(e => TR_RETUR_PATTERN.test(e.desc||''))) {
         stage = 'RETUR';
-    } else if (cat === 'DELIVERED' || (/diterima oleh|delivered|\bpod\b/.test(latestDesc) && !_trIsSelfReceipt(latest))) {
+    } else if (cat === 'DELIVERED' || (/diterima oleh|delivered|\bpod\b/.test(latestDesc) && !_trIsSelfReceipt(latest)) || _trHasReceivedBy(latest)) {
         stage = 'SAMPAI';
     } else {
         const hasStructuredProblem = arr.some(e => !_trIsPickupPhase(e) && (e.group === 'UNDELIVERED' || e.tag === 'actionRequired' || !!e.reasonDelivery));
@@ -301,6 +309,7 @@ function _normalizeMengantar(json) {
         descOnly: h.desc || '',
         code: h.code || null,
         place: h.counter_name || h.city_name || null,
+        receivedBy: (h.receiver || '').trim() || null,
         group: h.type?.group || null, tag: h.type?.tag || null, reasonDelivery: null
     }));
     return {
