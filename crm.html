@@ -1460,9 +1460,9 @@
             const p = o.produk || extractProduk(o.jumlah, o.nama) || 'Lainnya';
             if (!pm[p]) pm[p] = { total:0, pending:0, delivered:0, cancelled:0 };
             pm[p].total++;
-            if (o.status === 'Pending')   pm[p].pending++;
-            if (o.status === 'Delivered') pm[p].delivered++;
-            if (o.status === 'Cancelled') pm[p].cancelled++;
+            if (o.status_resi === 'SAMPAI') pm[p].delivered++;
+            else if (o.status_resi === 'RETUR') pm[p].cancelled++;
+            else pm[p].pending++;
         });
         const colors = ['#4F46E5','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899'];
         const entries = Object.entries(pm).sort((a,b) => b[1].total - a[1].total);
@@ -2848,7 +2848,7 @@
 
             const { data: rawData, error } = await cAFetchAll((from, to) =>
                 sbData.from('all_orderan').select('cs, jumlah, nama, team')
-                    .ilike('sumber', 'Validasi')
+                    .or('sumber.ilike.Validasi,sumber.eq.cs_input')
                     .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
                     .range(from, to));
             if (error) throw error;

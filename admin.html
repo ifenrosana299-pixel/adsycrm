@@ -395,7 +395,7 @@
 
             const { data, error: dashErr } = await fetchAll((from, to) =>
                 sbData.from('all_orderan').select('cs, jumlah, nama, created_at')
-                    .ilike('sumber', 'Validasi')
+                    .or('sumber.ilike.Validasi,sumber.eq.cs_input')
                     .gte('created_at', dateFrom30UTC).lte('created_at', dateTo30UTC)
                     .range(from, to));
             if (dashErr) { alertEl.innerHTML = ''; return; }
@@ -808,7 +808,7 @@
 
                 const { data: rawData, error } = await fetchAll((from, to) =>
                     sbData.from('all_orderan').select('cs, jumlah, nama, team')
-                        .ilike('sumber', 'Validasi')
+                        .or('sumber.ilike.Validasi,sumber.eq.cs_input')
                         .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
                         .range(from, to));
                 if (error) throw error;
@@ -1072,7 +1072,7 @@
 
             const { data: allOrdersData } = await fetchAll((from, to) =>
                 sbData.from('all_orderan').select('cs, jumlah, nama')
-                    .ilike('sumber', 'Validasi')
+                    .or('sumber.ilike.Validasi,sumber.eq.cs_input')
                     .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
                     .range(from, to));
 
