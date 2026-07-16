@@ -1036,8 +1036,79 @@
 
             <!-- ═══ ULANG TAHUN ═══ -->
             <section id="crmSec-ultah" class="crm-section">
-                <div class="crm-page-title"><div class="crm-page-title-icon">🎂</div><h2>Ulang Tahun</h2></div>
-                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">🎂</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur pengingat ulang tahun pelanggan sedang dikembangkan</div></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">🎂</div>
+                        <h2>Ulang Tahun</h2>
+                    </div>
+                    <button onclick="loadUltah()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="crm-stats-row" style="margin-bottom:16px;">
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-semua" onclick="ultahSetFilter('semua')">
+                        <div><div class="crm-stat-label">Total Data</div><div class="crm-stat-value" id="ultahStatSemua">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">🎂</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-hari" onclick="ultahSetFilter('hari')">
+                        <div><div class="crm-stat-label">Hari Ini</div><div class="crm-stat-value" id="ultahStatHari" style="color:#EF4444;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">🎉</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-minggu" onclick="ultahSetFilter('minggu')">
+                        <div><div class="crm-stat-label">7 Hari ke Depan</div><div class="crm-stat-value" id="ultahStatMinggu" style="color:#F59E0B;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">📅</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-bulan" onclick="ultahSetFilter('bulan')">
+                        <div><div class="crm-stat-label">Bulan Ini</div><div class="crm-stat-value" id="ultahStatBulan" style="color:#6366F1;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📆</div>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="crm-filters" style="margin-bottom:16px;">
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Bulan</label>
+                        <select id="ultahBulanFilter" class="crm-select" onchange="renderUltahTable()">
+                            <option value="0">Semua Bulan</option>
+                            <option value="1">Januari</option><option value="2">Februari</option>
+                            <option value="3">Maret</option><option value="4">April</option>
+                            <option value="5">Mei</option><option value="6">Juni</option>
+                            <option value="7">Juli</option><option value="8">Agustus</option>
+                            <option value="9">September</option><option value="10">Oktober</option>
+                            <option value="11">November</option><option value="12">Desember</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group" style="flex:2;min-width:200px;">
+                        <label class="crm-form-label">Cari</label>
+                        <input type="text" id="ultahSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="renderUltahTable()">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;">
+                        <button onclick="ultahResetFilter()" class="crm-btn crm-btn-secondary">✖ Reset</button>
+                    </div>
+                </div>
+
+                <div id="ultahCount" style="margin-bottom:10px;font-size:12px;color:#9CA3AF;"></div>
+
+                <div class="crm-table-wrap">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama</th>
+                                <th>No HP</th>
+                                <th>Tgl Lahir</th>
+                                <th>Usia</th>
+                                <th>Kab/Kota</th>
+                                <th>CS</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ultahTbody">
+                            <tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="crm-pagination" id="ultahPagination"></div>
             </section>
 
             <!-- ═══ KALENDER ═══ -->
@@ -1404,6 +1475,7 @@
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
+        if (name === 'ultah') loadUltah();
     }
 
     function crmToggleGroup(name) {
@@ -1672,6 +1744,194 @@
         document.getElementById('pelangganTypeFilter').value = '';
         document.getElementById('pelangganCSFilter').value = '';
         renderPelangganTable();
+    }
+
+    // ══════════════════════════════════════════
+    // ULANG TAHUN
+    // ══════════════════════════════════════════
+    let ultahData       = [];   // semua pelanggan dengan tgl_lahir
+    let ultahFiltered   = [];
+    let ultahPage       = 1;
+    const ultahPageSize = 50;
+    let ultahActiveFilter = 'bulan'; // default
+
+    function loadUltah() {
+        if (!orders.length) {
+            document.getElementById('ultahTbody').innerHTML =
+                '<tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>';
+            return;
+        }
+
+        // Dedup by no_hp+nama_cs, hanya yang ada tgl_lahir
+        const seen = new Set();
+        ultahData = [];
+        orders.forEach(o => {
+            if (!o.tgl_lahir) return;
+            const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
+            if (seen.has(key)) return;
+            seen.add(key);
+            ultahData.push(o);
+        });
+
+        // Hitung stat cards
+        const today = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+        let cHari = 0, cMinggu = 0, cBulan = 0;
+
+        ultahData.forEach(o => {
+            const d = new Date(o.tgl_lahir);
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            if (m === todayM) cBulan++;
+            if (m === todayM && day === todayD) cHari++;
+            // 7 hari ke depan (wrap bulan tidak dihandle biar simpel)
+            const thisYear = new Date(today.getFullYear(), m - 1, day);
+            const diff = (thisYear - today) / (1000 * 60 * 60 * 24);
+            if (diff >= 0 && diff <= 7) cMinggu++;
+        });
+
+        document.getElementById('ultahStatSemua').textContent = ultahData.length;
+        document.getElementById('ultahStatHari').textContent  = cHari;
+        document.getElementById('ultahStatMinggu').textContent = cMinggu;
+        document.getElementById('ultahStatBulan').textContent = cBulan;
+
+        // Default filter bulan ini
+        document.getElementById('ultahBulanFilter').value = todayM;
+        ultahActiveFilter = 'bulan';
+        ultahHighlightCard('bulan');
+        renderUltahTable();
+    }
+
+    function ultahSetFilter(type) {
+        ultahActiveFilter = type;
+        ultahHighlightCard(type);
+        const today = new Date();
+
+        if (type === 'hari') {
+            document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        } else if (type === 'minggu' || type === 'semua') {
+            document.getElementById('ultahBulanFilter').value = 0;
+        } else if (type === 'bulan') {
+            document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        }
+        renderUltahTable();
+    }
+
+    function ultahHighlightCard(active) {
+        ['semua','hari','minggu','bulan'].forEach(k => {
+            const card = document.getElementById('ultahCard-' + k);
+            if (card) card.style.outline = k === active ? '2px solid #6366F1' : '';
+        });
+    }
+
+    function ultahResetFilter() {
+        const today = new Date();
+        document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        document.getElementById('ultahSearch').value = '';
+        ultahActiveFilter = 'bulan';
+        ultahHighlightCard('bulan');
+        renderUltahTable();
+    }
+
+    function renderUltahTable() {
+        const bulan  = parseInt(document.getElementById('ultahBulanFilter').value);
+        const q      = (document.getElementById('ultahSearch')?.value || '').toLowerCase();
+        const today  = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+
+        ultahFiltered = ultahData.filter(o => {
+            const d   = new Date(o.tgl_lahir);
+            const m   = d.getMonth() + 1;
+            const day = d.getDate();
+
+            if (ultahActiveFilter === 'hari') {
+                if (m !== todayM || day !== todayD) return false;
+            } else if (ultahActiveFilter === 'minggu') {
+                const thisYear = new Date(today.getFullYear(), m - 1, day);
+                const diff = (thisYear - today) / (1000 * 60 * 60 * 24);
+                if (diff < 0 || diff > 7) return false;
+            } else if (bulan > 0) {
+                if (m !== bulan) return false;
+            }
+
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.no_hp?.includes(q))) return false;
+            return true;
+        });
+
+        // Sort by tanggal lahir di bulan itu (by day)
+        ultahFiltered.sort((a, b) => {
+            const da = new Date(a.tgl_lahir).getDate();
+            const db = new Date(b.tgl_lahir).getDate();
+            return da - db;
+        });
+
+        ultahPage = 1;
+        document.getElementById('ultahCount').textContent = `${ultahFiltered.length} pelanggan`;
+        renderUltahPage();
+    }
+
+    function renderUltahPage() {
+        const tb = document.getElementById('ultahTbody');
+        const today  = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+
+        const total      = ultahFiltered.length;
+        const totalPages = Math.ceil(total / ultahPageSize);
+        const start      = (ultahPage - 1) * ultahPageSize;
+        const slice      = ultahFiltered.slice(start, start + ultahPageSize);
+
+        if (!slice.length) {
+            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada pelanggan dengan ulang tahun di periode ini</td></tr>';
+            document.getElementById('ultahPagination').innerHTML = '';
+            return;
+        }
+
+        const BULAN = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+        const typeColor = { 'Aktif':'#10B981','Pasif':'#F59E0B','Jenuh':'#EF4444' };
+        const typeEmoji = { 'Aktif':'🟢','Pasif':'🟡','Jenuh':'🟠' };
+
+        tb.innerHTML = slice.map((o, i) => {
+            const d      = new Date(o.tgl_lahir);
+            const m      = d.getMonth() + 1;
+            const day    = d.getDate();
+            const year   = d.getFullYear();
+            const usia   = today.getFullYear() - year;
+            const isToday = m === todayM && day === todayD;
+            const tglStr = `${day} ${BULAN[m]} ${year}`;
+            const typeKey = Object.keys(typeEmoji).find(k => (o.type||'').includes(k)) || '';
+            const tc = typeColor[typeKey] || '#9CA3AF';
+
+            return `<tr style="${isToday ? 'background:#FFF7ED;' : ''}">
+                <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
+                <td style="font-weight:600;white-space:nowrap;">
+                    ${isToday ? '<span style="color:#EF4444;font-size:11px;font-weight:700;margin-right:4px;">🎉 HARI INI</span>' : ''}
+                    ${escapeHtml(o.nama || '-')}
+                </td>
+                <td style="font-size:12px;">${escapeHtml(o.no_hp || '-')}</td>
+                <td style="font-size:12px;white-space:nowrap;">${tglStr}</td>
+                <td style="font-size:12px;text-align:center;">${usia} th</td>
+                <td style="font-size:12px;">${escapeHtml(o.kabupaten || '-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.nama_cs || '-')}</td>
+                <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
+            </tr>`;
+        }).join('');
+
+        const pg = document.getElementById('ultahPagination');
+        pg.innerHTML = totalPages > 1 ? `
+            <button onclick="ultahGoPage(${ultahPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${ultahPage===1?'disabled':''}>‹ Prev</button>
+            <span style="font-size:13px;color:#6B7280;">Hal ${ultahPage} / ${totalPages}</span>
+            <button onclick="ultahGoPage(${ultahPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${ultahPage===totalPages?'disabled':''}>Next ›</button>
+        ` : '';
+    }
+
+    function ultahGoPage(pg) {
+        const total = Math.ceil(ultahFiltered.length / ultahPageSize);
+        if (pg < 1 || pg > total) return;
+        ultahPage = pg;
+        renderUltahPage();
     }
 
     let editPelangganId = null;
