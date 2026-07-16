@@ -1374,11 +1374,12 @@
         if (sec) sec.classList.add('crm-sec-active');
         if (el) el.classList.add('crm-active');
 
+        if (name === 'pesanan' && !allOrders.length) loadOrders();
+        if (name === 'dashboard' && !allOrders.length) loadOrders(); else if (name === 'dashboard') renderDashboard();
         if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
-        if (name === 'dashboard') renderDashboard();
     }
 
     function crmToggleGroup(name) {
@@ -3131,6 +3132,7 @@
         });
 
         await cASyncCustomers(Object.values(byPeriod), crmName);
+        await loadOrders();
     }
 
     async function cAUpdateStats() {
