@@ -1514,86 +1514,24 @@
         const tb = document.getElementById('pelangganTbody');
         tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
-        const assignedCS = assignments[currentUser.username] || [];
-        if (!assignedCS.length) {
-            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;">
-                <div style="color:#EF4444;font-weight:700;margin-bottom:8px;">Belum ada assignment CS</div>
-                <div style="color:#9CA3AF;font-size:12px;">Username: <code>${currentUser.username}</code> belum di-assign oleh admin</div>
-            </td></tr>`;
-            return;
-        }
-
         if (!orders.length) {
-            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Klik Sync Data terlebih dahulu.</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
             return;
         }
 
-        // ── 1. Derive unique pelanggan dari orders (source of truth: crm_customer_orders) ──
+        // Hanya pelanggan yang sudah DELIVERED (status_resi = SAMPAI)
+        // Dedup by no_hp + nama_cs — ambil record pertama per pelanggan
         const seen = new Set();
-        const baseList = [];
+        crmCustomers = [];
         orders.forEach(o => {
-            const key = (o.hp || o.nama || '') + '|' + (o.cs || '');
-            if (key && !key.startsWith('|') && !seen.has(key)) {
-                seen.add(key);
-                baseList.push({
-                    nama:    o.nama      || null,
-                    no_hp:   o.hp        || null,
-                    kab:     o.kabupaten || null,
-                    prov:    o.provinsi  || null,
-                    nama_cs: o.cs        || null,
-                    crm:     currentUser.username,
-                });
-            }
+            if (o.status_resi !== 'SAMPAI') return;
+            const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
+            if (key === '|' || seen.has(key)) return;
+            seen.add(key);
+            crmCustomers.push(o);
         });
 
-        // ── 2. Pastikan semua pelanggan dari orders ada di crm_customers (insert only, skip duplikat) ──
-        const batchSize = 100;
-        for (let i = 0; i < baseList.length; i += batchSize) {
-            await sbApp.from('crm_customers')
-                .upsert(baseList.slice(i, i + batchSize), {
-                    onConflict: 'no_hp,nama_cs',
-                    ignoreDuplicates: true
-                });
-        }
-
-        // ── 3. Fetch profile CRM (type, penyakit, interaksi, dll) dari crm_customers ──
-        const orFilter = assignedCS.map(cs => `nama_cs.ilike.${cs.replace(/[,()]/g, '')}`).join(',');
-        let profileData = [], pg = 0, more = true;
-        while (more) {
-            const { data, error } = await sbApp.from('crm_customers')
-                .select('*').or(orFilter)
-                .range(pg * 1000, (pg + 1) * 1000 - 1);
-            if (error) {
-                tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#EF4444;">${error.message}</td></tr>`;
-                return;
-            }
-            if (data && data.length > 0) { profileData = profileData.concat(data); more = data.length === 1000; pg++; }
-            else more = false;
-        }
-
-        // Build lookup: (no_hp|cs) → profile record
-        const profileMap = {};
-        profileData.forEach(p => {
-            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
-            profileMap[key] = p;
-        });
-
-        // ── 4. Merge: list dari orders + profile dari crm_customers ──
-        // Hanya tampilkan pelanggan yang ada di orders (bukan semua isi crm_customers)
-        const orderKeys = new Set(orders.map(o => (o.hp || o.nama || '') + '|' + (o.cs || '')));
-        const all = profileData.filter(p => {
-            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
-            return orderKeys.has(key);
-        });
-
-        if (!all.length) {
-            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data pelanggan</td></tr>`;
-            return;
-        }
-
-        crmCustomers = all;
-
-        const csSet = [...new Set(all.map(c => c.nama_cs).filter(Boolean))].sort();
+        const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
             '<option value="">Semua CS</option>' + csSet.map(c => `<option value="${c}">${c}</option>`).join('');
 
