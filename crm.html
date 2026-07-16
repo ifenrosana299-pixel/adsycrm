@@ -3050,7 +3050,7 @@
                             const isSel = cASelectedCS.includes(key);
                             return `<label class="cs-checkbox ${isSel ? 'selected' : ''}" style="font-size:13px;">
                                 <input type="checkbox" ${isSel ? 'checked' : ''} data-cs="${escapeHtml(csName)}" data-product="${escapeHtml(product)}" onchange="cAToggleCS(this.dataset.cs,this.dataset.product)">
-                                <span>CS ${escapeHtml(csName)}</span>
+                                <span>${escapeHtml(/^cs\s/i.test(csName) ? csName : 'CS ' + csName)}</span>
                             </label>`;
                         }).join('')}
                     </div>
