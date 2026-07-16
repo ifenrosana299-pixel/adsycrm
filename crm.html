@@ -701,7 +701,10 @@
                         <div class="crm-page-title-icon">📋</div>
                         <h2>Pesanan</h2>
                     </div>
-                    <button onclick="loadOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="btnUpdateResiPesanan" onclick="updateResiKosong()" class="crm-btn crm-btn-secondary crm-btn-sm">🔍 Update Resi Kosong</button>
+                        <button onclick="loadOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                    </div>
                 </div>
 
                 <!-- Stats -->
@@ -930,6 +933,7 @@
                         <h2>Pelanggan</h2>
                     </div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="btnUpdateResiPelanggan" onclick="updateResiKosong()" class="crm-btn crm-btn-secondary crm-btn-sm">🔍 Update Resi Kosong</button>
                         <button onclick="showUploadModal()" class="crm-btn crm-btn-primary crm-btn-sm">📤 Upload CSV</button>
                         <button onclick="loadPelanggan()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
                     </div>
@@ -1941,6 +1945,90 @@
         populateFilterDropdowns();
         applyFilters();
         renderDashboard();
+    }
+
+    async function updateResiKosong() {
+        const btn = document.getElementById('btnUpdateResiPesanan');
+        const btn2 = document.getElementById('btnUpdateResiPelanggan');
+        const setBusy = (b) => {
+            if (btn)  { btn.disabled  = b; btn.textContent  = b ? '⏳ Mencari...' : '🔍 Update Resi Kosong'; }
+            if (btn2) { btn2.disabled = b; btn2.textContent = b ? '⏳ Mencari...' : '🔍 Update Resi Kosong'; }
+        };
+        setBusy(true);
+        try {
+            // 1. Ambil semua crm_customers milik CRM ini yang resinya null
+            const { data: nullRows, error: nullErr } = await sbApp
+                .from('crm_customers')
+                .select('id, no_hp, nama_cs, tgl')
+                .eq('crm', currentUser.username)
+                .is('resi', null);
+
+            if (nullErr) { alert('Gagal load data: ' + nullErr.message); return; }
+            if (!nullRows || !nullRows.length) { alert('✅ Semua pesanan sudah ada resi!'); return; }
+
+            // 2. Group by nama_cs untuk batch query ke all_orderan
+            const byCS = {};
+            nullRows.forEach(r => {
+                const key = (r.nama_cs || '').trim().toLowerCase();
+                if (!byCS[key]) byCS[key] = [];
+                byCS[key].push(r);
+            });
+
+            // 3. Build map: `hp|cs_lower|tgl` → resi dari all_orderan
+            const hpResiMap = {};
+            for (const [csKey, rows] of Object.entries(byCS)) {
+                const csName = rows[0].nama_cs;
+                const tglsSorted = [...new Set(rows.map(r => r.tgl))].sort();
+                const dateFrom = new Date(tglsSorted[0] + 'T00:00:00+07:00').toISOString();
+                const dateTo   = new Date(tglsSorted[tglsSorted.length - 1] + 'T23:59:59+07:00').toISOString();
+
+                const { data: aoData } = await sbData
+                    .from('all_orderan')
+                    .select('hp, resi, created_at')
+                    .ilike('cs', csName)
+                    .gte('created_at', dateFrom)
+                    .lte('created_at', dateTo)
+                    .not('resi', 'is', null)
+                    .neq('resi', '');
+
+                (aoData || []).forEach(o => {
+                    if (!o.resi) return;
+                    const tglWIB = new Date(new Date(o.created_at).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+                    const mapKey = (o.hp || '').trim() + '|' + csKey + '|' + tglWIB;
+                    if (!hpResiMap[mapKey]) hpResiMap[mapKey] = o.resi;
+                });
+            }
+
+            // 4. Cocokkan dengan nullRows, update yang ketemu resinya
+            const toUpdate = [];
+            nullRows.forEach(r => {
+                const csKey  = (r.nama_cs || '').trim().toLowerCase();
+                const mapKey = (r.no_hp   || '').trim() + '|' + csKey + '|' + r.tgl;
+                const resi   = hpResiMap[mapKey];
+                if (resi) toUpdate.push({ id: r.id, resi });
+            });
+
+            if (!toUpdate.length) {
+                alert(`Dicek ${nullRows.length} pesanan tanpa resi — belum ada resi baru di sistem.`);
+                return;
+            }
+
+            let done = 0;
+            for (const { id, resi } of toUpdate) {
+                const { error } = await sbApp.from('crm_customers').update({ resi }).eq('id', id);
+                if (!error) done++;
+            }
+
+            alert(`✅ ${done} pesanan berhasil diisi resinya dari total ${nullRows.length} yang kosong!`);
+            await loadOrders();
+            if (typeof loadPelanggan === 'function') await loadPelanggan();
+
+        } catch (e) {
+            console.error('[UpdateResi]', e);
+            alert('Terjadi error: ' + e.message);
+        } finally {
+            setBusy(false);
+        }
     }
 
     function populateFilterDropdowns() {
