@@ -939,6 +939,30 @@
                     </div>
                 </div>
 
+                <!-- Stat Cards -->
+                <div class="crm-stats-row" style="margin-bottom:16px;">
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-SEMUA" onclick="pelangganSetFilter('')">
+                        <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="pelStatTotal">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">👥</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Aktif" onclick="pelangganSetFilter('Aktif')">
+                        <div><div class="crm-stat-label">Aktif</div><div class="crm-stat-value" id="pelStatAktif" style="color:#10B981;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">🟢</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Pasif" onclick="pelangganSetFilter('Pasif')">
+                        <div><div class="crm-stat-label">Pasif</div><div class="crm-stat-value" id="pelStatPasif" style="color:#F59E0B;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">🟡</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Jenuh" onclick="pelangganSetFilter('Jenuh')">
+                        <div><div class="crm-stat-label">Jenuh</div><div class="crm-stat-value" id="pelStatJenuh" style="color:#EF4444;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">🟠</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-kosong" onclick="pelangganSetFilter('kosong')">
+                        <div><div class="crm-stat-label">Belum diisi</div><div class="crm-stat-value" id="pelStatKosong" style="color:#9CA3AF;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#F3F4F6;">❓</div>
+                    </div>
+                </div>
+
                 <!-- Filter bar -->
                 <div class="crm-filters" style="margin-bottom:16px;">
                     <div class="crm-form-group" style="flex:2;min-width:200px;">
@@ -1538,15 +1562,48 @@
         renderPelangganTable();
     }
 
+    function pelangganSetFilter(val) {
+        const sel = document.getElementById('pelangganTypeFilter');
+        if (!sel) return;
+        sel.value = val === 'kosong' ? '' : val;
+        // simpan flag kosong di dataset supaya renderPelangganTable bisa baca
+        sel.dataset.kosong = val === 'kosong' ? '1' : '';
+        renderPelangganTable();
+    }
+
     function renderPelangganTable() {
         const q    = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
-        const type = document.getElementById('pelangganTypeFilter')?.value || '';
+        const sel  = document.getElementById('pelangganTypeFilter');
+        const type = sel?.value || '';
+        const filterKosong = sel?.dataset?.kosong === '1';
         const cs   = document.getElementById('pelangganCSFilter')?.value || '';
+
+        // Update stat cards
+        const counts = { Aktif: 0, Pasif: 0, Jenuh: 0, kosong: 0 };
+        crmCustomers.forEach(c => {
+            const t = Object.keys(counts).find(k => k !== 'kosong' && (c.type||'').includes(k));
+            if (t) counts[t]++; else counts.kosong++;
+        });
+        document.getElementById('pelStatTotal').textContent  = crmCustomers.length;
+        document.getElementById('pelStatAktif').textContent  = counts.Aktif;
+        document.getElementById('pelStatPasif').textContent  = counts.Pasif;
+        document.getElementById('pelStatJenuh').textContent  = counts.Jenuh;
+        document.getElementById('pelStatKosong').textContent = counts.kosong;
+
+        // Active card highlight
+        const activeFilter = filterKosong ? 'kosong' : (type || 'SEMUA');
+        ['SEMUA','Aktif','Pasif','Jenuh','kosong'].forEach(k => {
+            const card = document.getElementById('pelStatCard-' + k);
+            if (card) card.style.outline = (k === activeFilter) ? '2px solid #6366F1' : '';
+        });
 
         filteredCustomers = crmCustomers.filter(c => {
             if (q && !(c.nama?.toLowerCase().includes(q) || c.no_hp?.includes(q))) return false;
-            if (type && !(c.type || '').includes(type)) return false;
-            if (cs   && !normEq(c.nama_cs, cs)) return false;
+            if (filterKosong) {
+                const hasType = ['Aktif','Pasif','Jenuh'].some(k => (c.type||'').includes(k));
+                if (hasType) return false;
+            } else if (type && !(c.type || '').includes(type)) return false;
+            if (cs && !normEq(c.nama_cs, cs)) return false;
             return true;
         });
 
