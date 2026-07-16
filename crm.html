@@ -933,7 +933,6 @@
                         <h2>Pelanggan</h2>
                     </div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                        <button id="btnUpdateResiPelanggan" onclick="updateResiKosong()" class="crm-btn crm-btn-secondary crm-btn-sm">🔍 Update Resi Kosong</button>
                         <button onclick="showUploadModal()" class="crm-btn crm-btn-primary crm-btn-sm">📤 Upload CSV</button>
                         <button onclick="loadPelanggan()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
                     </div>
@@ -979,13 +978,16 @@
                         </select>
                     </div>
                     <div class="crm-form-group">
+                        <label class="crm-form-label">Produk</label>
+                        <select id="pelangganProdukFilter" class="crm-select" onchange="renderPelangganTable()">
+                            <option value="">Semua Produk</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
                         <label class="crm-form-label">CS</label>
                         <select id="pelangganCSFilter" class="crm-select" onchange="renderPelangganTable()">
                             <option value="">Semua CS</option>
                         </select>
-                    </div>
-                    <div style="display:flex;align-items:flex-end;">
-                        <button onclick="resetPelangganFilter()" class="crm-btn crm-btn-secondary">✖ Reset</button>
                     </div>
                 </div>
 
@@ -1082,9 +1084,6 @@
                         <label class="crm-form-label">Cari</label>
                         <input type="text" id="ultahSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="renderUltahTable()">
                     </div>
-                    <div style="display:flex;align-items:flex-end;">
-                        <button onclick="ultahResetFilter()" class="crm-btn crm-btn-secondary">✖ Reset</button>
-                    </div>
                 </div>
 
                 <div id="ultahCount" style="margin-bottom:10px;font-size:12px;color:#9CA3AF;"></div>
@@ -1098,13 +1097,14 @@
                                 <th>No HP</th>
                                 <th>Tgl Lahir</th>
                                 <th>Usia</th>
+                                <th>Produk</th>
                                 <th>Kab/Kota</th>
                                 <th>CS</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="ultahTbody">
-                            <tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                            <tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1400,6 +1400,7 @@
                     <option value="READ">READ</option>
                     <option value="CENTANG 2">CENTANG 2</option>
                     <option value="NO RESPON">NO RESPON</option>
+                    <option value="BLOKIR">BLOKIR</option>
                 </select>
             </div>
             <div>
@@ -1631,6 +1632,10 @@
         document.getElementById('pelangganCSFilter').innerHTML =
             '<option value="">Semua CS</option>' + csSet.map(c => `<option value="${c}">${c}</option>`).join('');
 
+        const produkSet = [...new Set(crmCustomers.map(c => c.produk).filter(Boolean))].sort();
+        document.getElementById('pelangganProdukFilter').innerHTML =
+            '<option value="">Semua Produk</option>' + produkSet.map(p => `<option value="${p}">${p}</option>`).join('');
+
         renderPelangganTable();
     }
 
@@ -1644,11 +1649,12 @@
     }
 
     function renderPelangganTable() {
-        const q    = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
-        const sel  = document.getElementById('pelangganTypeFilter');
-        const type = sel?.value || '';
+        const q      = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
+        const sel    = document.getElementById('pelangganTypeFilter');
+        const type   = sel?.value || '';
         const filterKosong = sel?.dataset?.kosong === '1';
-        const cs   = document.getElementById('pelangganCSFilter')?.value || '';
+        const cs     = document.getElementById('pelangganCSFilter')?.value || '';
+        const produk = document.getElementById('pelangganProdukFilter')?.value || '';
 
         // Update stat cards
         const counts = { Aktif: 0, Pasif: 0, Jenuh: 0, kosong: 0 };
@@ -1676,6 +1682,7 @@
                 if (hasType) return false;
             } else if (type && !(c.type || '').includes(type)) return false;
             if (cs && !normEq(c.nama_cs, cs)) return false;
+            if (produk && !normEq(c.produk, produk)) return false;
             return true;
         });
 
@@ -1705,7 +1712,7 @@
             const tc = typeColor[typeKey] || '#9CA3AF';
             const interaksiColor = {
                 'RESPON BAIK':'#10B981', 'READ':'#F59E0B',
-                'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444'
+                'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444', 'BLOKIR':'#111827'
             }[c.interaksi_terakhir] || '#9CA3AF';
 
             return `<tr>
@@ -1758,7 +1765,7 @@
     function loadUltah() {
         if (!orders.length) {
             document.getElementById('ultahTbody').innerHTML =
-                '<tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>';
+                '<tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>';
             return;
         }
 
@@ -1884,7 +1891,7 @@
         const slice      = ultahFiltered.slice(start, start + ultahPageSize);
 
         if (!slice.length) {
-            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada pelanggan dengan ulang tahun di periode ini</td></tr>';
+            tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada pelanggan dengan ulang tahun di periode ini</td></tr>';
             document.getElementById('ultahPagination').innerHTML = '';
             return;
         }
@@ -1913,6 +1920,7 @@
                 <td style="font-size:12px;">${escapeHtml(o.no_hp || '-')}</td>
                 <td style="font-size:12px;white-space:nowrap;">${tglStr}</td>
                 <td style="font-size:12px;text-align:center;">${usia} th</td>
+                <td style="font-size:12px;font-weight:600;color:#6366F1;">${escapeHtml(o.produk || '-')}</td>
                 <td style="font-size:12px;">${escapeHtml(o.kabupaten || '-')}</td>
                 <td style="font-size:12px;">${escapeHtml(o.nama_cs || '-')}</td>
                 <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
