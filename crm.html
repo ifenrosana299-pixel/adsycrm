@@ -1636,8 +1636,8 @@
 
         try {
         if (!allOrders.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data pesanan...</td></tr>`;
-            await loadOrders();
+            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>`;
+            if (ordersReady) await ordersReady; else await loadOrders();
         }
         if (!allOrders.length) {
             tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan.</td></tr>`;
@@ -1949,7 +1949,7 @@
         // Load orders & skuList jika belum ada
         if (!allOrders.length) {
             wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>';
-            await loadOrders();
+            if (ordersReady) await ordersReady; else await loadOrders();
         }
         if (!skuList.length) await loadSkuList();
 
@@ -4175,6 +4175,8 @@
     }
 
     // ── INIT ──
+    let ordersReady = null; // promise — biar loadPelanggan/loadMemberTier tinggal tunggu
+
     window.onload = async function() {
         await initSupabase();
         await loadSkuList();
@@ -4190,8 +4192,8 @@
         cADrpInit();
 
         await loadAssignments();
-        await loadOrders();
-
+        ordersReady = loadOrders(); // fire — tidak di-await, jalan di background
+        await ordersReady;
     };
 
     // ════════════════════════════════════════
