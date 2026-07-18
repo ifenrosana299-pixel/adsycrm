@@ -1614,6 +1614,7 @@
         const tb = document.getElementById('pelangganTbody');
         tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
+        try {
         if (!orders.length) {
             tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
             return;
@@ -1631,22 +1632,53 @@
             sampaiOrders.push(o);
         });
 
-        // Fetch status_resi_detail hanya untuk record SAMPAI (jauh lebih sedikit)
-        const sampaiIds = sampaiOrders.map(o => o.id);
-        const detailMap = {};
-        if (sampaiIds.length) {
-            // Batch per 500 ID
-            for (let i = 0; i < sampaiIds.length; i += 500) {
-                const batch = sampaiIds.slice(i, i + 500);
-                const { data: dRows } = await sbApp.from('crm_customers')
-                    .select('id,status_resi_detail')
-                    .in('id', batch);
-                if (dRows) dRows.forEach(r => { detailMap[r.id] = r.status_resi_detail; });
-            }
-        }
+        if (!sampaiOrders.length) {
+            crmCustomers = [];
+        } else {
+            // Pisahkan: yang sudah ada tgl_delivered vs yang belum
+            const needsDetail = sampaiOrders.filter(o => !o.tgl_delivered);
 
-        // Merge status_resi_detail ke sampaiOrders
-        crmCustomers = sampaiOrders.map(o => ({ ...o, status_resi_detail: detailMap[o.id] || null }));
+            const detailMap = {};
+            if (needsDetail.length) {
+                // Fetch status_resi_detail hanya untuk yang belum punya tgl_delivered
+                const needIds = needsDetail.map(o => o.id);
+                for (let i = 0; i < needIds.length; i += 500) {
+                    const batch = needIds.slice(i, i + 500);
+                    const { data: dRows, error: dErr } = await sbApp.from('crm_customers')
+                        .select('id,status_resi_detail')
+                        .in('id', batch);
+                    if (dErr) { console.warn('status_resi_detail fetch error:', dErr.message); }
+                    if (dRows) dRows.forEach(r => { detailMap[r.id] = r.status_resi_detail; });
+                }
+
+                // Extract tgl_delivered dari history dan simpan ke DB (fire & forget)
+                const toUpdate = [];
+                needsDetail.forEach(o => {
+                    const history = detailMap[o.id]?.history;
+                    if (!Array.isArray(history) || !history.length) return;
+                    const raw = history[history.length - 1]?.date || '';
+                    if (!raw) return;
+                    const tgl_delivered = raw.slice(0, 10);
+                    detailMap['_tgl_' + o.id] = tgl_delivered;
+                    toUpdate.push({ id: o.id, tgl_delivered });
+                });
+
+                if (toUpdate.length) {
+                    (async () => {
+                        for (let i = 0; i < toUpdate.length; i += 200) {
+                            await sbApp.from('crm_customers')
+                                .upsert(toUpdate.slice(i, i + 200), { onConflict: 'id' });
+                        }
+                    })();
+                }
+            }
+
+            // Gabungkan: yang sudah ada tgl_delivered langsung pakai, yang baru extract dari history
+            crmCustomers = sampaiOrders.map(o => ({
+                ...o,
+                tgl_delivered: o.tgl_delivered || detailMap['_tgl_' + o.id] || null,
+            }));
+        }
 
         const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
@@ -1657,6 +1689,11 @@
             '<option value="">Semua Produk</option>' + produkSet.map(p => `<option value="${p}">${p}</option>`).join('');
 
         renderPelangganTable();
+        } catch(err) {
+            console.error('loadPelanggan error:', err);
+            document.getElementById('pelangganTbody').innerHTML =
+                `<tr><td colspan="14" style="text-align:center;padding:48px;color:#EF4444;">Error: ${err.message}</td></tr>`;
+        }
     }
 
     function pelangganSetFilter(val) {
@@ -1736,15 +1773,7 @@
             }[c.interaksi_terakhir] || '#9CA3AF';
 
             const tglOrder = c.tgl ? fmtTanggalShort(c.tgl) : '—';
-            const deliveredDateStr = (() => {
-                const history = c.status_resi_detail?.history;
-                if (Array.isArray(history) && history.length) {
-                    const last = history[history.length - 1];
-                    const raw = last.date || '';
-                    if (raw) return raw.slice(0, 10);
-                }
-                return null;
-            })();
+            const deliveredDateStr = c.tgl_delivered || null;
             const tglDelivered = deliveredDateStr ? fmtTanggalShort(deliveredDateStr) : '—';
 
             const potensiRepeatHtml = (() => {
@@ -2247,8 +2276,8 @@
         document.getElementById('crmTbody').innerHTML = '<tr><td colspan="16" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
         let page = 0, hasMore = true;
-        // Tidak select status_resi_detail (JSON besar) — di-fetch terpisah di loadPelanggan
-        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,qty,total_cod,keluhan,repeat_orders,tgl,kabupaten,provinsi,status_resi,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
+        // Tidak select status_resi_detail (JSON besar) — di-fetch terpisah di loadPelanggan hanya jika tgl_delivered belum ada
+        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,qty,total_cod,keluhan,repeat_orders,tgl,tgl_delivered,kabupaten,provinsi,status_resi,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
         while (hasMore) {
             const { data, error } = await sbApp.from('crm_customers')
                 .select(ORDERS_COLS)
