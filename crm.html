@@ -1635,8 +1635,12 @@
         tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
         try {
-        if (!orders.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
+        if (!allOrders.length) {
+            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data pesanan...</td></tr>`;
+            await loadOrders();
+        }
+        if (!allOrders.length) {
+            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan.</td></tr>`;
             return;
         }
 
