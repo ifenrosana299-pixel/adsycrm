@@ -77,6 +77,9 @@
                 <div id="adminNav-rekap" class="nav-item" onclick="adminShowSection('rekap')">
                     <span class="nav-icon">📈</span> Rekap CRM
                 </div>
+                <div id="adminNav-produkConfig" class="nav-item" onclick="adminShowSection('produkConfig')">
+                    <span class="nav-icon">⚙️</span> Konfigurasi Produk
+                </div>
             </nav>
             <div class="sidebar-footer">
                 <div class="sidebar-username" id="adminUsername"></div>
@@ -335,6 +338,26 @@
                 </div>
             </div>
 
+            <!-- ===== KONFIGURASI PRODUK ===== -->
+            <div id="adminSec-produkConfig" class="admin-section">
+                <div class="section-header">
+                    <div class="section-title">⚙️ Konfigurasi Produk</div>
+                    <div class="section-sub">Atur durasi pemakaian per produk untuk kalkulasi Potensi Repeat Order pelanggan</div>
+                </div>
+                <div class="card">
+                    <p style="color:#94a3b8;font-size:13px;margin-bottom:16px;">
+                        <strong>Durasi (hari)</strong> = berapa hari 1 box produk habis dipakai. Potensi Repeat = Tgl Delivered + (Qty × Durasi).
+                    </p>
+                    <div id="produkConfigWrap">
+                        <p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>
+                    </div>
+                    <div style="margin-top:16px;">
+                        <button onclick="saveProdukConfig()" class="btn btn-success">💾 Simpan Semua</button>
+                        <span id="produkConfigMsg" style="margin-left:12px;font-size:13px;color:#10B981;"></span>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -358,7 +381,7 @@
         // ADMIN SIDEBAR NAV
         // =====================
         function adminShowSection(section) {
-            ['dashboard', 'assignment', 'riwayat', 'orderan', 'rekap'].forEach(s => {
+            ['dashboard', 'assignment', 'riwayat', 'orderan', 'rekap', 'produkConfig'].forEach(s => {
                 const sec = document.getElementById('adminSec-' + s);
                 const nav = document.getElementById('adminNav-' + s);
                 if (sec) sec.style.display = 'none';
@@ -369,10 +392,11 @@
             if (activeSection) activeSection.style.display = 'block';
             if (activeNav)     activeNav.classList.add('nav-active');
 
-            if (section === 'dashboard') loadDashboard();
-            if (section === 'riwayat')   loadRiwayat();
-            if (section === 'orderan')   loadAllOrderan();
-            if (section === 'rekap')     initRekap();
+            if (section === 'dashboard')   loadDashboard();
+            if (section === 'riwayat')     loadRiwayat();
+            if (section === 'orderan')     loadAllOrderan();
+            if (section === 'rekap')       initRekap();
+            if (section === 'produkConfig') loadProdukConfig();
         }
 
         // ===== DASHBOARD =====
@@ -1007,7 +1031,7 @@
                                 return `
                                     <label class="cs-checkbox ${isSelected ? 'selected' : ''}" style="font-size: 13px;">
                                         <input type="checkbox" ${isSelected ? 'checked' : ''} data-cs="${escapeHtml(csName)}" data-product="${escapeHtml(product)}" onchange="toggleCS(this.dataset.cs, this.dataset.product)">
-                                        <span>CS ${escapeHtml(csName)}</span>
+                                        <span>${escapeHtml(/^cs\s/i.test(csName) ? csName : 'CS ' + csName)}</span>
                                     </label>
                                 `;
                             }).join('')}
@@ -2130,6 +2154,93 @@
             if (aDrpViewMonth>11){aDrpViewMonth=0;aDrpViewYear++;}
             if (aDrpViewMonth<0) {aDrpViewMonth=11;aDrpViewYear--;}
             aDrpMakeCalendar();
+        }
+
+        // =====================
+        // KONFIGURASI PRODUK
+        // =====================
+        let produkConfigData = [];
+
+        async function loadProdukConfig() {
+            const wrap = document.getElementById('produkConfigWrap');
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>';
+
+            const { data, error } = await sbData.from('sku_produk')
+                .select('id, kode, nama_produk, durasi_hari')
+                .order('nama_produk');
+
+            if (error || !data) {
+                wrap.innerHTML = `<p style="color:#ef4444;">Gagal memuat: ${error?.message}</p>`;
+                return;
+            }
+
+            produkConfigData = data;
+
+            wrap.innerHTML = `
+                <table class="data-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th>Kode</th>
+                            <th style="width:180px;">Durasi 1 Box (hari)</th>
+                            <th style="width:200px;color:#9CA3AF;font-weight:400;font-size:12px;">Contoh: qty=2 → 2×durasi hari</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(p => `
+                            <tr>
+                                <td style="font-weight:600;">${escapeHtml(p.nama_produk)}</td>
+                                <td style="color:#9CA3AF;font-size:12px;">${escapeHtml(p.kode)}</td>
+                                <td>
+                                    <input type="number" min="1" max="365"
+                                        id="durasi_${p.id}"
+                                        value="${p.durasi_hari || ''}"
+                                        placeholder="belum diatur"
+                                        class="form-input" style="width:120px;text-align:center;">
+                                </td>
+                                <td style="font-size:12px;color:#9CA3AF;">
+                                    ${p.durasi_hari ? `Potensi repeat ~${p.durasi_hari} hari setelah terima` : '—'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function saveProdukConfig() {
+            const msg = document.getElementById('produkConfigMsg');
+            msg.textContent = 'Menyimpan...';
+            msg.style.color = '#9CA3AF';
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const p of produkConfigData) {
+                const input = document.getElementById('durasi_' + p.id);
+                if (!input) continue;
+                const val = input.value.trim();
+                const durasi = val === '' ? null : parseInt(val);
+
+                const { error } = await sbData.from('sku_produk')
+                    .update({ durasi_hari: durasi })
+                    .eq('id', p.id);
+
+                if (error) errorCount++;
+                else successCount++;
+            }
+
+            if (errorCount === 0) {
+                msg.textContent = `✅ ${successCount} produk berhasil disimpan!`;
+                msg.style.color = '#10B981';
+                // Reload skuList global supaya crm.html bisa pakai
+                skuList = [];
+                await loadSkuList();
+            } else {
+                msg.textContent = `⚠️ ${successCount} berhasil, ${errorCount} gagal.`;
+                msg.style.color = '#F59E0B';
+            }
+            setTimeout(() => { msg.textContent = ''; }, 3000);
         }
     </script>
 </body>
