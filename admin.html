@@ -2183,21 +2183,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.map(p => `
-                            <tr id="produkRow_${p.id}">
+                        ${data.map((p, idx) => `
+                            <tr id="produkRow_${idx}">
                                 <td style="font-weight:600;">${escapeHtml(p.nama_produk)}</td>
                                 <td style="color:#9CA3AF;font-size:12px;">${escapeHtml(p.kode)}</td>
                                 <td>
                                     <input type="number" min="1" max="365"
-                                        id="durasi_${p.id}"
+                                        id="durasi_${idx}"
                                         value="${p.durasi_hari || ''}"
                                         placeholder="belum diatur"
                                         class="form-input" style="width:110px;text-align:center;"
-                                        onkeydown="if(event.key==='Enter') saveProdukRow(${p.id})">
+                                        onkeydown="if(event.key==='Enter') saveProdukRow(${idx})">
                                 </td>
                                 <td>
-                                    <button onclick="saveProdukRow(${p.id})" class="btn btn-success btn-sm" id="saveBtn_${p.id}" style="font-size:12px;padding:4px 12px;">Simpan</button>
-                                    <span id="saveMsg_${p.id}" style="margin-left:8px;font-size:12px;"></span>
+                                    <button onclick="saveProdukRow(${idx})" class="btn btn-success btn-sm" id="saveBtn_${idx}" style="font-size:12px;padding:4px 12px;">Simpan</button>
+                                    <span id="saveMsg_${idx}" style="margin-left:8px;font-size:12px;"></span>
                                 </td>
                             </tr>
                         `).join('')}
@@ -2206,11 +2206,11 @@
             `;
         }
 
-        async function saveProdukRow(id) {
-            const btn = document.getElementById('saveBtn_' + id);
-            const msg = document.getElementById('saveMsg_' + id);
-            const input = document.getElementById('durasi_' + id);
-            if (!input) return;
+        async function saveProdukRow(idx) {
+            const btn = document.getElementById('saveBtn_' + idx);
+            const msg = document.getElementById('saveMsg_' + idx);
+            const input = document.getElementById('durasi_' + idx);
+            if (!input || !produkConfigData[idx]) return;
 
             btn.disabled = true;
             btn.textContent = '...';
@@ -2218,10 +2218,11 @@
 
             const val = input.value.trim();
             const durasi = val === '' ? null : parseInt(val);
+            const p = produkConfigData[idx];
 
             const { error } = await sbData.from('sku_produk')
                 .update({ durasi_hari: durasi })
-                .eq('id', id);
+                .eq('id', p.id);
 
             btn.disabled = false;
             btn.textContent = 'Simpan';
@@ -2232,10 +2233,7 @@
             } else {
                 msg.textContent = '✅ Tersimpan';
                 msg.style.color = '#10B981';
-                // Update local data
-                const p = produkConfigData.find(x => x.id === id);
-                if (p) p.durasi_hari = durasi;
-                // Reload skuList global
+                p.durasi_hari = durasi;
                 skuList = [];
                 await loadSkuList();
             }
