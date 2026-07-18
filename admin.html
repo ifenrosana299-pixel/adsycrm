@@ -2292,9 +2292,13 @@
         }
 
         async function saveProdukModal() {
-            if (produkEditIdx === null) return;
+            if (produkEditIdx === null) { alert('Debug: produkEditIdx null'); return; }
             const p = produkConfigData[produkEditIdx];
+            if (!p) { alert('Debug: produk data tidak ditemukan'); return; }
+            if (!p.id) { alert('Debug: p.id kosong — ' + JSON.stringify(p)); return; }
+
             const btn = document.getElementById('produkModalSaveBtn');
+            if (!btn) { alert('Debug: tombol simpan tidak ditemukan'); return; }
 
             const durasi      = parseInt(document.getElementById('modalDurasi').value) || null;
             const silverMin   = parseInt(document.getElementById('modalSilverMin').value) || null;
@@ -2305,19 +2309,23 @@
             btn.disabled = true;
             btn.textContent = 'Menyimpan...';
 
-            const { error } = await sbData.from('sku_produk').update({
+            console.log('[saveProdukModal] update id:', p.id, { durasi, silverMin, goldMin, platinumMin, diamondMin });
+
+            const { data: updData, error } = await sbData.from('sku_produk').update({
                 durasi_hari:       durasi,
                 tier_silver_min:   silverMin,
                 tier_gold_min:     goldMin,
                 tier_platinum_min: platinumMin,
                 tier_diamond_min:  diamondMin,
-            }).eq('id', p.id);
+            }).eq('id', p.id).select();
+
+            console.log('[saveProdukModal] result:', updData, error);
 
             btn.disabled = false;
             btn.textContent = 'Simpan';
 
             if (error) {
-                alert('Gagal simpan: ' + error.message);
+                alert('Gagal simpan: ' + error.message + '\nCode: ' + error.code);
                 return;
             }
 
