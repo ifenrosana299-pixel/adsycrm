@@ -2091,9 +2091,9 @@
                 <td style="color:#9ca3af;font-size:12px;">${start + i + 1}</td>
                 <td style="font-weight:600;">${escapeHtml(c.nama || '—')}${namaBadge}</td>
                 <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
-                <td style="text-align:center;color:#94a3b8;">—</td>
-                <td style="text-align:center;color:#94a3b8;">—</td>
-                <td style="text-align:center;color:#94a3b8;">—</td>
+                <td style="text-align:center;font-weight:600;color:${c.point != null ? '#4F46E5' : '#94a3b8'};">${c.point != null ? c.point : '—'}</td>
+                <td style="text-align:center;font-size:12px;color:${c.tgl_redeem ? '#374151' : '#94a3b8'};">${c.tgl_redeem ? fmtDate(c.tgl_redeem) : '—'}</td>
+                <td style="text-align:center;font-weight:600;color:${c.total_point_diredeem ? '#374151' : '#94a3b8'};">${c.total_point_diredeem || '—'}</td>
                 <td style="text-align:center;color:#374151;">${fmtDate(lastTgl)}</td>
                 <td style="text-align:center;font-weight:600;color:${totalBox ? '#1e293b' : '#94a3b8'};">${totalBox ? totalBox + ' box' : '—'}</td>
                 <td style="position:sticky;right:0;background:white;z-index:1;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">
@@ -2218,10 +2218,13 @@
         if (error) { alert('Gagal simpan: ' + error.message); return; }
 
         // Update local data
-        const c = crmCustomers.find(x => x.id === pointModalId) || allOrders.find(x => x.id === pointModalId);
-        if (c) { c.tgl_redeem = tglRedeem; c.total_point_diredeem = totalRedeem; }
+        [crmCustomers, allOrders, tierCurrentList].forEach(arr => {
+            const c = arr.find(x => x.id === pointModalId);
+            if (c) { c.tgl_redeem = tglRedeem; c.total_point_diredeem = totalRedeem; }
+        });
 
         closePointModal();
+        renderMemberTierPage();
     }
 
     let ultahData       = [];   // semua pelanggan dengan tgl_lahir
