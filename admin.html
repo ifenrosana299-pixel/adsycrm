@@ -2178,8 +2178,8 @@
                         <tr>
                             <th>Produk</th>
                             <th>Kode</th>
-                            <th style="width:160px;">Durasi 1 Box (hari)</th>
-                            <th style="width:120px;"></th>
+                            <th style="width:140px;">Durasi 1 Box</th>
+                            <th style="width:130px;"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2187,17 +2187,23 @@
                             <tr id="produkRow_${idx}">
                                 <td style="font-weight:600;">${escapeHtml(p.nama_produk)}</td>
                                 <td style="color:#9CA3AF;font-size:12px;">${escapeHtml(p.kode)}</td>
-                                <td>
+                                <td id="durasi_view_${idx}" style="font-size:14px;color:${p.durasi_hari ? '#1e293b' : '#94a3b8'};">
+                                    ${p.durasi_hari ? `<strong>${p.durasi_hari}</strong> hari` : '—'}
+                                </td>
+                                <td id="durasi_edit_${idx}" style="display:none;">
                                     <input type="number" min="1" max="365"
                                         id="durasi_${idx}"
                                         value="${p.durasi_hari || ''}"
-                                        placeholder="belum diatur"
-                                        class="form-input" style="width:110px;text-align:center;"
-                                        onkeydown="if(event.key==='Enter') saveProdukRow(${idx})">
+                                        placeholder="isi hari..."
+                                        class="form-input" style="width:100px;text-align:center;"
+                                        onkeydown="if(event.key==='Enter') saveProdukRow(${idx}); if(event.key==='Escape') cancelProdukEdit(${idx})">
                                 </td>
-                                <td>
-                                    <button onclick="saveProdukRow(${idx})" class="btn btn-success btn-sm" id="saveBtn_${idx}" style="font-size:12px;padding:4px 12px;">Simpan</button>
-                                    <span id="saveMsg_${idx}" style="margin-left:8px;font-size:12px;"></span>
+                                <td id="durasi_actions_${idx}">
+                                    <button onclick="startProdukEdit(${idx})" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>
+                                </td>
+                                <td id="durasi_save_${idx}" style="display:none;white-space:nowrap;">
+                                    <button onclick="saveProdukRow(${idx})" class="btn btn-success btn-sm" id="saveBtn_${idx}" style="font-size:12px;padding:4px 12px;">💾 Simpan</button>
+                                    <button onclick="cancelProdukEdit(${idx})" class="btn btn-sm" style="font-size:12px;padding:4px 10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;margin-left:4px;">Batal</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -2206,15 +2212,30 @@
             `;
         }
 
+        function startProdukEdit(idx) {
+            document.getElementById('durasi_view_' + idx).style.display = 'none';
+            document.getElementById('durasi_edit_' + idx).style.display = '';
+            document.getElementById('durasi_actions_' + idx).style.display = 'none';
+            document.getElementById('durasi_save_' + idx).style.display = '';
+            document.getElementById('durasi_' + idx).focus();
+        }
+
+        function cancelProdukEdit(idx) {
+            const p = produkConfigData[idx];
+            document.getElementById('durasi_' + idx).value = p.durasi_hari || '';
+            document.getElementById('durasi_edit_' + idx).style.display = 'none';
+            document.getElementById('durasi_save_' + idx).style.display = 'none';
+            document.getElementById('durasi_view_' + idx).style.display = '';
+            document.getElementById('durasi_actions_' + idx).style.display = '';
+        }
+
         async function saveProdukRow(idx) {
             const btn = document.getElementById('saveBtn_' + idx);
-            const msg = document.getElementById('saveMsg_' + idx);
             const input = document.getElementById('durasi_' + idx);
             if (!input || !produkConfigData[idx]) return;
 
             btn.disabled = true;
-            btn.textContent = '...';
-            msg.textContent = '';
+            btn.textContent = '⏳ Menyimpan...';
 
             const val = input.value.trim();
             const durasi = val === '' ? null : parseInt(val);
@@ -2225,19 +2246,32 @@
                 .eq('id', p.id);
 
             btn.disabled = false;
-            btn.textContent = 'Simpan';
+            btn.textContent = '💾 Simpan';
 
             if (error) {
-                msg.textContent = '❌ Gagal';
-                msg.style.color = '#EF4444';
+                btn.textContent = '❌ Gagal — coba lagi';
+                btn.style.background = '#FEE2E2';
+                btn.style.color = '#EF4444';
+                setTimeout(() => { btn.textContent = '💾 Simpan'; btn.style.background = ''; btn.style.color = ''; }, 2500);
             } else {
-                msg.textContent = '✅ Tersimpan';
-                msg.style.color = '#10B981';
                 p.durasi_hari = durasi;
+                // Update view
+                const viewCell = document.getElementById('durasi_view_' + idx);
+                viewCell.innerHTML = durasi ? `<strong>${durasi}</strong> hari` : '—';
+                viewCell.style.color = durasi ? '#1e293b' : '#94a3b8';
+                // Kembali ke view mode
+                document.getElementById('durasi_edit_' + idx).style.display = 'none';
+                document.getElementById('durasi_save_' + idx).style.display = 'none';
+                document.getElementById('durasi_view_' + idx).style.display = '';
+                const actBtn = document.getElementById('durasi_actions_' + idx);
+                actBtn.style.display = '';
+                actBtn.innerHTML = '<span style="font-size:12px;color:#10B981;margin-right:8px;">✅ Tersimpan</span><button onclick="startProdukEdit(' + idx + ')" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>';
+                setTimeout(() => {
+                    actBtn.innerHTML = '<button onclick="startProdukEdit(' + idx + ')" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>';
+                }, 2500);
                 skuList = [];
                 await loadSkuList();
             }
-            setTimeout(() => { msg.textContent = ''; }, 2500);
         }
     </script>
 </body>
