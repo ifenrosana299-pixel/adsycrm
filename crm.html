@@ -2089,13 +2089,16 @@
 
             return `<tr>
                 <td style="color:#9ca3af;font-size:12px;">${start + i + 1}</td>
-                <td style="font-weight:600;cursor:pointer;" onclick="openPelangganDetail(${c.id})"><span style="color:#4F46E5;">${escapeHtml(c.nama || '—')}</span>${namaBadge}</td>
+                <td style="font-weight:600;">${escapeHtml(c.nama || '—')}${namaBadge}</td>
                 <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
                 <td style="text-align:center;color:#374151;">${fmtDate(lastTgl)}</td>
                 <td style="text-align:center;font-weight:600;color:${totalBox ? '#1e293b' : '#94a3b8'};">${totalBox ? totalBox + ' box' : '—'}</td>
+                <td style="position:sticky;right:0;background:white;z-index:1;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">
+                    <button onclick="openPointModal(${c.id})" class="crm-btn crm-btn-secondary crm-btn-sm">🎁 Point</button>
+                </td>
             </tr>`;
         }).join('');
 
@@ -2144,6 +2147,7 @@
                         <th style="text-align:center;">Total Point Diredeem</th>
                         <th style="text-align:center;">Last Order</th>
                         <th style="text-align:center;">Jumlah BOX Repeat</th>
+                        <th style="position:sticky;right:0;background:#F1F5F9;z-index:2;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">Aksi</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
@@ -2170,6 +2174,25 @@
         tierPageSize = parseInt(val);
         tierPage = 1;
         renderMemberTierPage();
+    }
+
+    function openPointModal(id) {
+        const c = crmCustomers.find(x => x.id === id) || allOrders.find(x => x.id === id);
+        if (!c) return;
+        const m = TIER_META[memberTierActive];
+        const modal = document.getElementById('pointModal');
+        document.getElementById('pointModalName').textContent   = c.nama || '—';
+        document.getElementById('pointModalNomer').textContent  = c.no_hp || '—';
+        document.getElementById('pointModalTier').textContent   = m.label;
+        document.getElementById('pointModalTier').style.color   = m.color;
+        document.getElementById('pointModalPoint').textContent  = c.point ?? '—';
+        document.getElementById('pointModalTglRedeem').textContent    = c.tgl_redeem || '—';
+        document.getElementById('pointModalTotalRedeem').textContent  = c.total_point_diredeem ?? '—';
+        modal.style.display = 'flex';
+    }
+
+    function closePointModal() {
+        document.getElementById('pointModal').style.display = 'none';
     }
 
     let ultahData       = [];   // semua pelanggan dengan tgl_lahir
@@ -4608,5 +4631,40 @@
         loadTestimoni();
     }
 </script>
+
+<!-- ═══ POINT MODAL ═══ -->
+<div id="pointModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;" onclick="if(event.target===this)closePointModal()">
+    <div style="background:white;border-radius:20px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+            <div>
+                <div style="font-size:18px;font-weight:800;color:#1e293b;" id="pointModalName">—</div>
+                <div style="font-size:13px;color:#94a3b8;margin-top:2px;" id="pointModalNomer">—</div>
+                <div style="margin-top:6px;font-size:12px;font-weight:700;" id="pointModalTier">—</div>
+            </div>
+            <button onclick="closePointModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;padding:4px;">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border-radius:12px;">
+                <div style="font-size:13px;color:#64748b;font-weight:500;">🎯 Point Saat Ini</div>
+                <div style="font-size:20px;font-weight:800;color:#4F46E5;" id="pointModalPoint">—</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border-radius:12px;">
+                <div style="font-size:13px;color:#64748b;font-weight:500;">📅 Tanggal Redeem Terakhir</div>
+                <div style="font-size:14px;font-weight:600;color:#374151;" id="pointModalTglRedeem">—</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f8fafc;border-radius:12px;">
+                <div style="font-size:13px;color:#64748b;font-weight:500;">🎁 Total Point Diredeem</div>
+                <div style="font-size:14px;font-weight:600;color:#374151;" id="pointModalTotalRedeem">—</div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;padding:12px 16px;background:#FEF3C7;border-radius:10px;">
+            <div style="font-size:12px;color:#92400e;">⚙️ Sistem point otomatis akan aktif setelah konfigurasi selesai. Saat ini semua nilai masih —</div>
+        </div>
+
+        <button onclick="closePointModal()" class="crm-btn crm-btn-secondary" style="width:100%;margin-top:16px;padding:10px;">Tutup</button>
+    </div>
+</div>
 </body>
 </html>
