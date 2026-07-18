@@ -1784,9 +1784,10 @@
                     (s.kode || '').toUpperCase() === produkKey
                 );
                 if (!sku || !sku.durasi_hari) return '<span style="color:#9CA3AF;font-size:12px;">Durasi belum diatur</span>';
-                const qty = c.qty || 1;
+                const qty = parseInt(c.qty) || 1;
                 const totalHari = qty * sku.durasi_hari;
-                const repeatDate = new Date(deliveredDateStr);
+                const repeatDate = new Date(deliveredDateStr + 'T00:00:00');
+                if (isNaN(repeatDate)) return '<span style="color:#9CA3AF;font-size:12px;">—</span>';
                 repeatDate.setDate(repeatDate.getDate() + totalHari);
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const diff = Math.ceil((repeatDate - today) / (1000 * 60 * 60 * 24));
