@@ -130,7 +130,7 @@ function escapeHtml(str) {
 async function loadSkuList() {
     if (skuList.length) return;
     try {
-        const { data } = await sbData.from('sku_produk').select('kode,nama_produk');
+        const { data } = await sbData.from('sku_produk').select('kode,nama_produk,durasi_hari');
         skuList = data || [];
     } catch(_) { skuList = []; }
 }
