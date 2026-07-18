@@ -1371,15 +1371,15 @@
         const seen = new Set();
         const baseList = [];
         orders.forEach(o => {
-            const key = (o.hp || o.nama || '') + '|' + (o.cs || '');
+            const key = (o.no_hp || o.nama || '') + '|' + (o.nama_cs || '');
             if (key && !key.startsWith('|') && !seen.has(key)) {
                 seen.add(key);
                 baseList.push({
                     nama:    o.nama      || null,
-                    no_hp:   o.hp        || null,
+                    no_hp:   o.no_hp     || null,
                     kab:     o.kabupaten || null,
                     prov:    o.provinsi  || null,
-                    nama_cs: o.cs        || null,
+                    nama_cs: o.nama_cs   || null,
                     crm:     currentUser.username,
                 });
             }
@@ -1419,7 +1419,7 @@
 
         // ── 4. Merge: list dari orders + profile dari crm_customers ──
         // Hanya tampilkan pelanggan yang ada di orders (bukan semua isi crm_customers)
-        const orderKeys = new Set(orders.map(o => (o.hp || o.nama || '') + '|' + (o.cs || '')));
+        const orderKeys = new Set(orders.map(o => (o.no_hp || o.nama || '') + '|' + (o.nama_cs || '')));
         const all = profileData.filter(p => {
             const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
             return orderKeys.has(key);
