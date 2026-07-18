@@ -1498,6 +1498,17 @@
         if (isNaN(d)) return str;
         return `${d.getDate()} ${IDN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
     }
+    // Normalize DD-MM-YYYY → YYYY-MM-DD (format dari kurir Mengantar)
+    function normDateISO(str) {
+        if (!str) return null;
+        const s = String(str).slice(0, 10);
+        if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+            const [d, m, y] = s.split('-');
+            return `${y}-${m}-${d}`;
+        }
+        return s; // sudah YYYY-MM-DD
+    }
+
     function fmtTanggalShort(str) {
         if (!str) return '—';
         const d = new Date(str + 'T00:00:00');
@@ -1658,7 +1669,7 @@
                     if (!Array.isArray(history) || !history.length) return;
                     const raw = history[history.length - 1]?.date || '';
                     if (!raw) return;
-                    const tgl_delivered = raw.slice(0, 10);
+                    const tgl_delivered = normDateISO(raw);
                     detailMap['_tgl_' + o.id] = tgl_delivered;
                     toUpdate.push({ id: o.id, tgl_delivered });
                 });
@@ -1773,7 +1784,7 @@
             }[c.interaksi_terakhir] || '#9CA3AF';
 
             const tglOrder = c.tgl ? fmtTanggalShort(c.tgl) : '—';
-            const deliveredDateStr = c.tgl_delivered || null;
+            const deliveredDateStr = normDateISO(c.tgl_delivered);
             const tglDelivered = deliveredDateStr ? fmtTanggalShort(deliveredDateStr) : '—';
 
             const potensiRepeatHtml = (() => {
