@@ -2173,17 +2173,11 @@
 
             produkConfigData = data;
 
-            const tierBadge = (p) => {
-                if (!p.tier_silver_min) return '<span style="color:#94a3b8;font-size:12px;">—</span>';
-                const s = p.tier_silver_min, g = p.tier_gold_min, pl = p.tier_platinum_min, d = p.tier_diamond_min;
-                const badges = [
-                    `<span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;">B</span>`,
-                    s  ? `<span style="font-size:10px;font-weight:700;color:#475569;background:#e2e8f0;padding:2px 6px;border-radius:4px;">S≥${s}</span>` : '',
-                    g  ? `<span style="font-size:10px;font-weight:700;color:#92400e;background:#fde68a;padding:2px 6px;border-radius:4px;">G≥${g}</span>` : '',
-                    pl ? `<span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:2px 6px;border-radius:4px;">P≥${pl}</span>` : '',
-                    d  ? `<span style="font-size:10px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:2px 6px;border-radius:4px;">D≥${d}</span>` : '',
-                ];
-                return `<div style="display:flex;gap:3px;flex-wrap:wrap;">${badges.filter(Boolean).join('')}</div>`;
+            const tierCell = (val, color, bg, label) => {
+                if (!val) return `<td style="text-align:center;color:#cbd5e1;font-size:12px;">—</td>`;
+                return `<td style="text-align:center;">
+                    <span style="display:inline-block;font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 8px;border-radius:6px;">≥${val}</span>
+                </td>`;
             };
 
             wrap.innerHTML = `
@@ -2192,8 +2186,12 @@
                         <tr>
                             <th>Produk</th>
                             <th>Kode</th>
-                            <th style="width:130px;">Durasi 1 Box</th>
-                            <th style="width:100px;">Tier Member</th>
+                            <th style="width:110px;">Durasi 1 Box</th>
+                            <th style="width:70px;text-align:center;color:#92400e;">🥉 Bronze</th>
+                            <th style="width:70px;text-align:center;color:#475569;">🥈 Silver</th>
+                            <th style="width:70px;text-align:center;color:#b45309;">🥇 Gold</th>
+                            <th style="width:70px;text-align:center;color:#6d28d9;">💎 Platinum</th>
+                            <th style="width:70px;text-align:center;color:#0369a1;">👑 Diamond</th>
                             <th style="width:80px;"></th>
                         </tr>
                     </thead>
@@ -2205,7 +2203,11 @@
                                 <td style="font-size:14px;color:${p.durasi_hari ? '#1e293b' : '#94a3b8'};">
                                     ${p.durasi_hari ? `<strong>${p.durasi_hari}</strong> hari` : '—'}
                                 </td>
-                                <td>${tierBadge(p)}</td>
+                                <td style="text-align:center;"><span style="font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;padding:3px 8px;border-radius:6px;">${p.tier_silver_min ? '0–'+(p.tier_silver_min-1) : '—'}</span></td>
+                                ${tierCell(p.tier_silver_min, '#475569', '#e2e8f0', 'S')}
+                                ${tierCell(p.tier_gold_min, '#92400e', '#fde68a', 'G')}
+                                ${tierCell(p.tier_platinum_min, '#6d28d9', '#ede9fe', 'P')}
+                                ${tierCell(p.tier_diamond_min, '#0369a1', '#e0f2fe', 'D')}
                                 <td>
                                     <button onclick="openProdukModal(${idx})" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
