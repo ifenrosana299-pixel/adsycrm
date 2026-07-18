@@ -1718,9 +1718,15 @@
             }[c.interaksi_terakhir] || '#9CA3AF';
 
             const tglOrder = c.tgl ? fmtTanggalShort(c.tgl) : '—';
-            const tglDelivered = c.status_resi_updated_at
-                ? fmtTanggalShort(new Date(new Date(c.status_resi_updated_at).getTime() + 7*3600*1000).toISOString().slice(0,10))
-                : '—';
+            const tglDelivered = (() => {
+                const history = c.status_resi_detail?.history;
+                if (Array.isArray(history) && history.length) {
+                    const last = history[history.length - 1];
+                    const raw = last.date || '';
+                    if (raw) return fmtTanggalShort(raw.slice(0, 10));
+                }
+                return '—';
+            })();
 
             return `<tr>
                 <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
