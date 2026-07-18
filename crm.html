@@ -320,6 +320,67 @@
         /* Badge */
         .crm-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
 
+        /* Tracking Resi */
+        .tr-stat-clickable { cursor:pointer; transition:box-shadow .15s, transform .15s; }
+        .tr-stat-clickable:hover { box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+        .tr-stat-clickable.tr-stat-active { box-shadow:0 0 0 2px #4F46E5 inset; }
+        .tr-tabs { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+        .tr-tab {
+            padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700;
+            background:white; color:#6B7280; border:1.5px solid #E5E7EB; cursor:pointer;
+            display:inline-flex; align-items:center; gap:6px; transition:all .15s; white-space:nowrap;
+        }
+        .tr-tab:hover { border-color:#C7D2FE; }
+        .tr-tab.tr-tab-active { background:#4F46E5; color:white; border-color:#4F46E5; }
+        .tr-toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+        .tr-search-wrap { flex:1; min-width:220px; margin-left:auto; }
+        .tr-count { font-size:12px; font-weight:700; color:#9CA3AF; white-space:nowrap; }
+
+        #trList { display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:14px; align-items:start; }
+        .tr-card {
+            background:white; border-radius:16px; padding:18px 22px;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; transition:box-shadow .15s;
+        }
+        .tr-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.10); }
+        .tr-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+        .tr-card-left { display:flex; gap:12px; align-items:flex-start; min-width:0; }
+        .tr-avatar {
+            width:40px; height:40px; border-radius:50%; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center;
+            color:white; font-weight:800; font-size:15px;
+        }
+        .tr-name { font-size:14px; font-weight:700; color:#111827; }
+        .tr-phone { font-size:12px; color:#6B7280; margin-top:1px; }
+        .tr-meta { display:flex; gap:6px; align-items:center; margin-top:6px; flex-wrap:wrap; }
+        .tr-produk { font-size:12px; color:#6B7280; margin-top:6px; }
+        .tr-price { font-size:15px; font-weight:800; color:#111827; text-align:right; white-space:nowrap; }
+        .tr-date  { font-size:11px; color:#9CA3AF; text-align:right; margin-top:2px; white-space:nowrap; }
+        .tr-resi  { font-size:11px; font-weight:700; color:#4B5563; background:#F3F4F6; padding:3px 9px; border-radius:6px; margin-top:6px; display:inline-block; }
+
+        .tr-stepper { display:flex; align-items:flex-start; margin-top:16px; max-width:520px; }
+        .tr-step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; }
+        .tr-step-circle {
+            width:22px; height:22px; border-radius:50%; background:#E5E7EB; color:#9CA3AF;
+            display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
+            z-index:1;
+        }
+        .tr-step-label { font-size:10.5px; color:#9CA3AF; margin-top:6px; font-weight:600; white-space:nowrap; }
+        .tr-step-line { position:absolute; top:11px; left:50%; width:100%; height:2px; background:#E5E7EB; z-index:0; }
+        .tr-step:last-child .tr-step-line { display:none; }
+        .tr-step-done .tr-step-circle { background:#10B981; color:white; }
+        .tr-step-done .tr-step-label { color:#10B981; }
+        .tr-step-done .tr-step-line { background:#10B981; }
+        .tr-step-active .tr-step-circle { background:#4F46E5; color:white; }
+        .tr-step-active .tr-step-label { color:#4F46E5; font-weight:800; }
+        .tr-step-problem .tr-step-circle { background:#DC2626; color:white; }
+        .tr-step-problem .tr-step-label { color:#DC2626; font-weight:800; }
+
+        .tr-repeat-wrap { margin-top:10px; padding-top:10px; border-top:1px dashed #E5E7EB; }
+        .tr-repeat-row { font-size:11.5px; color:#6B7280; padding:5px 0; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+
+        .tr-history-item { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #F3F4F6; align-items:flex-start; }
+        .tr-history-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+
         /* Toolbar */
         .crm-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
         .crm-toolbar-right { margin-left: auto; font-size: 13px; font-weight: 600; color: #6366F1; }
@@ -437,6 +498,9 @@
             <div class="crm-nav-label">Data Utama</div>
             <div class="crm-nav-item" id="crmNavItem-pesanan" onclick="crmShow('pesanan', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span> Pesanan
+            </div>
+            <div class="crm-nav-item" id="crmNavItem-trackingResi" onclick="crmShow('trackingResi', this)">
+                <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> Tracking Resi
             </div>
             <div class="crm-nav-item" id="crmNavItem-produk" onclick="crmShow('produk', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span> Produk
@@ -637,7 +701,10 @@
                         <div class="crm-page-title-icon">📋</div>
                         <h2>Pesanan</h2>
                     </div>
-                    <button onclick="loadOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="btnUpdateResiPesanan" onclick="updateResiKosong()" class="crm-btn crm-btn-secondary crm-btn-sm">🔍 Update Resi Kosong</button>
+                        <button onclick="loadOrders()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                    </div>
                 </div>
 
                 <!-- Stats -->
@@ -765,6 +832,84 @@
                 <div class="crm-pagination" id="crmPagination"></div>
             </section>
 
+            <!-- ═══ TRACKING RESI ═══ -->
+            <section id="crmSec-trackingResi" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">📦</div>
+                        <h2>Tracking Resi</h2>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div class="drp-wrap">
+                            <button class="drp-trigger" onclick="trDrpToggle()" id="trDrp-trigger">
+                                <span class="drp-icon">📅</span>
+                                <span id="trDrp-label">Bulan Ini</span>
+                                <span style="color:#9CA3AF;">▾</span>
+                            </button>
+                            <div class="drp-dropdown" id="trDrp-dropdown" style="left:auto;right:0;">
+                                <div class="drp-presets">
+                                    <button class="drp-preset" onclick="trDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                    <button class="drp-preset" onclick="trDrpPresetYesterday(this)">Kemarin</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset" onclick="trDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(14,'14 Hari Terakhir',this)">14 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(30,'30 Hari Terakhir',this)">30 Hari Terakhir</button>
+                                    <button class="drp-preset" onclick="trDrpPreset(90,'90 Hari Terakhir',this)">90 Hari Terakhir</button>
+                                    <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
+                                    <button class="drp-preset active" onclick="trDrpPresetThisMonth(this)">Bulan Ini</button>
+                                    <button class="drp-preset" onclick="trDrpPresetLastMonth(this)">Bulan Lalu</button>
+                                </div>
+                                <div style="display:flex;flex-direction:column;flex:1;">
+                                    <div class="drp-cal" id="trDrp-cal"></div>
+                                    <div class="drp-footer">
+                                        <div class="drp-selected-txt"><span id="trDrp-sel-start">—</span> → <span id="trDrp-sel-end">—</span></div>
+                                        <div style="display:flex;gap:6px;">
+                                            <button class="drp-cancel" onclick="trDrpClose()">Batal</button>
+                                            <button class="drp-apply" onclick="trDrpApply()">Terapkan</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="trRefreshAll()" id="trRefreshBtn" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh Semua</button>
+                    </div>
+                </div>
+                <div style="font-size:12.5px;color:#9CA3AF;margin-bottom:18px;">Monitor status pengiriman semua order</div>
+
+                <div class="crm-stats-row">
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-SEMUA" onclick="trSetFilter('SEMUA')">
+                        <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="trStatTotal">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-ON_PROSES" onclick="trSetFilter('ON_PROSES_GROUP')">
+                        <div><div class="crm-stat-label">On Proses</div><div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#DBEAFE;">🔄</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-UNDEL" onclick="trSetFilter('BERMASALAH')">
+                        <div><div class="crm-stat-label">Undel</div><div class="crm-stat-value" id="trStatUndel" style="color:#DC2626;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">⚠️</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-RETUR" onclick="trSetFilter('RETUR')">
+                        <div><div class="crm-stat-label">Retur</div><div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="trStatCard-DELIVERY" onclick="trSetFilter('SAMPAI')">
+                        <div><div class="crm-stat-label">Delivery</div><div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
+                    </div>
+                </div>
+
+                <div class="tr-toolbar">
+                    <div class="tr-tabs" id="trTabs"></div>
+                    <div class="tr-search-wrap">
+                        <input type="text" id="trSearch" class="crm-input" style="width:100%;" placeholder="🔍 Cari nama / resi / produk..." onkeyup="trApplyFilter()">
+                    </div>
+                    <div class="tr-count" id="trCount">0 pesanan</div>
+                </div>
+
+                <div id="trList"></div>
+            </section>
+
             <!-- ═══ PRODUK ═══ -->
             <section id="crmSec-produk" class="crm-section">
                 <div class="crm-page-title">
@@ -793,6 +938,30 @@
                     </div>
                 </div>
 
+                <!-- Stat Cards -->
+                <div class="crm-stats-row" style="margin-bottom:16px;">
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-SEMUA" onclick="pelangganSetFilter('')">
+                        <div><div class="crm-stat-label">Total</div><div class="crm-stat-value" id="pelStatTotal">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">👥</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Aktif" onclick="pelangganSetFilter('Aktif')">
+                        <div><div class="crm-stat-label">Aktif</div><div class="crm-stat-value" id="pelStatAktif" style="color:#10B981;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">🟢</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Pasif" onclick="pelangganSetFilter('Pasif')">
+                        <div><div class="crm-stat-label">Pasif</div><div class="crm-stat-value" id="pelStatPasif" style="color:#F59E0B;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">🟡</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-Jenuh" onclick="pelangganSetFilter('Jenuh')">
+                        <div><div class="crm-stat-label">Jenuh</div><div class="crm-stat-value" id="pelStatJenuh" style="color:#EF4444;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">🟠</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="pelStatCard-kosong" onclick="pelangganSetFilter('kosong')">
+                        <div><div class="crm-stat-label">Belum diisi</div><div class="crm-stat-value" id="pelStatKosong" style="color:#9CA3AF;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#F3F4F6;">❓</div>
+                    </div>
+                </div>
+
                 <!-- Filter bar -->
                 <div class="crm-filters" style="margin-bottom:16px;">
                     <div class="crm-form-group" style="flex:2;min-width:200px;">
@@ -809,13 +978,16 @@
                         </select>
                     </div>
                     <div class="crm-form-group">
+                        <label class="crm-form-label">Produk</label>
+                        <select id="pelangganProdukFilter" class="crm-select" onchange="renderPelangganTable()">
+                            <option value="">Semua Produk</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
                         <label class="crm-form-label">CS</label>
                         <select id="pelangganCSFilter" class="crm-select" onchange="renderPelangganTable()">
                             <option value="">Semua CS</option>
                         </select>
-                    </div>
-                    <div style="display:flex;align-items:flex-end;">
-                        <button onclick="resetPelangganFilter()" class="crm-btn crm-btn-secondary">✖ Reset</button>
                     </div>
                 </div>
 
@@ -869,8 +1041,77 @@
 
             <!-- ═══ ULANG TAHUN ═══ -->
             <section id="crmSec-ultah" class="crm-section">
-                <div class="crm-page-title"><div class="crm-page-title-icon">🎂</div><h2>Ulang Tahun</h2></div>
-                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">🎂</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur pengingat ulang tahun pelanggan sedang dikembangkan</div></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">🎂</div>
+                        <h2>Ulang Tahun</h2>
+                    </div>
+                    <button onclick="loadUltah()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="crm-stats-row" style="margin-bottom:16px;">
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-semua" onclick="ultahSetFilter('semua')">
+                        <div><div class="crm-stat-label">Total Data</div><div class="crm-stat-value" id="ultahStatSemua">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">🎂</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-hari" onclick="ultahSetFilter('hari')">
+                        <div><div class="crm-stat-label">Hari Ini</div><div class="crm-stat-value" id="ultahStatHari" style="color:#EF4444;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">🎉</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-minggu" onclick="ultahSetFilter('minggu')">
+                        <div><div class="crm-stat-label">7 Hari ke Depan</div><div class="crm-stat-value" id="ultahStatMinggu" style="color:#F59E0B;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">📅</div>
+                    </div>
+                    <div class="crm-stat tr-stat-clickable" id="ultahCard-bulan" onclick="ultahSetFilter('bulan')">
+                        <div><div class="crm-stat-label">Bulan Ini</div><div class="crm-stat-value" id="ultahStatBulan" style="color:#6366F1;">0</div></div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">📆</div>
+                    </div>
+                </div>
+
+                <!-- Filter -->
+                <div class="crm-filters" style="margin-bottom:16px;">
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Bulan</label>
+                        <select id="ultahBulanFilter" class="crm-select" onchange="renderUltahTable()">
+                            <option value="0">Semua Bulan</option>
+                            <option value="1">Januari</option><option value="2">Februari</option>
+                            <option value="3">Maret</option><option value="4">April</option>
+                            <option value="5">Mei</option><option value="6">Juni</option>
+                            <option value="7">Juli</option><option value="8">Agustus</option>
+                            <option value="9">September</option><option value="10">Oktober</option>
+                            <option value="11">November</option><option value="12">Desember</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group" style="flex:2;min-width:200px;">
+                        <label class="crm-form-label">Cari</label>
+                        <input type="text" id="ultahSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="renderUltahTable()">
+                    </div>
+                </div>
+
+                <div id="ultahCount" style="margin-bottom:10px;font-size:12px;color:#9CA3AF;"></div>
+
+                <div class="crm-table-wrap">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama</th>
+                                <th>No HP</th>
+                                <th>Tgl Lahir</th>
+                                <th>Usia</th>
+                                <th>Produk</th>
+                                <th>Kab/Kota</th>
+                                <th>CS</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ultahTbody">
+                            <tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="crm-pagination" id="ultahPagination"></div>
             </section>
 
             <!-- ═══ KALENDER ═══ -->
@@ -1096,6 +1337,19 @@
     </div>
 </div>
 
+<!-- ═══ TRACKING RESI DETAIL MODAL ═══ -->
+<div id="trModal" class="crm-modal hidden" onclick="if(event.target===this)trCloseModal()">
+    <div class="crm-modal-box" style="max-width:520px;max-height:82vh;overflow-y:auto;">
+        <div class="crm-modal-title" id="trModalTitle">Detail Pengiriman</div>
+        <div class="crm-modal-sub" id="trModalSub"></div>
+        <div id="trModalBody"></div>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+            <button onclick="trCloseModal()" class="crm-btn crm-btn-secondary" style="flex:1;">Tutup</button>
+            <button onclick="trManualCheckFromModal()" class="crm-btn crm-btn-primary" style="flex:1;">🔄 Cek Ulang</button>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ UPLOAD MODAL ═══ -->
 <div id="uploadModal" class="crm-modal hidden">
     <div class="crm-modal-box">
@@ -1149,6 +1403,7 @@
                     <option value="READ">READ</option>
                     <option value="CENTANG 2">CENTANG 2</option>
                     <option value="NO RESPON">NO RESPON</option>
+                    <option value="BLOKIR">BLOKIR</option>
                 </select>
             </div>
             <div>
@@ -1197,7 +1452,7 @@
 
 <script src="js/shared.js"></script>
 <script>
-    const CRM_SECTIONS = ['dashboard','pesanan','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
+    const CRM_SECTIONS = ['dashboard','pesanan','trackingResi','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
 
@@ -1218,10 +1473,13 @@
         if (sec) sec.classList.add('crm-sec-active');
         if (el) el.classList.add('crm-active');
 
+        if (name === 'pesanan' && !allOrders.length) loadOrders();
+        if (name === 'dashboard' && !allOrders.length) loadOrders(); else if (name === 'dashboard') renderDashboard();
+        if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
-        if (name === 'dashboard') renderDashboard();
+        if (name === 'ultah') loadUltah();
     }
 
     function crmToggleGroup(name) {
@@ -1252,14 +1510,16 @@
     function renderDashboard() {
         // Filter by dDrp date range — pakai created_at + WIB offset
         const display = (dFilterStart && dFilterEnd) ? orders.filter(o => {
-            const d = o.created_at ? new Date(new Date(o.created_at).getTime() + 7*3600*1000) : null;
+            const d = o.created_at ? new Date(o.created_at) : null;
             return d && d >= dFilterStart && d <= dFilterEnd;
         }) : orders;
 
+        // Delivered/Cancelled dihitung dari status_resi (fitur Tracking Resi) — sebelumnya
+        // pakai field "status" yang memang tidak pernah diisi di crm_customers, jadi selalu 0.
         const total     = display.length;
-        const pending   = display.filter(o => o.status === 'Pending').length;
-        const delivered = display.filter(o => o.status === 'Delivered').length;
-        const cancelled = display.filter(o => o.status === 'Cancelled').length;
+        const delivered = display.filter(o => o.status_resi === 'SAMPAI').length;
+        const cancelled = display.filter(o => o.status_resi === 'RETUR').length;
+        const pending    = total - delivered - cancelled;
         const uniqueCustomers = new Set(display.map(o => o.hp || o.nama).filter(Boolean)).size;
 
         document.getElementById('dashTotal').textContent       = total;
@@ -1281,12 +1541,13 @@
             const tglRaw = o.created_at ? new Date(new Date(o.created_at).getTime() + 7*3600*1000).toISOString().slice(0,10) : null;
             const tgl    = tglRaw ? fmtTanggalShort(tglRaw) : '-';
             const produk = o.produk || extractProduk(o.jumlah, o.nama) || '-';
-            const sc     = {'Pending':'#F59E0B','Processing':'#7C3AED','Shipped':'#3B82F6','Delivered':'#10B981','Cancelled':'#EF4444'}[o.status] || '#9CA3AF';
+            const stage  = typeof trEffectiveStage === 'function' ? trEffectiveStage(o) : (o.status_resi || 'MENUNGGU_RESI');
+            const meta   = (typeof TR_STAGE_META !== 'undefined' && TR_STAGE_META[stage]) || { label: stage, bg:'#F3F4F6', color:'#6B7280' };
             return `<tr>
                 <td style="font-size:12px;color:#9CA3AF;white-space:nowrap;">${tgl}</td>
                 <td style="font-weight:600;">${escapeHtml(o.nama||'-')}</td>
                 <td><span class="crm-badge" style="background:#EEF2FF;color:#4F46E5;">${escapeHtml(produk)}</span></td>
-                <td><span class="crm-badge" style="background:${sc}20;color:${sc};">${escapeHtml(o.status||'-')}</span></td>
+                <td><span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span></td>
                 <td style="font-size:12px;color:#6B7280;">${escapeHtml(o.nama_cs||o.cs||'-')}</td>
             </tr>`;
         }).join('');
@@ -1304,9 +1565,9 @@
             const p = o.produk || extractProduk(o.jumlah, o.nama) || 'Lainnya';
             if (!pm[p]) pm[p] = { total:0, pending:0, delivered:0, cancelled:0 };
             pm[p].total++;
-            if (o.status === 'Pending')   pm[p].pending++;
-            if (o.status === 'Delivered') pm[p].delivered++;
-            if (o.status === 'Cancelled') pm[p].cancelled++;
+            if (o.status_resi === 'SAMPAI') pm[p].delivered++;
+            else if (o.status_resi === 'RETUR') pm[p].cancelled++;
+            else pm[p].pending++;
         });
         const colors = ['#4F46E5','#10B981','#F59E0B','#EF4444','#06B6D4','#EC4899'];
         const entries = Object.entries(pm).sort((a,b) => b[1].total - a[1].total);
@@ -1353,101 +1614,78 @@
         const tb = document.getElementById('pelangganTbody');
         tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
-        const assignedCS = assignments[currentUser.username] || [];
-        if (!assignedCS.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;">
-                <div style="color:#EF4444;font-weight:700;margin-bottom:8px;">Belum ada assignment CS</div>
-                <div style="color:#9CA3AF;font-size:12px;">Username: <code>${currentUser.username}</code> belum di-assign oleh admin</div>
-            </td></tr>`;
-            return;
-        }
-
         if (!orders.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Klik Sync Data terlebih dahulu.</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
             return;
         }
 
-        // ── 1. Derive unique pelanggan dari orders (source of truth: crm_customer_orders) ──
+        // Hanya pelanggan yang sudah DELIVERED (status_resi = SAMPAI)
+        // Dedup by no_hp + nama_cs — ambil record pertama per pelanggan
         const seen = new Set();
-        const baseList = [];
+        crmCustomers = [];
         orders.forEach(o => {
-            const key = (o.no_hp || o.nama || '') + '|' + (o.nama_cs || '');
-            if (key && !key.startsWith('|') && !seen.has(key)) {
-                seen.add(key);
-                baseList.push({
-                    nama:    o.nama      || null,
-                    no_hp:   o.no_hp     || null,
-                    kab:     o.kabupaten || null,
-                    prov:    o.provinsi  || null,
-                    nama_cs: o.nama_cs   || null,
-                    crm:     currentUser.username,
-                });
-            }
+            if (o.status_resi !== 'SAMPAI') return;
+            const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
+            if (key === '|' || seen.has(key)) return;
+            seen.add(key);
+            crmCustomers.push(o);
         });
 
-        // ── 2. Pastikan semua pelanggan dari orders ada di crm_customers (insert only, skip duplikat) ──
-        const batchSize = 100;
-        for (let i = 0; i < baseList.length; i += batchSize) {
-            await sbApp.from('crm_customers')
-                .upsert(baseList.slice(i, i + batchSize), {
-                    onConflict: 'no_hp,nama_cs',
-                    ignoreDuplicates: true
-                });
-        }
-
-        // ── 3. Fetch profile CRM (type, penyakit, interaksi, dll) dari crm_customers ──
-        const orFilter = assignedCS.map(cs => `nama_cs.ilike.${cs.replace(/[,()]/g, '')}`).join(',');
-        let profileData = [], pg = 0, more = true;
-        while (more) {
-            const { data, error } = await sbApp.from('crm_customers')
-                .select('*').or(orFilter)
-                .range(pg * 1000, (pg + 1) * 1000 - 1);
-            if (error) {
-                tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#EF4444;">${error.message}</td></tr>`;
-                return;
-            }
-            if (data && data.length > 0) { profileData = profileData.concat(data); more = data.length === 1000; pg++; }
-            else more = false;
-        }
-
-        // Build lookup: (no_hp|cs) → profile record
-        const profileMap = {};
-        profileData.forEach(p => {
-            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
-            profileMap[key] = p;
-        });
-
-        // ── 4. Merge: list dari orders + profile dari crm_customers ──
-        // Hanya tampilkan pelanggan yang ada di orders (bukan semua isi crm_customers)
-        const orderKeys = new Set(orders.map(o => (o.no_hp || o.nama || '') + '|' + (o.nama_cs || '')));
-        const all = profileData.filter(p => {
-            const key = (p.no_hp || p.nama || '') + '|' + (p.nama_cs || '');
-            return orderKeys.has(key);
-        });
-
-        if (!all.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data pelanggan</td></tr>`;
-            return;
-        }
-
-        crmCustomers = all;
-
-        const csSet = [...new Set(all.map(c => c.nama_cs).filter(Boolean))].sort();
+        const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
             '<option value="">Semua CS</option>' + csSet.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        const produkSet = [...new Set(crmCustomers.map(c => c.produk).filter(Boolean))].sort();
+        document.getElementById('pelangganProdukFilter').innerHTML =
+            '<option value="">Semua Produk</option>' + produkSet.map(p => `<option value="${p}">${p}</option>`).join('');
 
         renderPelangganTable();
     }
 
+    function pelangganSetFilter(val) {
+        const sel = document.getElementById('pelangganTypeFilter');
+        if (!sel) return;
+        sel.value = val === 'kosong' ? '' : val;
+        // simpan flag kosong di dataset supaya renderPelangganTable bisa baca
+        sel.dataset.kosong = val === 'kosong' ? '1' : '';
+        renderPelangganTable();
+    }
+
     function renderPelangganTable() {
-        const q    = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
-        const type = document.getElementById('pelangganTypeFilter')?.value || '';
-        const cs   = document.getElementById('pelangganCSFilter')?.value || '';
+        const q      = (document.getElementById('pelangganSearch')?.value || '').toLowerCase();
+        const sel    = document.getElementById('pelangganTypeFilter');
+        const type   = sel?.value || '';
+        const filterKosong = sel?.dataset?.kosong === '1';
+        const cs     = document.getElementById('pelangganCSFilter')?.value || '';
+        const produk = document.getElementById('pelangganProdukFilter')?.value || '';
+
+        // Update stat cards
+        const counts = { Aktif: 0, Pasif: 0, Jenuh: 0, kosong: 0 };
+        crmCustomers.forEach(c => {
+            const t = Object.keys(counts).find(k => k !== 'kosong' && (c.type||'').includes(k));
+            if (t) counts[t]++; else counts.kosong++;
+        });
+        document.getElementById('pelStatTotal').textContent  = crmCustomers.length;
+        document.getElementById('pelStatAktif').textContent  = counts.Aktif;
+        document.getElementById('pelStatPasif').textContent  = counts.Pasif;
+        document.getElementById('pelStatJenuh').textContent  = counts.Jenuh;
+        document.getElementById('pelStatKosong').textContent = counts.kosong;
+
+        // Active card highlight
+        const activeFilter = filterKosong ? 'kosong' : (type || 'SEMUA');
+        ['SEMUA','Aktif','Pasif','Jenuh','kosong'].forEach(k => {
+            const card = document.getElementById('pelStatCard-' + k);
+            if (card) card.style.outline = (k === activeFilter) ? '2px solid #6366F1' : '';
+        });
 
         filteredCustomers = crmCustomers.filter(c => {
             if (q && !(c.nama?.toLowerCase().includes(q) || c.no_hp?.includes(q))) return false;
-            if (type && !(c.type || '').includes(type)) return false;
-            if (cs   && !normEq(c.nama_cs, cs)) return false;
+            if (filterKosong) {
+                const hasType = ['Aktif','Pasif','Jenuh'].some(k => (c.type||'').includes(k));
+                if (hasType) return false;
+            } else if (type && !(c.type || '').includes(type)) return false;
+            if (cs && !normEq(c.nama_cs, cs)) return false;
+            if (produk && !normEq(c.produk, produk)) return false;
             return true;
         });
 
@@ -1477,13 +1715,10 @@
             const tc = typeColor[typeKey] || '#9CA3AF';
             const interaksiColor = {
                 'RESPON BAIK':'#10B981', 'READ':'#F59E0B',
-                'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444'
+                'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444', 'BLOKIR':'#111827'
             }[c.interaksi_terakhir] || '#9CA3AF';
 
-            // Tgl Order
             const tglOrder = c.tgl ? fmtTanggalShort(c.tgl) : '—';
-
-            // Tgl Delivered — dari history kurir terakhir
             const deliveredDateStr = (() => {
                 const history = c.status_resi_detail?.history;
                 if (Array.isArray(history) && history.length) {
@@ -1495,7 +1730,6 @@
             })();
             const tglDelivered = deliveredDateStr ? fmtTanggalShort(deliveredDateStr) : '—';
 
-            // Potensi Repeat Order
             const potensiRepeatHtml = (() => {
                 if (!deliveredDateStr) return '<span style="color:#9CA3AF;font-size:12px;">—</span>';
                 const produkKey = (c.produk || '').toUpperCase();
@@ -1511,11 +1745,9 @@
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const diff = Math.ceil((repeatDate - today) / (1000 * 60 * 60 * 24));
                 const label = fmtTanggalShort(repeatDate.toISOString().slice(0, 10));
-                let badge;
-                if (diff < 0)       badge = `<span style="font-size:11px;color:#EF4444;white-space:nowrap;">🔴 ${label} (${Math.abs(diff)}h lalu)</span>`;
-                else if (diff <= 3) badge = `<span style="font-size:11px;color:#F59E0B;white-space:nowrap;">🟡 ${label} (${diff}h lagi)</span>`;
-                else                badge = `<span style="font-size:11px;color:#10B981;white-space:nowrap;">🟢 ${label} (${diff}h lagi)</span>`;
-                return badge;
+                if (diff < 0)       return `<span style="font-size:11px;color:#EF4444;white-space:nowrap;">🔴 ${label} (${Math.abs(diff)}h lalu)</span>`;
+                else if (diff <= 3) return `<span style="font-size:11px;color:#F59E0B;white-space:nowrap;">🟡 ${label} (${diff}h lagi)</span>`;
+                else                return `<span style="font-size:11px;color:#10B981;white-space:nowrap;">🟢 ${label} (${diff}h lagi)</span>`;
             })();
 
             return `<tr>
@@ -1557,6 +1789,195 @@
         document.getElementById('pelangganTypeFilter').value = '';
         document.getElementById('pelangganCSFilter').value = '';
         renderPelangganTable();
+    }
+
+    // ══════════════════════════════════════════
+    // ULANG TAHUN
+    // ══════════════════════════════════════════
+    let ultahData       = [];   // semua pelanggan dengan tgl_lahir
+    let ultahFiltered   = [];
+    let ultahPage       = 1;
+    const ultahPageSize = 50;
+    let ultahActiveFilter = 'bulan'; // default
+
+    function loadUltah() {
+        if (!orders.length) {
+            document.getElementById('ultahTbody').innerHTML =
+                '<tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>';
+            return;
+        }
+
+        // Dedup by no_hp+nama_cs, hanya yang ada tgl_lahir
+        const seen = new Set();
+        ultahData = [];
+        orders.forEach(o => {
+            if (!o.tgl_lahir) return;
+            const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
+            if (seen.has(key)) return;
+            seen.add(key);
+            ultahData.push(o);
+        });
+
+        // Hitung stat cards
+        const today = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+        let cHari = 0, cMinggu = 0, cBulan = 0;
+
+        ultahData.forEach(o => {
+            const d = new Date(o.tgl_lahir);
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            if (m === todayM) cBulan++;
+            if (m === todayM && day === todayD) cHari++;
+            // 7 hari ke depan (wrap bulan tidak dihandle biar simpel)
+            const thisYear = new Date(today.getFullYear(), m - 1, day);
+            const diff = (thisYear - today) / (1000 * 60 * 60 * 24);
+            if (diff >= 0 && diff <= 7) cMinggu++;
+        });
+
+        document.getElementById('ultahStatSemua').textContent = ultahData.length;
+        document.getElementById('ultahStatHari').textContent  = cHari;
+        document.getElementById('ultahStatMinggu').textContent = cMinggu;
+        document.getElementById('ultahStatBulan').textContent = cBulan;
+
+        // Default filter bulan ini
+        document.getElementById('ultahBulanFilter').value = todayM;
+        ultahActiveFilter = 'bulan';
+        ultahHighlightCard('bulan');
+        renderUltahTable();
+    }
+
+    function ultahSetFilter(type) {
+        ultahActiveFilter = type;
+        ultahHighlightCard(type);
+        const today = new Date();
+
+        if (type === 'hari') {
+            document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        } else if (type === 'minggu' || type === 'semua') {
+            document.getElementById('ultahBulanFilter').value = 0;
+        } else if (type === 'bulan') {
+            document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        }
+        renderUltahTable();
+    }
+
+    function ultahHighlightCard(active) {
+        ['semua','hari','minggu','bulan'].forEach(k => {
+            const card = document.getElementById('ultahCard-' + k);
+            if (card) card.style.outline = k === active ? '2px solid #6366F1' : '';
+        });
+    }
+
+    function ultahResetFilter() {
+        const today = new Date();
+        document.getElementById('ultahBulanFilter').value = today.getMonth() + 1;
+        document.getElementById('ultahSearch').value = '';
+        ultahActiveFilter = 'bulan';
+        ultahHighlightCard('bulan');
+        renderUltahTable();
+    }
+
+    function renderUltahTable() {
+        const bulan  = parseInt(document.getElementById('ultahBulanFilter').value);
+        const q      = (document.getElementById('ultahSearch')?.value || '').toLowerCase();
+        const today  = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+
+        ultahFiltered = ultahData.filter(o => {
+            const d   = new Date(o.tgl_lahir);
+            const m   = d.getMonth() + 1;
+            const day = d.getDate();
+
+            if (ultahActiveFilter === 'hari') {
+                if (m !== todayM || day !== todayD) return false;
+            } else if (ultahActiveFilter === 'minggu') {
+                const thisYear = new Date(today.getFullYear(), m - 1, day);
+                const diff = (thisYear - today) / (1000 * 60 * 60 * 24);
+                if (diff < 0 || diff > 7) return false;
+            } else if (bulan > 0) {
+                if (m !== bulan) return false;
+            }
+
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.no_hp?.includes(q))) return false;
+            return true;
+        });
+
+        // Sort by tanggal lahir di bulan itu (by day)
+        ultahFiltered.sort((a, b) => {
+            const da = new Date(a.tgl_lahir).getDate();
+            const db = new Date(b.tgl_lahir).getDate();
+            return da - db;
+        });
+
+        ultahPage = 1;
+        document.getElementById('ultahCount').textContent = `${ultahFiltered.length} pelanggan`;
+        renderUltahPage();
+    }
+
+    function renderUltahPage() {
+        const tb = document.getElementById('ultahTbody');
+        const today  = new Date();
+        const todayM = today.getMonth() + 1;
+        const todayD = today.getDate();
+
+        const total      = ultahFiltered.length;
+        const totalPages = Math.ceil(total / ultahPageSize);
+        const start      = (ultahPage - 1) * ultahPageSize;
+        const slice      = ultahFiltered.slice(start, start + ultahPageSize);
+
+        if (!slice.length) {
+            tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada pelanggan dengan ulang tahun di periode ini</td></tr>';
+            document.getElementById('ultahPagination').innerHTML = '';
+            return;
+        }
+
+        const BULAN = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+        const typeColor = { 'Aktif':'#10B981','Pasif':'#F59E0B','Jenuh':'#EF4444' };
+        const typeEmoji = { 'Aktif':'🟢','Pasif':'🟡','Jenuh':'🟠' };
+
+        tb.innerHTML = slice.map((o, i) => {
+            const d      = new Date(o.tgl_lahir);
+            const m      = d.getMonth() + 1;
+            const day    = d.getDate();
+            const year   = d.getFullYear();
+            const usia   = today.getFullYear() - year;
+            const isToday = m === todayM && day === todayD;
+            const tglStr = `${day} ${BULAN[m]} ${year}`;
+            const typeKey = Object.keys(typeEmoji).find(k => (o.type||'').includes(k)) || '';
+            const tc = typeColor[typeKey] || '#9CA3AF';
+
+            return `<tr style="${isToday ? 'background:#FFF7ED;' : ''}">
+                <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
+                <td style="font-weight:600;white-space:nowrap;">
+                    ${isToday ? '<span style="color:#EF4444;font-size:11px;font-weight:700;margin-right:4px;">🎉 HARI INI</span>' : ''}
+                    ${escapeHtml(o.nama || '-')}
+                </td>
+                <td style="font-size:12px;">${escapeHtml(o.no_hp || '-')}</td>
+                <td style="font-size:12px;white-space:nowrap;">${tglStr}</td>
+                <td style="font-size:12px;text-align:center;">${usia} th</td>
+                <td style="font-size:12px;font-weight:600;color:#6366F1;">${escapeHtml(o.produk || '-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.kabupaten || '-')}</td>
+                <td style="font-size:12px;">${escapeHtml(o.nama_cs || '-')}</td>
+                <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
+            </tr>`;
+        }).join('');
+
+        const pg = document.getElementById('ultahPagination');
+        pg.innerHTML = totalPages > 1 ? `
+            <button onclick="ultahGoPage(${ultahPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${ultahPage===1?'disabled':''}>‹ Prev</button>
+            <span style="font-size:13px;color:#6B7280;">Hal ${ultahPage} / ${totalPages}</span>
+            <button onclick="ultahGoPage(${ultahPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${ultahPage===totalPages?'disabled':''}>Next ›</button>
+        ` : '';
+    }
+
+    function ultahGoPage(pg) {
+        const total = Math.ceil(ultahFiltered.length / ultahPageSize);
+        if (pg < 1 || pg > total) return;
+        ultahPage = pg;
+        renderUltahPage();
     }
 
     let editPelangganId = null;
@@ -1828,6 +2249,90 @@
         renderDashboard();
     }
 
+    async function updateResiKosong() {
+        const btn = document.getElementById('btnUpdateResiPesanan');
+        const btn2 = document.getElementById('btnUpdateResiPelanggan');
+        const setBusy = (b) => {
+            if (btn)  { btn.disabled  = b; btn.textContent  = b ? '⏳ Mencari...' : '🔍 Update Resi Kosong'; }
+            if (btn2) { btn2.disabled = b; btn2.textContent = b ? '⏳ Mencari...' : '🔍 Update Resi Kosong'; }
+        };
+        setBusy(true);
+        try {
+            // 1. Ambil semua crm_customers milik CRM ini yang resinya null
+            const { data: nullRows, error: nullErr } = await sbApp
+                .from('crm_customers')
+                .select('id, no_hp, nama_cs, tgl')
+                .eq('crm', currentUser.username)
+                .is('resi', null);
+
+            if (nullErr) { alert('Gagal load data: ' + nullErr.message); return; }
+            if (!nullRows || !nullRows.length) { alert('✅ Semua pesanan sudah ada resi!'); return; }
+
+            // 2. Group by nama_cs untuk batch query ke all_orderan
+            const byCS = {};
+            nullRows.forEach(r => {
+                const key = (r.nama_cs || '').trim().toLowerCase();
+                if (!byCS[key]) byCS[key] = [];
+                byCS[key].push(r);
+            });
+
+            // 3. Build map: `hp|cs_lower|tgl` → resi dari all_orderan
+            const hpResiMap = {};
+            for (const [csKey, rows] of Object.entries(byCS)) {
+                const csName = rows[0].nama_cs;
+                const tglsSorted = [...new Set(rows.map(r => r.tgl))].sort();
+                const dateFrom = new Date(tglsSorted[0] + 'T00:00:00+07:00').toISOString();
+                const dateTo   = new Date(tglsSorted[tglsSorted.length - 1] + 'T23:59:59+07:00').toISOString();
+
+                const { data: aoData } = await sbData
+                    .from('all_orderan')
+                    .select('hp, resi, created_at')
+                    .ilike('cs', csName)
+                    .gte('created_at', dateFrom)
+                    .lte('created_at', dateTo)
+                    .not('resi', 'is', null)
+                    .neq('resi', '');
+
+                (aoData || []).forEach(o => {
+                    if (!o.resi) return;
+                    const tglWIB = new Date(new Date(o.created_at).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+                    const mapKey = (o.hp || '').trim() + '|' + csKey + '|' + tglWIB;
+                    if (!hpResiMap[mapKey]) hpResiMap[mapKey] = o.resi;
+                });
+            }
+
+            // 4. Cocokkan dengan nullRows, update yang ketemu resinya
+            const toUpdate = [];
+            nullRows.forEach(r => {
+                const csKey  = (r.nama_cs || '').trim().toLowerCase();
+                const mapKey = (r.no_hp   || '').trim() + '|' + csKey + '|' + r.tgl;
+                const resi   = hpResiMap[mapKey];
+                if (resi) toUpdate.push({ id: r.id, resi });
+            });
+
+            if (!toUpdate.length) {
+                alert(`Dicek ${nullRows.length} pesanan tanpa resi — belum ada resi baru di sistem.`);
+                return;
+            }
+
+            let done = 0;
+            for (const { id, resi } of toUpdate) {
+                const { error } = await sbApp.from('crm_customers').update({ resi }).eq('id', id);
+                if (!error) done++;
+            }
+
+            alert(`✅ ${done} pesanan berhasil diisi resinya dari total ${nullRows.length} yang kosong!`);
+            await loadOrders();
+            if (typeof loadPelanggan === 'function') await loadPelanggan();
+
+        } catch (e) {
+            console.error('[UpdateResi]', e);
+            alert('Terjadi error: ' + e.message);
+        } finally {
+            setBusy(false);
+        }
+    }
+
     function populateFilterDropdowns() {
         const csMap = {}, produkMap = {};
         orders.forEach(o => {
@@ -1851,10 +2356,8 @@
         filteredOrders = orders.filter(o => {
             if (q && !(o.nama?.toLowerCase().includes(q) || o.no_hp?.includes(q) || o.resi?.toLowerCase().includes(q))) return false;
             if (pFilterStart && pFilterEnd) {
-                const assignedWIB = o.created_at
-                    ? new Date(new Date(o.created_at).getTime() + 7*3600*1000)
-                    : null;
-                if (!assignedWIB || assignedWIB < pFilterStart || assignedWIB > pFilterEnd) return false;
+                const assigned = o.created_at ? new Date(o.created_at) : null;
+                if (!assigned || assigned < pFilterStart || assigned > pFilterEnd) return false;
             }
             if (cs && !normEq(o.nama_cs, cs)) return false;
             if (pr && !normEq(o.produk, pr)) return false;
@@ -2102,6 +2605,249 @@
 
     async function updateOrder() { await saveNotes(); }
 
+    // ════════════════════════════════════════
+    // TRACKING RESI
+    // ════════════════════════════════════════
+    const TR_STEP_LABELS = ['Konfirmasi','Dikirim','Kota Tujuan','OTW','Sampai'];
+    const TR_STAGE_META = {
+        MENUNGGU_RESI: { label:'⏳ Menunggu Resi', bg:'#FEF3C7', color:'#D97706', step:1 },
+        BELUM_DICEK:   { label:'🔍 Belum Dicek',   bg:'#F3F4F6', color:'#6B7280', step:1 },
+        DIKIRIM:       { label:'🚚 Dikirim',        bg:'#DBEAFE', color:'#2563EB', step:2 },
+        KOTA_TUJUAN:   { label:'🏙️ Kota Tujuan',   bg:'#E0E7FF', color:'#4F46E5', step:3 },
+        OTW:           { label:'🛵 OTW',            bg:'#FCE7F3', color:'#DB2777', step:4 },
+        SAMPAI:        { label:'✅ Sampai',          bg:'#D1FAE5', color:'#059669', step:5 },
+        BERMASALAH:    { label:'⚠️ Bermasalah',     bg:'#FEE2E2', color:'#DC2626', step:2, problem:true },
+        RETUR:         { label:'↩️ Retur',           bg:'#FEE2E2', color:'#B91C1C', step:2, problem:true },
+    };
+    const TR_AVATAR_PALETTE = ['#4F46E5','#059669','#D97706','#DC2626','#0EA5E9','#7C3AED','#0891B2','#65A30D','#C026D3','#E11D48'];
+
+    // Bucket ringkasan 4 kategori buat angka stat card (Total/On Proses/Undel/Retur/Delivery)
+    function trCardState(stage) {
+        if (stage === 'SAMPAI')     return 'DELIVERY';
+        if (stage === 'RETUR')      return 'RETUR';
+        if (stage === 'BERMASALAH') return 'UNDEL';
+        return 'ON_PROSES'; // MENUNGGU_RESI, BELUM_DICEK, DIKIRIM, KOTA_TUJUAN, OTW
+    }
+
+    const TR_TABS = [
+        { key:'SEMUA', label:'Semua' },
+        { key:'MENUNGGU_RESI', label:'⏳ Menunggu Resi' },
+        { key:'DIKIRIM', label:'🚚 Dikirim' },
+        { key:'KOTA_TUJUAN', label:'🏙️ Kota Tujuan' },
+        { key:'OTW', label:'🛵 OTW' },
+        { key:'SAMPAI', label:'✅ Sampai' },
+        { key:'BERMASALAH', label:'⚠️ Bermasalah' },
+        { key:'RETUR', label:'↩️ Retur' },
+    ];
+    // Peta klik stat-card (ringkasan 5 angka) -> filter tab yang sesuai
+    const TR_STAT_CARD_FILTER = { SEMUA:'SEMUA', ON_PROSES:'ON_PROSES_GROUP', UNDEL:'BERMASALAH', RETUR:'RETUR', DELIVERY:'SAMPAI' };
+    const TR_ON_PROSES_STAGES = ['MENUNGGU_RESI','BELUM_DICEK','DIKIRIM','KOTA_TUJUAN','OTW'];
+    let trFilterStage  = 'SEMUA';
+    let trModalOrderId = null;
+
+    function trAvatarColor(name) {
+        const s = name || '?';
+        let hash = 0;
+        for (let i=0; i<s.length; i++) hash = (hash*31 + s.charCodeAt(i)) % 1000000007;
+        return TR_AVATAR_PALETTE[Math.abs(hash) % TR_AVATAR_PALETTE.length];
+    }
+
+    function trEffectiveStage(o) {
+        if (!o.resi) return 'MENUNGGU_RESI';
+        if (!o.status_resi || !TR_STAGE_META[o.status_resi]) return 'BELUM_DICEK';
+        return o.status_resi;
+    }
+
+    function renderTrackingResi() {
+        document.getElementById('trTabs').innerHTML = TR_TABS.map(t =>
+            `<div class="tr-tab ${trFilterStage===t.key?'tr-tab-active':''}" onclick="trSetFilter('${t.key}')">${t.label}</div>`
+        ).join('');
+        Object.entries(TR_STAT_CARD_FILTER).forEach(([cardKey, filterKey]) => {
+            document.getElementById('trStatCard-'+cardKey)?.classList.toggle('tr-stat-active', trFilterStage===filterKey);
+        });
+        trUpdateStats();
+        trApplyFilter();
+    }
+
+    // Order yang jatuh dalam rentang tanggal trDrp aktif (created_at, sudah WIB-correct)
+    function trOrdersInRange() {
+        if (!trFilterStart || !trFilterEnd) return orders;
+        return orders.filter(o => {
+            const d = o.created_at ? new Date(o.created_at) : null;
+            return d && d >= trFilterStart && d <= trFilterEnd;
+        });
+    }
+
+    // Rekap jumlah per cardstate — dari data dalam rentang tanggal trDrp aktif
+    function trUpdateStats() {
+        const inRange = trOrdersInRange();
+        const counts = { ON_PROSES:0, UNDEL:0, RETUR:0, DELIVERY:0 };
+        inRange.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
+        document.getElementById('trStatTotal').textContent     = inRange.length;
+        document.getElementById('trStatOnProses').textContent  = counts.ON_PROSES;
+        document.getElementById('trStatUndel').textContent     = counts.UNDEL;
+        document.getElementById('trStatRetur').textContent     = counts.RETUR;
+        document.getElementById('trStatDelivery').textContent  = counts.DELIVERY;
+    }
+
+    function trSetFilter(key) { trFilterStage = key; renderTrackingResi(); }
+
+    function trApplyFilter() {
+        const q = (document.getElementById('trSearch').value || '').toLowerCase();
+        const list = trOrdersInRange().filter(o => {
+            const stage = trEffectiveStage(o);
+            if (trFilterStage === 'ON_PROSES_GROUP') {
+                if (!TR_ON_PROSES_STAGES.includes(stage)) return false;
+            } else if (trFilterStage !== 'SEMUA' && stage !== trFilterStage) {
+                return false;
+            }
+            if (q && !(o.nama?.toLowerCase().includes(q) || o.resi?.toLowerCase().includes(q) || o.produk?.toLowerCase().includes(q))) return false;
+            return true;
+        });
+        document.getElementById('trCount').textContent = `${list.length} pesanan`;
+        document.getElementById('trList').innerHTML = list.length
+            ? list.map(o => trCardHtml(o)).join('')
+            : '<div class="tr-card" style="grid-column:1/-1;text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
+    }
+
+    function trStepperHtml(stage, stepOverride) {
+        const meta = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const step = stepOverride || meta.step;
+        const allDone = stage === 'SAMPAI';
+        return `<div class="tr-stepper">${TR_STEP_LABELS.map((label, i) => {
+            const idx = i + 1;
+            let cls = 'tr-step';
+            if (allDone || idx < step) cls += ' tr-step-done';
+            else if (idx === step) cls += meta.problem ? ' tr-step-problem' : ' tr-step-active';
+            const icon = (allDone || idx < step) ? '✓' : idx;
+            return `<div class="${cls}"><div class="tr-step-line"></div><div class="tr-step-circle">${icon}</div><div class="tr-step-label">${label}</div></div>`;
+        }).join('')}</div>`;
+    }
+
+    function trCardHtml(o) {
+        const stage   = trEffectiveStage(o);
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const initial = (o.nama || '?').trim().charAt(0).toUpperCase();
+        const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
+        const repeats  = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
+
+        return `<div class="tr-card" onclick="trOpenDetail(${o.id})">
+            <div class="tr-card-top">
+                <div class="tr-card-left">
+                    <div class="tr-avatar" style="background:${trAvatarColor(o.nama)};">${escapeHtml(initial)}</div>
+                    <div>
+                        <div class="tr-name">${escapeHtml(o.nama||'-')}</div>
+                        <div class="tr-phone">${escapeHtml(o.no_hp||'-')}</div>
+                        <div class="tr-meta">
+                            <span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span>
+                            ${o.ekspedisi ? `<span class="crm-badge" style="background:#F3F4F6;color:#6B7280;">${escapeHtml(o.ekspedisi)}</span>` : ''}
+                        </div>
+                        <div class="tr-produk">${escapeHtml(o.produk||'-')} × ${o.qty||'-'}</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="tr-price">${totalCOD}</div>
+                    <div class="tr-date">${o.tgl||'-'}</div>
+                    ${o.resi ? `<div class="tr-resi">${escapeHtml(o.resi)}${o.ekspedisi ? ' · '+escapeHtml(o.ekspedisi) : ''}</div>` : ''}
+                </div>
+            </div>
+            ${trStepperHtml(stage, o.status_resi_step)}
+            ${repeats.length ? `<div class="tr-repeat-wrap">${repeats.map((r,i) => {
+                const rStage = r.resi ? (TR_STAGE_META[r.status_resi] ? r.status_resi : 'BELUM_DICEK') : 'MENUNGGU_RESI';
+                const rMeta  = TR_STAGE_META[rStage] || TR_STAGE_META.BELUM_DICEK;
+                return `<div class="tr-repeat-row">
+                    <span>🔁 Repeat ${i+1} — ${r.tgl||'-'} ${r.resi ? '· '+escapeHtml(r.resi) : ''}</span>
+                    <span class="crm-badge" style="background:${rMeta.bg};color:${rMeta.color};">${rMeta.label}</span>
+                </div>`;
+            }).join('')}</div>` : ''}
+        </div>`;
+    }
+
+    function trOpenDetail(id) {
+        trModalOrderId = id;
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        document.getElementById('trModalTitle').textContent = o.nama || 'Detail Pengiriman';
+        document.getElementById('trModalSub').textContent = (o.resi ? o.resi + ' · ' : '') + (o.ekspedisi || '');
+
+        const stage   = trEffectiveStage(o);
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const detail  = o.status_resi_detail || null;
+        const history = detail && Array.isArray(detail.history) ? detail.history.slice().reverse() : [];
+
+        let historyHtml = '<div style="font-size:12px;color:#9CA3AF;margin-top:12px;">Belum ada history — klik "Cek Ulang".</div>';
+        if (history.length) {
+            historyHtml = `<div style="margin-top:14px;">${history.map((h,i) => `
+                <div class="tr-history-item">
+                    <div class="tr-history-dot" style="background:${i===0?meta.color:'#E5E7EB'};"></div>
+                    <div>
+                        <div style="font-size:12.5px;${i===0?'font-weight:700;':''}">${escapeHtml(h.desc || h.content || h.content2 || '-')}</div>
+                        <div style="font-size:11px;color:#9CA3AF;margin-top:2px;">${escapeHtml(h.date || '')}${h.location_name ? ' · '+escapeHtml(h.location_name) : ''}</div>
+                    </div>
+                </div>`).join('')}</div>`;
+        }
+
+        document.getElementById('trModalBody').innerHTML = `
+            <div style="margin-top:10px;"><span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span></div>
+            ${trStepperHtml(stage, o.status_resi_step)}
+            ${historyHtml}
+        `;
+        document.getElementById('trModal').classList.remove('hidden');
+    }
+
+    function trCloseModal() { document.getElementById('trModal').classList.add('hidden'); }
+
+    async function trManualCheckFromModal() {
+        const o = orders.find(x => x.id === trModalOrderId);
+        if (!o) return;
+        if (!o.resi) { alert('Belum ada resi untuk order ini.'); return; }
+        const result = await checkResiTracking(o.resi, o.ekspedisi);
+        if (!result) { alert('Gagal cek resi — pastikan ekspedisi terisi & resi valid.'); return; }
+        o.status_resi = result.stage;
+        o.status_resi_step = result.step;
+        o.status_resi_updated_at = new Date().toISOString();
+        o.status_resi_detail = result.detail;
+        await sbApp.from('crm_customers').update({
+            status_resi: o.status_resi, status_resi_step: o.status_resi_step,
+            status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+        }).eq('id', o.id);
+        trOpenDetail(o.id);
+        trUpdateStats();
+        trApplyFilter();
+    }
+
+    async function trRefreshAll() {
+        const btn = document.getElementById('trRefreshBtn');
+        const origLabel = btn.textContent;
+        btn.disabled = true;
+        try {
+            const targets = orders.filter(o => o.resi && o.status_resi !== 'SAMPAI' && o.status_resi !== 'RETUR');
+            const BATCH = 5;
+            for (let i=0; i<targets.length; i+=BATCH) {
+                const batch = targets.slice(i, i+BATCH);
+                await Promise.all(batch.map(async o => {
+                    const result = await checkResiTracking(o.resi, o.ekspedisi);
+                    if (!result) return;
+                    o.status_resi = result.stage;
+                    o.status_resi_step = result.step;
+                    o.status_resi_updated_at = new Date().toISOString();
+                    o.status_resi_detail = result.detail;
+                    await sbApp.from('crm_customers').update({
+                        status_resi: o.status_resi, status_resi_step: o.status_resi_step,
+                        status_resi_updated_at: o.status_resi_updated_at, status_resi_detail: o.status_resi_detail
+                    }).eq('id', o.id);
+                }));
+                btn.textContent = `Mengecek... (${Math.min(i+BATCH,targets.length)}/${targets.length})`;
+            }
+            trUpdateStats();
+            trApplyFilter();
+            alert(`✅ Selesai cek ${targets.length} resi!`);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = origLabel;
+        }
+    }
+
     // Sync ulang semua data dari server (assignment + orders + pelanggan)
     async function syncAll() {
         const btn   = document.getElementById('syncBtn');
@@ -2136,7 +2882,7 @@
         const startPad    = firstDay === 0 ? 6 : firstDay - 1;
         const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
         const prevDays    = new Date(viewYear, viewMonth, 0).getDate();
-        const today       = new Date(); today.setHours(0,0,0,0);
+        const todayYMD    = wibYMD();
 
         let html = `<div class="drp-cal-hdr">
             <button class="drp-nav" onclick="${navFn}(-1)">‹</button>
@@ -2151,7 +2897,7 @@
 
         for (let d=1;d<=daysInMonth;d++) {
             const cur     = new Date(viewYear, viewMonth, d);
-            const isToday = cur.getTime()===today.getTime();
+            const isToday = viewYear===todayYMD.y && viewMonth===todayYMD.m && d===todayYMD.d;
             const isStart = selStart && cur.getTime()===new Date(selStart.getFullYear(),selStart.getMonth(),selStart.getDate()).getTime();
             const isEnd   = selEnd   && cur.getTime()===new Date(selEnd.getFullYear(),selEnd.getMonth(),selEnd.getDate()).getTime();
             const inRange = selStart && selEnd && cur>selStart && cur<selEnd;
@@ -2177,10 +2923,9 @@
     // DATE RANGE PICKER — PESANAN (prefix: pDrp)
     // ══════════════════════════════════════════
     let pDrpSelStart=null, pDrpSelEnd=null;
-    let pDrpViewYear=new Date().getFullYear(), pDrpViewMonth=new Date().getMonth();
-    const _pToday = new Date(); _pToday.setHours(0,0,0,0);
-    const _pTodayEnd = new Date(); _pTodayEnd.setHours(23,59,59,999);
-    let pFilterStart=new Date(_pToday), pFilterEnd=new Date(_pTodayEnd);
+    let pDrpViewYear=wibYMD().y, pDrpViewMonth=wibYMD().m;
+    let pFilterStart = wibDayStart(wibYMD().y, wibYMD().m, wibYMD().d);
+    let pFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
 
     function pDrpToggle() {
         const dd = document.getElementById('pDrp-dropdown');
@@ -2197,30 +2942,33 @@
         if (!dd.contains(e.target) && !tr.contains(e.target)) pDrpClose();
     }
     function pDrpPreset(days, label, btn) {
-        pDrpSelStart = new Date(Date.now()-(days-1)*864e5); pDrpSelStart.setHours(0,0,0,0);
-        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        pDrpSelStart = new Date(s.y, s.m, s.d);
+        pDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetYesterday(btn) {
-        pDrpSelStart = new Date(Date.now()-864e5); pDrpSelStart.setHours(0,0,0,0);
-        pDrpSelEnd   = new Date(Date.now()-864e5); pDrpSelEnd.setHours(23,59,59,999);
+        const y = wibYMDOffset(-1);
+        pDrpSelStart = new Date(y.y, y.m, y.d);
+        pDrpSelEnd   = new Date(y.y, y.m, y.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetThisMonth(btn) {
-        pDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        pDrpSelEnd   = new Date(); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        pDrpSelStart = new Date(t.y, t.m, 1);
+        pDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
     }
     function pDrpPresetLastMonth(btn) {
-        const n=new Date();
-        pDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
-        pDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); pDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        pDrpSelStart = new Date(t.y, t.m-1, 1);
+        pDrpSelEnd   = new Date(t.y, t.m, 0);
         document.querySelectorAll('#pDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         pDrpUpdateSel(); pDrpRender();
@@ -2241,9 +2989,9 @@
     }
     function pDrpApply() {
         if (!pDrpSelStart) return;
-        pFilterStart = new Date(pDrpSelStart); pFilterStart.setHours(0,0,0,0);
-        pFilterEnd   = pDrpSelEnd ? new Date(pDrpSelEnd) : new Date(pDrpSelStart);
-        pFilterEnd.setHours(23,59,59,999);
+        const endSel = pDrpSelEnd || pDrpSelStart;
+        pFilterStart = wibDayStart(pDrpSelStart.getFullYear(), pDrpSelStart.getMonth(), pDrpSelStart.getDate());
+        pFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
         document.getElementById('pDrp-label').textContent = `${drpFmtDate(pFilterStart)} — ${drpFmtDate(pFilterEnd)}`;
         pDrpClose();
         applyFilters();
@@ -2272,10 +3020,9 @@
     // DATE RANGE PICKER — DASHBOARD (prefix: dDrp)
     // ══════════════════════════════════════════
     let dDrpSelStart=null, dDrpSelEnd=null;
-    let dDrpViewYear=new Date().getFullYear(), dDrpViewMonth=new Date().getMonth();
-    const _dToday = new Date(); _dToday.setHours(0,0,0,0);
-    const _dTodayEnd = new Date(); _dTodayEnd.setHours(23,59,59,999);
-    let dFilterStart=new Date(_dToday), dFilterEnd=new Date(_dTodayEnd);
+    let dDrpViewYear=wibYMD().y, dDrpViewMonth=wibYMD().m;
+    let dFilterStart = wibDayStart(wibYMD().y, wibYMD().m, wibYMD().d);
+    let dFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
 
     function dDrpToggle() {
         const dd = document.getElementById('dDrp-dropdown');
@@ -2292,30 +3039,33 @@
         if (!dd.contains(e.target) && !tr.contains(e.target)) dDrpClose();
     }
     function dDrpPreset(days, label, btn) {
-        dDrpSelStart = new Date(Date.now()-(days-1)*864e5); dDrpSelStart.setHours(0,0,0,0);
-        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        dDrpSelStart = new Date(s.y, s.m, s.d);
+        dDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetYesterday(btn) {
-        dDrpSelStart = new Date(Date.now()-864e5); dDrpSelStart.setHours(0,0,0,0);
-        dDrpSelEnd   = new Date(Date.now()-864e5); dDrpSelEnd.setHours(23,59,59,999);
+        const y = wibYMDOffset(-1);
+        dDrpSelStart = new Date(y.y, y.m, y.d);
+        dDrpSelEnd   = new Date(y.y, y.m, y.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetThisMonth(btn) {
-        dDrpSelStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        dDrpSelEnd   = new Date(); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        dDrpSelStart = new Date(t.y, t.m, 1);
+        dDrpSelEnd   = new Date(t.y, t.m, t.d);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
     }
     function dDrpPresetLastMonth(btn) {
-        const n=new Date();
-        dDrpSelStart = new Date(n.getFullYear(), n.getMonth()-1, 1);
-        dDrpSelEnd   = new Date(n.getFullYear(), n.getMonth(), 0); dDrpSelEnd.setHours(23,59,59,999);
+        const t = wibYMD();
+        dDrpSelStart = new Date(t.y, t.m-1, 1);
+        dDrpSelEnd   = new Date(t.y, t.m, 0);
         document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         dDrpUpdateSel(); dDrpRender();
@@ -2326,9 +3076,9 @@
     }
     function dDrpApply() {
         if (!dDrpSelStart) return;
-        dFilterStart = new Date(dDrpSelStart); dFilterStart.setHours(0,0,0,0);
-        dFilterEnd   = dDrpSelEnd ? new Date(dDrpSelEnd) : new Date(dDrpSelStart);
-        dFilterEnd.setHours(23,59,59,999);
+        const endSel = dDrpSelEnd || dDrpSelStart;
+        dFilterStart = wibDayStart(dDrpSelStart.getFullYear(), dDrpSelStart.getMonth(), dDrpSelStart.getDate());
+        dFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
         document.getElementById('dDrp-label').textContent = `${drpFmtDate(dFilterStart)} — ${drpFmtDate(dFilterEnd)}`;
         dDrpClose();
         renderDashboard();
@@ -2351,6 +3101,93 @@
         if (dDrpViewMonth>11){dDrpViewMonth=0;dDrpViewYear++;}
         if (dDrpViewMonth<0) {dDrpViewMonth=11;dDrpViewYear--;}
         dDrpRender();
+    }
+
+    // ══════════════════════════════════════════
+    // DATE RANGE PICKER — TRACKING RESI (prefix: trDrp) — default Bulan Ini
+    // ══════════════════════════════════════════
+    let trDrpSelStart=null, trDrpSelEnd=null;
+    let trDrpViewYear=wibYMD().y, trDrpViewMonth=wibYMD().m;
+    let trFilterStart = wibDayStart(wibYMD().y, wibYMD().m, 1);
+    let trFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
+
+    function trDrpToggle() {
+        const dd = document.getElementById('trDrp-dropdown');
+        dd.classList.toggle('open');
+        if (dd.classList.contains('open')) { trDrpRender(); document.addEventListener('click', trDrpOutside); }
+        else document.removeEventListener('click', trDrpOutside);
+    }
+    function trDrpClose() {
+        document.getElementById('trDrp-dropdown').classList.remove('open');
+        document.removeEventListener('click', trDrpOutside);
+    }
+    function trDrpOutside(e) {
+        const dd=document.getElementById('trDrp-dropdown'), tr=document.getElementById('trDrp-trigger');
+        if (!dd.contains(e.target) && !tr.contains(e.target)) trDrpClose();
+    }
+    function trDrpPreset(days, label, btn) {
+        const t = wibYMD(), s = wibYMDOffset(-(days-1));
+        trDrpSelStart = new Date(s.y, s.m, s.d);
+        trDrpSelEnd   = new Date(t.y, t.m, t.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetYesterday(btn) {
+        const y = wibYMDOffset(-1);
+        trDrpSelStart = new Date(y.y, y.m, y.d);
+        trDrpSelEnd   = new Date(y.y, y.m, y.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetThisMonth(btn) {
+        const t = wibYMD();
+        trDrpSelStart = new Date(t.y, t.m, 1);
+        trDrpSelEnd   = new Date(t.y, t.m, t.d);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpPresetLastMonth(btn) {
+        const t = wibYMD();
+        trDrpSelStart = new Date(t.y, t.m-1, 1);
+        trDrpSelEnd   = new Date(t.y, t.m, 0);
+        document.querySelectorAll('#trDrp-dropdown .drp-preset').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpUpdateSel() {
+        document.getElementById('trDrp-sel-start').textContent = drpFmtDate(trDrpSelStart);
+        document.getElementById('trDrp-sel-end').textContent   = drpFmtDate(trDrpSelEnd);
+    }
+    function trDrpApply() {
+        if (!trDrpSelStart) return;
+        const endSel = trDrpSelEnd || trDrpSelStart;
+        trFilterStart = wibDayStart(trDrpSelStart.getFullYear(), trDrpSelStart.getMonth(), trDrpSelStart.getDate());
+        trFilterEnd   = wibDayEnd(endSel.getFullYear(), endSel.getMonth(), endSel.getDate());
+        document.getElementById('trDrp-label').textContent = `${drpFmtDate(trFilterStart)} — ${drpFmtDate(trFilterEnd)}`;
+        trDrpClose();
+        trApplyFilter();
+    }
+    function trDrpClickDay(y,m,d) {
+        const clicked = new Date(y,m,d);
+        if (!trDrpSelStart || (trDrpSelStart && trDrpSelEnd)) {
+            trDrpSelStart=clicked; trDrpSelEnd=null;
+        } else {
+            if (clicked < trDrpSelStart) { trDrpSelEnd=trDrpSelStart; trDrpSelStart=clicked; }
+            else trDrpSelEnd=clicked;
+        }
+        trDrpUpdateSel(); trDrpRender();
+    }
+    function trDrpRender() {
+        drpMakeCalendar('trDrp-cal', trDrpSelStart, trDrpSelEnd, 'trDrpClickDay', 'trDrpNav', trDrpViewYear, trDrpViewMonth);
+    }
+    function trDrpNav(dir) {
+        trDrpViewMonth += dir;
+        if (trDrpViewMonth>11){trDrpViewMonth=0;trDrpViewYear++;}
+        if (trDrpViewMonth<0) {trDrpViewMonth=11;trDrpViewYear--;}
+        trDrpRender();
     }
 
     // ══════════════════════════════════════════════════════
@@ -2401,7 +3238,7 @@
 
             const { data: rawData, error } = await cAFetchAll((from, to) =>
                 sbData.from('all_orderan').select('cs, jumlah, nama, team')
-                    .ilike('sumber', 'Validasi')
+                    .or('sumber.ilike.Validasi,sumber.eq.cs_input')
                     .gte('created_at', dateFromUTC).lte('created_at', dateToUTC)
                     .range(from, to));
             if (error) throw error;
@@ -2515,7 +3352,7 @@
                             const isSel = cASelectedCS.includes(key);
                             return `<label class="cs-checkbox ${isSel ? 'selected' : ''}" style="font-size:13px;">
                                 <input type="checkbox" ${isSel ? 'checked' : ''} data-cs="${escapeHtml(csName)}" data-product="${escapeHtml(product)}" onchange="cAToggleCS(this.dataset.cs,this.dataset.product)">
-                                <span>CS ${escapeHtml(csName)}</span>
+                                <span>${escapeHtml(/^cs\s/i.test(csName) ? csName : 'CS ' + csName)}</span>
                             </label>`;
                         }).join('')}
                     </div>
@@ -2574,9 +3411,29 @@
 
         alert(`✅ Tersimpan!\n${assignmentList.length} CS+Produk\nPeriode: ${dateFrom} - ${dateTo}`);
 
-        // Sync ke crm_customers di background
-        cASyncCustomers(assignmentList, dateFrom, dateTo)
+        // Sync ke crm_customers di background — sync SELURUH assignment CRM ini (semua periode),
+        // bukan cuma yang baru disimpan.
+        caSyncAllCustomersForCRM(currentUser.username)
             .catch(e => console.error('[cA Sync] Error:', e));
+    }
+
+    // ── Ambil SEMUA assignment aktif milik CRM ini (semua periode/CS), lalu sync ──
+    async function caSyncAllCustomersForCRM(crmName) {
+        const { data: allAssignments, error } = await sbApp.from('crm_assignments')
+            .select('cs_name, produk, date_from, date_to')
+            .eq('crm_name', crmName);
+        if (error) { console.error('[cA Sync] Gagal load assignment CRM:', error); return; }
+        if (!allAssignments || !allAssignments.length) return;
+
+        const byPeriod = {};
+        allAssignments.forEach(a => {
+            const key = a.date_from + '|' + a.date_to;
+            if (!byPeriod[key]) byPeriod[key] = { dateFrom: a.date_from, dateTo: a.date_to, items: [] };
+            byPeriod[key].items.push({ csName: a.cs_name, produk: a.produk });
+        });
+
+        await cASyncCustomers(Object.values(byPeriod), crmName);
+        await loadOrders();
     }
 
     async function cAUpdateStats() {
@@ -2697,115 +3554,191 @@
     }
 
     async function cADeleteById(id) {
-        if (!confirm('Hapus assignment ini?')) return;
+        if (!confirm('Hapus assignment ini?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)')) return;
+        const { data: row } = await sbApp.from('crm_assignments').select('crm_name').eq('id', id).single();
         const { error } = await sbApp.from('crm_assignments').delete().eq('id', id);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
+        if (row?.crm_name) await caPruneOrphanCustomers(row.crm_name);
         await loadAssignments();
         cALoadRiwayat();
     }
 
     async function cADeleteGroup(crmName, dateFrom, dateTo) {
         const periode = dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`;
-        if (!confirm(`Hapus semua assignment periode ${periode}?`)) return;
+        if (!confirm(`Hapus semua assignment periode ${periode}?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)`)) return;
         const { error } = await sbApp.from('crm_assignments').delete()
             .eq('crm_name', crmName)
             .eq('date_from', dateFrom)
             .eq('date_to', dateTo);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
+        await caPruneOrphanCustomers(crmName);
         await loadAssignments();
         cALoadRiwayat();
     }
 
+    // Hapus row crm_customers milik crmName yang udah gak dicover assignment aktif manapun
+    // (dipanggil abis assignment dihapus, biar Pesanan/Tracking selalu sinkron sama assignment yang beneran aktif).
+    // Assignment dengan produk kosong dianggap "cover semua produk" utk CS+periode itu — sama kayak
+    // logika filter produk di cASyncCustomers.
+    async function caPruneOrphanCustomers(crmName) {
+        const { data: activeAssignments, error: aErr } = await sbApp.from('crm_assignments')
+            .select('cs_name, produk, date_from, date_to')
+            .eq('crm_name', crmName);
+        if (aErr) { console.error('[cA Prune] Gagal load assignment aktif:', aErr); return; }
+
+        const isCovered = (namaCs, produk, tgl) => (activeAssignments || []).some(a =>
+            normEq(a.cs_name, namaCs) &&
+            (!a.produk || normEq(a.produk, produk)) &&
+            tgl >= a.date_from && tgl <= a.date_to
+        );
+
+        let page = 0, hasMore = true, toDelete = [];
+        while (hasMore) {
+            const { data, error } = await sbApp.from('crm_customers')
+                .select('id, nama_cs, produk, tgl')
+                .eq('crm', crmName)
+                .range(page*1000, (page+1)*1000-1);
+            if (error) { console.error('[cA Prune] Gagal load crm_customers:', error); break; }
+            if (data && data.length) {
+                data.forEach(r => { if (!isCovered(r.nama_cs, r.produk, r.tgl)) toDelete.push(r.id); });
+                hasMore = data.length === 1000;
+                page++;
+            } else hasMore = false;
+        }
+
+        if (!toDelete.length) return;
+        for (let i = 0; i < toDelete.length; i += 100) {
+            const { error } = await sbApp.from('crm_customers').delete().in('id', toDelete.slice(i, i+100));
+            if (error) console.error('[cA Prune] Gagal hapus batch', i, error);
+        }
+        console.log('[cA Prune] Hapus', toDelete.length, 'row orphan dari crm_customers untuk', crmName);
+    }
+
     // ── Sync orders ke crm_customers ──
-    async function cASyncCustomers(assignmentList, dateFrom, dateTo) {
+    // periodGroups: [{ dateFrom, dateTo, items: [{csName, produk}] }, ...] — hasil sync gabungan SEMUA
+    // assignment aktif milik crmName, supaya wipe-and-rebuild di bawah tidak menghapus periode lain.
+    async function cASyncCustomers(periodGroups, crmName) {
         try {
-            const crmName  = currentUser.username;
-            const csNames  = [...new Set(assignmentList.map(a => a.csName))];
-            console.log('[cA Sync] crmName:', crmName, '| cs:', csNames, '| range:', dateFrom, '-', dateTo);
-
-            const { error: cleanupErr } = await sbApp.from('crm_customers').delete().eq('crm', crmName);
-            if (cleanupErr) console.warn('[cA Sync] Cleanup warn:', cleanupErr);
-
-            const csFilter    = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
-            const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-            const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
-
-            const { data: orderData } = await cAFetchAll((from, to) =>
-                sbData.from('all_orderan').select('*')
-                    .or(csFilter)
-                    .gte('created_at', dateFromUTC)
-                    .lte('created_at', dateToUTC)
-                    .range(from, to));
-
-            if (!orderData || !orderData.length) {
-                console.warn('[cA Sync] Tidak ada order, sync dibatalkan.');
-                return;
-            }
-
-            const csProdukMap = {};
-            assignmentList.forEach(a => {
-                const key = (a.csName || '').trim().toLowerCase();
-                if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
-            });
+            console.log('[cA Sync] crmName:', crmName, '| jumlah periode:', periodGroups.length);
 
             await loadSkuList();
 
-            const filtered = orderData.filter(o => {
-                const csKey        = (o.cs || '').trim().toLowerCase();
-                const assignedProd = csProdukMap[csKey];
-                if (!assignedProd) return true;
-                const orderProd    = extractProduk(o.jumlah, o.nama);
-                if (!orderProd) return true;
-                return orderProd === assignedProd;
-            });
-            console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
+            // Ambil row lama CRM ini — dipakai utk (a) merge histori tracking resi per repeat_orders
+            // biar ga ke-timpa kosong, dan (b) hapus row yang udah ga dicover assignment manapun lagi.
+            // TIDAK delete-semua-dulu, supaya kolom yang diisi manual (catatan, perkembangan, status_resi,
+            // dst — semua kolom di luar payload upsert di bawah) tidak ikut hilang tiap kali simpan assignment.
+            const { data: existingRows, error: existingErr } = await sbApp
+                .from('crm_customers')
+                .select('id, no_hp, nama_cs, tgl, repeat_orders')
+                .eq('crm', crmName);
+            if (existingErr) console.warn('[cA Sync] Gagal load existing rows (non-fatal):', existingErr);
+            const existingMap = {};
+            (existingRows || []).forEach(r => { existingMap[r.no_hp + '|' + r.nama_cs + '|' + r.tgl] = r; });
 
-            const grouped = {};
-            filtered.forEach(o => {
-                const tglWIB = o.created_at
-                    ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
-                    : dateFrom;
-                const key = (o.hp || '').trim() + '|' + (o.cs || '').trim().toLowerCase();
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push({ ...o, tglWIB });
-            });
+            let totalUpserted = 0;
+            for (const { dateFrom, dateTo, items } of periodGroups) {
+                const csNames = [...new Set(items.map(a => a.csName))];
+                const csFilter    = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g,'')}`).join(',');
+                const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
+                const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
 
-            const rows = Object.values(grouped).map(orders => {
-                orders.sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
-                const first = orders[0];
-                const repeats = orders.slice(1).map(o => ({
-                    tgl: o.tglWIB, resi: o.resi||null,
-                    produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
-                    qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
-                }));
-                const csKey = (first.cs || '').trim().toLowerCase();
-                return {
-                    nama:          norm((first.nama || '').split('|')[0]) || null,
-                    no_hp:         first.hp                  || null,
-                    alamat:        first.alamat              || null,
-                    kelurahan:     first.kelurahan           || null,
-                    kecamatan:     first.kecamatan          || null,
-                    kabupaten:     norm(first.kabupaten)     || null,
-                    provinsi:      norm(first.provinsi)      || null,
-                    nama_cs:       norm(first.cs)            || null,
-                    crm:           crmName,
-                    tgl:           first.tglWIB,
-                    resi:          first.resi                || null,
-                    produk:        csProdukMap[csKey]        || null,
-                    qty:           first.quantity            || null,
-                    total_cod:     first.total_pembayaran    || null,
-                    keluhan:       first.keluhan             || null,
-                    repeat_orders: repeats,
-                };
-            });
+                const { data: orderData } = await cAFetchAll((from, to) =>
+                    sbData.from('all_orderan').select('*')
+                        .or(csFilter)
+                        .gte('created_at', dateFromUTC)
+                        .lte('created_at', dateToUTC)
+                        .range(from, to));
 
-            for (let i = 0; i < rows.length; i += 100) {
-                const { error } = await sbApp.from('crm_customers').upsert(rows.slice(i, i+100), {
-                    onConflict: 'no_hp,nama_cs,tgl', ignoreDuplicates: false
+                console.log('[cA Sync] periode', dateFrom, '-', dateTo, '| orderData count:', orderData?.length);
+                if (!orderData || !orderData.length) continue;
+
+                const csProdukMap = {};
+                items.forEach(a => {
+                    const key = (a.csName || '').trim().toLowerCase();
+                    if (a.produk) csProdukMap[key] = a.produk.trim().toUpperCase();
                 });
-                if (error) console.error('[cA Sync] Upsert error batch', i, error);
+
+                // Kalau produk gagal dideteksi (nama/jumlah gak ke-parse / SKU belum ada di sku_produk)
+                // → BUANG, jangan diasumsikan cocok. CS yang closing >1 produk bisa ke-mix kalau
+                // fallback-nya "include" — order produk lain yg gagal ke-detect ikut lolos.
+                const filtered = orderData.filter(o => {
+                    const csKey        = (o.cs || '').trim().toLowerCase();
+                    const assignedProd = csProdukMap[csKey];
+                    if (!assignedProd) return true;
+                    const orderProd    = extractProduk(o.jumlah, o.nama);
+                    if (!orderProd) return false;
+                    return orderProd === assignedProd;
+                });
+                console.log('[cA Sync] Filtered:', filtered.length, '/', orderData.length);
+
+                const grouped = {};
+                filtered.forEach(o => {
+                    const tglWIB = o.created_at
+                        ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                        : dateFrom;
+                    const key = (o.hp || '').trim() + '|' + (o.cs || '').trim().toLowerCase();
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push({ ...o, tglWIB });
+                });
+
+                const rows = Object.values(grouped).map(orders => {
+                    orders.sort((a,b) => new Date(a.created_at||0)-new Date(b.created_at||0));
+                    const first = orders[0];
+                    const key = (first.hp||'').trim() + '|' + (norm(first.cs)||'') + '|' + first.tglWIB;
+                    const oldRepeats = Array.isArray(existingMap[key]?.repeat_orders) ? existingMap[key].repeat_orders : [];
+
+                    const repeats = orders.slice(1).map(o => {
+                        const base = {
+                            tgl: o.tglWIB, resi: o.resi||null,
+                            ekspedisi: extractEkspedisi(o.pembayaran||'')||null,
+                            produk: (extractProduk(o.jumlah, o.nama)||'').toUpperCase()||null,
+                            qty: o.quantity||null, total_cod: o.total_pembayaran||null, keluhan: o.keluhan||null
+                        };
+                        // Merge histori tracking resi lama (matching by resi) biar status yang udah
+                        // pernah dicek (cron/manual) ga ke-reset kosong tiap resync.
+                        const oldRep = base.resi ? oldRepeats.find(r => r.resi === base.resi) : null;
+                        return oldRep ? {
+                            ...base,
+                            status_resi:            oldRep.status_resi            ?? null,
+                            status_resi_step:       oldRep.status_resi_step       ?? null,
+                            status_resi_updated_at: oldRep.status_resi_updated_at ?? null,
+                            status_resi_detail:     oldRep.status_resi_detail     ?? null,
+                        } : base;
+                    });
+                    const csKey = (first.cs || '').trim().toLowerCase();
+                    return {
+                        nama:          norm((first.nama || '').split('|')[0]) || null,
+                        no_hp:         first.hp                  || null,
+                        alamat:        first.alamat              || null,
+                        kelurahan:     first.kelurahan           || null,
+                        kecamatan:     first.kecamatan          || null,
+                        kabupaten:     norm(first.kabupaten)     || null,
+                        provinsi:      norm(first.provinsi)      || null,
+                        nama_cs:       norm(first.cs)            || null,
+                        crm:           crmName,
+                        tgl:           first.tglWIB,
+                        resi:          first.resi                || null,
+                        ekspedisi:     extractEkspedisi(first.pembayaran||'') || null,
+                        produk:        csProdukMap[csKey]        || null,
+                        qty:           first.quantity            || null,
+                        total_cod:     first.total_pembayaran    || null,
+                        keluhan:       first.keluhan             || null,
+                        repeat_orders: repeats,
+                    };
+                });
+
+                for (let i = 0; i < rows.length; i += 100) {
+                    const { error } = await sbApp.from('crm_customers').upsert(rows.slice(i, i+100), {
+                        onConflict: 'no_hp,nama_cs,tgl', ignoreDuplicates: false
+                    });
+                    if (error) console.error('[cA Sync] Upsert error batch', i, error);
+                    else totalUpserted += rows.slice(i, i+100).length;
+                }
             }
-            console.log('[cA Sync] Selesai:', rows.length, 'baris.');
+
+            // Tidak ada auto-delete di sini — sync murni upsert (tambah/update). Row lama yang sudah
+            // tidak dicover assignment manapun TETAP dibiarkan, hanya bisa dihapus manual.
+            console.log('[cA Sync] Selesai:', totalUpserted, 'baris total.');
         } catch(e) { console.error('[cA Sync] Exception:', e); }
     }
 
