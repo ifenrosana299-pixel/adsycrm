@@ -351,10 +351,6 @@
                     <div id="produkConfigWrap">
                         <p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>
                     </div>
-                    <div style="margin-top:16px;">
-                        <button onclick="saveProdukConfig()" class="btn btn-success">💾 Simpan Semua</button>
-                        <span id="produkConfigMsg" style="margin-left:12px;font-size:13px;color:#10B981;"></span>
-                    </div>
                 </div>
             </div>
 
@@ -2182,13 +2178,13 @@
                         <tr>
                             <th>Produk</th>
                             <th>Kode</th>
-                            <th style="width:180px;">Durasi 1 Box (hari)</th>
-                            <th style="width:200px;color:#9CA3AF;font-weight:400;font-size:12px;">Contoh: qty=2 → 2×durasi hari</th>
+                            <th style="width:160px;">Durasi 1 Box (hari)</th>
+                            <th style="width:120px;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         ${data.map(p => `
-                            <tr>
+                            <tr id="produkRow_${p.id}">
                                 <td style="font-weight:600;">${escapeHtml(p.nama_produk)}</td>
                                 <td style="color:#9CA3AF;font-size:12px;">${escapeHtml(p.kode)}</td>
                                 <td>
@@ -2196,10 +2192,12 @@
                                         id="durasi_${p.id}"
                                         value="${p.durasi_hari || ''}"
                                         placeholder="belum diatur"
-                                        class="form-input" style="width:120px;text-align:center;">
+                                        class="form-input" style="width:110px;text-align:center;"
+                                        onkeydown="if(event.key==='Enter') saveProdukRow(${p.id})">
                                 </td>
-                                <td style="font-size:12px;color:#9CA3AF;">
-                                    ${p.durasi_hari ? `Potensi repeat ~${p.durasi_hari} hari setelah terima` : '—'}
+                                <td>
+                                    <button onclick="saveProdukRow(${p.id})" class="btn btn-success btn-sm" id="saveBtn_${p.id}" style="font-size:12px;padding:4px 12px;">Simpan</button>
+                                    <span id="saveMsg_${p.id}" style="margin-left:8px;font-size:12px;"></span>
                                 </td>
                             </tr>
                         `).join('')}
@@ -2208,39 +2206,40 @@
             `;
         }
 
-        async function saveProdukConfig() {
-            const msg = document.getElementById('produkConfigMsg');
-            msg.textContent = 'Menyimpan...';
-            msg.style.color = '#9CA3AF';
+        async function saveProdukRow(id) {
+            const btn = document.getElementById('saveBtn_' + id);
+            const msg = document.getElementById('saveMsg_' + id);
+            const input = document.getElementById('durasi_' + id);
+            if (!input) return;
 
-            let successCount = 0;
-            let errorCount = 0;
+            btn.disabled = true;
+            btn.textContent = '...';
+            msg.textContent = '';
 
-            for (const p of produkConfigData) {
-                const input = document.getElementById('durasi_' + p.id);
-                if (!input) continue;
-                const val = input.value.trim();
-                const durasi = val === '' ? null : parseInt(val);
+            const val = input.value.trim();
+            const durasi = val === '' ? null : parseInt(val);
 
-                const { error } = await sbData.from('sku_produk')
-                    .update({ durasi_hari: durasi })
-                    .eq('id', p.id);
+            const { error } = await sbData.from('sku_produk')
+                .update({ durasi_hari: durasi })
+                .eq('id', id);
 
-                if (error) errorCount++;
-                else successCount++;
-            }
+            btn.disabled = false;
+            btn.textContent = 'Simpan';
 
-            if (errorCount === 0) {
-                msg.textContent = `✅ ${successCount} produk berhasil disimpan!`;
+            if (error) {
+                msg.textContent = '❌ Gagal';
+                msg.style.color = '#EF4444';
+            } else {
+                msg.textContent = '✅ Tersimpan';
                 msg.style.color = '#10B981';
-                // Reload skuList global supaya crm.html bisa pakai
+                // Update local data
+                const p = produkConfigData.find(x => x.id === id);
+                if (p) p.durasi_hari = durasi;
+                // Reload skuList global
                 skuList = [];
                 await loadSkuList();
-            } else {
-                msg.textContent = `⚠️ ${successCount} berhasil, ${errorCount} gagal.`;
-                msg.style.color = '#F59E0B';
             }
-            setTimeout(() => { msg.textContent = ''; }, 3000);
+            setTimeout(() => { msg.textContent = ''; }, 2500);
         }
     </script>
 </body>
