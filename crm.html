@@ -520,9 +520,11 @@
                 <span class="crm-nav-arrow" id="crmArrow-pengelompokan">▼</span>
             </div>
             <div id="crmGroup-pengelompokan" class="hidden">
-                <div class="crm-nav-sub" id="crmNavItem-pengelompokan" onclick="crmShow('pengelompokan', this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Member Tier
-                </div>
+                <div class="crm-nav-sub" id="crmNavItem-tier-bronze" onclick="crmShowTier('bronze', this)">🥉 Bronze</div>
+                <div class="crm-nav-sub" id="crmNavItem-tier-silver" onclick="crmShowTier('silver', this)">🥈 Silver</div>
+                <div class="crm-nav-sub" id="crmNavItem-tier-gold" onclick="crmShowTier('gold', this)">🥇 Gold</div>
+                <div class="crm-nav-sub" id="crmNavItem-tier-platinum" onclick="crmShowTier('platinum', this)">💎 Platinum</div>
+                <div class="crm-nav-sub" id="crmNavItem-tier-diamond" onclick="crmShowTier('diamond', this)">👑 Diamond</div>
             </div>
 
             <div class="crm-nav-item" id="crmNavItem-ultah" onclick="crmShow('ultah', this)">
@@ -1029,18 +1031,13 @@
 
             <!-- ═══ MEMBER TIER ═══ -->
             <section id="crmSec-pengelompokan" class="crm-section">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
                     <div class="crm-page-title" style="margin-bottom:0;">
-                        <div class="crm-page-title-icon">⭐</div>
-                        <h2>Member Tier</h2>
+                        <div class="crm-page-title-icon" id="memberTierIcon">⭐</div>
+                        <h2 id="memberTierTitle">Member Tier</h2>
                     </div>
                     <button onclick="loadMemberTier()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
                 </div>
-
-                <!-- Tier tabs -->
-                <div id="memberTierTabs" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;"></div>
-
-                <!-- Table wrap -->
                 <div id="memberTierWrap">
                     <p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>
                 </div>
@@ -1490,7 +1487,6 @@
         if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
-        if (name === 'pengelompokan') loadMemberTier();
         if (name === 'testimoni') loadTestimoni();
         if (name === 'ultah') loadUltah();
     }
@@ -1919,48 +1915,72 @@
         return 'bronze';
     }
 
-    function loadMemberTier() {
-        const tabsEl = document.getElementById('memberTierTabs');
-        const wrap   = document.getElementById('memberTierWrap');
-        if (!tabsEl || !wrap) return;
+    async function crmShowTier(tier, el) {
+        // Highlight nav item
+        document.querySelectorAll('[id^="crmNavItem-tier-"]').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+        // Pastikan group pengelompokan terbuka
+        const grp = document.getElementById('crmGroup-pengelompokan');
+        if (grp && grp.classList.contains('hidden')) crmToggleGroup('pengelompokan');
+        // Set tier aktif & tampilkan section
+        memberTierActive = tier;
+        // Show section (pakai mekanisme CRM_SECTIONS)
+        CRM_SECTIONS.forEach(s => {
+            const sec = document.getElementById('crmSec-' + s);
+            if (sec) sec.style.display = 'none';
+        });
+        document.querySelectorAll('.crm-nav-item, .crm-nav-sub').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+        const sec = document.getElementById('crmSec-pengelompokan');
+        if (sec) sec.style.display = 'block';
+        await loadMemberTier();
+    }
 
-        if (!crmCustomers || !crmCustomers.length) {
-            tabsEl.innerHTML = '';
-            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">Belum ada data pelanggan (status SAMPAI).</p>';
+    async function loadMemberTier() {
+        const wrap = document.getElementById('memberTierWrap');
+        if (!wrap) return;
+
+        const m = TIER_META[memberTierActive];
+        const titleEl = document.getElementById('memberTierTitle');
+        const iconEl  = document.getElementById('memberTierIcon');
+        if (titleEl) titleEl.textContent = m.label;
+        if (iconEl)  iconEl.textContent  = m.label.split(' ')[0];
+
+        // Load orders & skuList jika belum ada
+        if (!orders.length) {
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>';
+            await loadOrders();
+        }
+        if (!skuList.length) await loadSkuList();
+
+        if (!orders.length) {
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">Belum ada data pesanan.</p>';
             return;
         }
 
-        // Grup per tier
-        const groups = { bronze: [], silver: [], gold: [], platinum: [], diamond: [] };
+        // Ambil semua SAMPAI, dedup by no_hp+nama_cs (sama seperti loadPelanggan)
+        const seen = new Set();
+        const sampaiList = [];
+        orders.forEach(o => {
+            if (o.status_resi !== 'SAMPAI') return;
+            const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
+            if (key === '|' || seen.has(key)) return;
+            seen.add(key);
+            sampaiList.push(o);
+        });
 
-        crmCustomers.forEach(c => {
+        // Filter sesuai tier aktif
+        const list = sampaiList.filter(c => {
             const repeatCount = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
             const produkNorm  = (c.produk || '').trim().toLowerCase();
             const sku = skuList.find(s =>
                 s.kode?.toLowerCase() === produkNorm ||
                 s.nama_produk?.toLowerCase() === produkNorm
             );
-            const tier = getCustomerTier(repeatCount, sku);
-            groups[tier].push({ ...c, _repeatCount: repeatCount });
-        });
+            return getCustomerTier(repeatCount, sku) === memberTierActive;
+        }).map(c => ({ ...c, _repeatCount: Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0 }));
 
-        // Render tabs
-        tabsEl.innerHTML = Object.entries(TIER_META).map(([key, m]) => {
-            const count   = groups[key].length;
-            const active  = key === memberTierActive;
-            return `<button onclick="setMemberTierTab('${key}')"
-                style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;border:2px solid ${active ? m.border : '#e2e8f0'};background:${active ? m.bg : '#fff'};color:${active ? m.color : '#6b7280'};font-size:13px;font-weight:${active ? '700' : '500'};cursor:pointer;transition:all .15s;">
-                ${m.label}
-                <span style="background:${active ? m.border : '#e2e8f0'};color:${active ? '#fff' : '#6b7280'};padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;">${count}</span>
-            </button>`;
-        }).join('');
-
-        renderMemberTierTable(groups[memberTierActive]);
-    }
-
-    function setMemberTierTab(tier) {
-        memberTierActive = tier;
-        loadMemberTier();
+        renderMemberTierTable(list);
     }
 
     function renderMemberTierTable(list) {
