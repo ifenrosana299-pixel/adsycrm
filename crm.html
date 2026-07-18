@@ -1983,9 +1983,20 @@
         renderMemberTierTable(list);
     }
 
+    let tierPage = 1;
+    let tierPageSize = 10;
+    let tierCurrentList = [];
+
     function renderMemberTierTable(list) {
+        tierCurrentList = list;
+        tierPage = 1;
+        renderMemberTierPage();
+    }
+
+    function renderMemberTierPage() {
         const wrap = document.getElementById('memberTierWrap');
         const m    = TIER_META[memberTierActive];
+        const list = tierCurrentList;
 
         if (!list.length) {
             wrap.innerHTML = `<div style="text-align:center;padding:48px;color:#94a3b8;">
@@ -1995,47 +2006,120 @@
             return;
         }
 
-        const rows = list.map(c => {
-            const repeats   = Array.isArray(c.repeat_orders) ? c.repeat_orders : [];
-            const lastTgl   = repeats.length ? (repeats[repeats.length - 1].tgl || c.tgl) : c.tgl;
-            const totalBox  = repeats.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
+        const fmtDate = (d) => {
+            if (!d) return '—';
+            const dt = new Date(d);
+            if (isNaN(dt)) return d;
+            return dt.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+        };
 
-            const fmtDate = (d) => {
-                if (!d) return '—';
-                const dt = new Date(d);
-                if (isNaN(dt)) return d;
-                return dt.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-            };
+        // Stats untuk cards
+        const totalRepeat  = list.reduce((s, c) => s + (Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0), 0);
+        const avgRepeat    = list.length ? (totalRepeat / list.length).toFixed(1) : 0;
 
+        // Hampir naik tier: cek thresholds dari skuList
+        const hampirNaik = list.filter(c => {
+            const repeatCount = c._repeatCount || 0;
+            const produkNorm  = (c.produk || '').trim().toLowerCase();
+            const sku = skuList.find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
+            if (!sku) return false;
+            const thresholds = [sku.tier_silver_min, sku.tier_gold_min, sku.tier_platinum_min, sku.tier_diamond_min].filter(Boolean);
+            const nextTier = thresholds.find(t => t > repeatCount);
+            return nextTier && (nextTier - repeatCount) <= 2;
+        }).length;
+
+        // Pagination
+        const totalPages = Math.ceil(list.length / tierPageSize);
+        const start = (tierPage - 1) * tierPageSize;
+        const pageList = list.slice(start, start + tierPageSize);
+
+        const rows = pageList.map((c, i) => {
+            const repeats  = Array.isArray(c.repeat_orders) ? c.repeat_orders : [];
+            const lastTgl  = repeats.length ? (repeats[repeats.length - 1].tgl || c.tgl) : c.tgl;
+            const totalBox = repeats.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
             return `<tr>
+                <td style="color:#9ca3af;font-size:12px;">${start + i + 1}</td>
                 <td style="font-weight:600;">${escapeHtml(c.nama || '—')}</td>
                 <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
-                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
-                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
-                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
-                <td style="text-align:center;font-size:13px;color:#374151;">${fmtDate(lastTgl)}</td>
-                <td style="text-align:center;font-size:13px;font-weight:600;color:${totalBox ? '#1e293b' : '#94a3b8'};">${totalBox ? totalBox + ' box' : '—'}</td>
+                <td style="text-align:center;color:#94a3b8;">—</td>
+                <td style="text-align:center;color:#94a3b8;">—</td>
+                <td style="text-align:center;color:#94a3b8;">—</td>
+                <td style="text-align:center;color:#374151;">${fmtDate(lastTgl)}</td>
+                <td style="text-align:center;font-weight:600;color:${totalBox ? '#1e293b' : '#94a3b8'};">${totalBox ? totalBox + ' box' : '—'}</td>
             </tr>`;
         }).join('');
 
+        // Pagination buttons
+        const pgBtns = (() => {
+            if (totalPages <= 1) return '';
+            let btns = '';
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || Math.abs(p - tierPage) <= 1) {
+                    btns += `<button onclick="tierGoPage(${p})" style="padding:4px 10px;border-radius:6px;border:1px solid ${p===tierPage?'#4F46E5':'#e2e8f0'};background:${p===tierPage?'#4F46E5':'#fff'};color:${p===tierPage?'#fff':'#374151'};font-size:12px;cursor:pointer;">${p}</button>`;
+                } else if (Math.abs(p - tierPage) === 2) {
+                    btns += `<span style="color:#94a3b8;font-size:12px;">...</span>`;
+                }
+            }
+            return btns;
+        })();
+
         wrap.innerHTML = `
-            <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;">${list.length} pelanggan</div>
-            <div style="overflow-x:auto;">
-                <table class="data-table" style="width:100%;min-width:700px;">
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>Nomer</th>
-                            <th style="text-align:center;">Point</th>
-                            <th style="text-align:center;">Tgl Redeem Point</th>
-                            <th style="text-align:center;">Total Point Diredeem</th>
-                            <th style="text-align:center;">Last Order</th>
-                            <th style="text-align:center;">Jumlah BOX Repeat</th>
-                        </tr>
-                    </thead>
+            <div class="crm-stats-row" style="margin-bottom:16px;">
+                <div class="crm-stat">
+                    <div><div class="crm-stat-label">Total Member</div><div class="crm-stat-value" style="color:${m.color};">${list.length}</div></div>
+                    <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
+                </div>
+                <div class="crm-stat">
+                    <div><div class="crm-stat-label">Total Repeat</div><div class="crm-stat-value">${totalRepeat}</div></div>
+                    <div class="crm-stat-icon" style="background:#EEF2FF;">🔁</div>
+                </div>
+                <div class="crm-stat">
+                    <div><div class="crm-stat-label">Rata-rata Repeat</div><div class="crm-stat-value">${avgRepeat}x</div></div>
+                    <div class="crm-stat-icon" style="background:#F0FDF4;">📊</div>
+                </div>
+                <div class="crm-stat">
+                    <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaik}</div></div>
+                    <div class="crm-stat-icon" style="background:#FEF3C7;">⬆️</div>
+                </div>
+            </div>
+
+            <div class="crm-table-wrap">
+                <table class="crm-table">
+                    <thead><tr>
+                        <th>#</th>
+                        <th>Nama</th>
+                        <th>Nomer</th>
+                        <th style="text-align:center;">Point</th>
+                        <th style="text-align:center;">Tgl Redeem Point</th>
+                        <th style="text-align:center;">Total Point Diredeem</th>
+                        <th style="text-align:center;">Last Order</th>
+                        <th style="text-align:center;">Jumlah BOX Repeat</th>
+                    </tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px;">
+                <div style="font-size:12px;color:#9ca3af;">${start+1}–${Math.min(start+tierPageSize, list.length)} dari ${list.length} pelanggan</div>
+                <div style="display:flex;gap:4px;align-items:center;">${pgBtns}</div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;">
+                    Baris/hal:
+                    <select onchange="tierChangePageSize(this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:12px;">
+                        ${[10,20,50,100].map(n => `<option value="${n}" ${n===tierPageSize?'selected':''}>${n}</option>`).join('')}
+                    </select>
+                </div>
             </div>`;
+    }
+
+    function tierGoPage(p) {
+        tierPage = p;
+        renderMemberTierPage();
+    }
+
+    function tierChangePageSize(val) {
+        tierPageSize = parseInt(val);
+        tierPage = 1;
+        renderMemberTierPage();
     }
 
     let ultahData       = [];   // semua pelanggan dengan tgl_lahir
