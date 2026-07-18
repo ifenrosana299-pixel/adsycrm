@@ -1023,9 +1023,10 @@
                     <div id="pelangganPagination" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"></div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="font-size:12px;color:#64748b;">Baris/hal:</span>
-                        <select id="pelangganPageSizeSelect" class="crm-select" style="width:80px;height:32px;font-size:13px;" onchange="pelangganChangePageSize(this.value)">
+                        <select id="pelangganPageSizeSelect" style="width:70px;height:32px;font-size:13px;padding:0 8px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;color:#1e293b;cursor:pointer;outline:none;" onchange="pelangganChangePageSize(this.value)">
+                            <option value="10" selected>10</option>
                             <option value="20">20</option>
-                            <option value="50" selected>50</option>
+                            <option value="50">50</option>
                             <option value="100">100</option>
                         </select>
                     </div>
@@ -1630,7 +1631,7 @@
     let crmCustomers = [];
     let filteredCustomers = [];
     let pelangganPage = 1;
-    let pelangganPageSize = 50;
+    let pelangganPageSize = 10;
 
     async function loadPelanggan() {
         const tb = document.getElementById('pelangganTbody');
@@ -3663,12 +3664,23 @@
     }
 
     async function cADeleteById(id) {
-        if (!confirm('Hapus assignment ini?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)')) return;
-        const { data: row } = await sbApp.from('crm_assignments').select('crm_name').eq('id', id).single();
+        if (!confirm('Hapus assignment ini?\n(Pesanan CS ini untuk periode tersebut akan ikut terhapus)')) return;
+        const { data: row } = await sbApp.from('crm_assignments').select('crm_name, cs_name, date_from, date_to').eq('id', id).single();
         const { error } = await sbApp.from('crm_assignments').delete().eq('id', id);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
-        if (row?.crm_name) await caPruneOrphanCustomers(row.crm_name);
+
+        // Hapus crm_customers untuk CS ini di periode tersebut
+        if (row?.crm_name && row?.cs_name) {
+            await sbApp.from('crm_customers').delete()
+                .eq('crm', row.crm_name)
+                .ilike('nama_cs', row.cs_name)
+                .gte('tgl', row.date_from)
+                .lte('tgl', row.date_to);
+        }
+
         await loadAssignments();
+        await loadOrders();
+        await loadPelanggan();
         cALoadRiwayat();
     }
 
@@ -3696,7 +3708,7 @@
             for (const csName of csNames) {
                 await sbApp.from('crm_customers').delete()
                     .eq('crm', crmName)
-                    .eq('nama_cs', csName)
+                    .ilike('nama_cs', csName)
                     .gte('tgl', dateFrom)
                     .lte('tgl', dateTo);
             }
@@ -3704,6 +3716,7 @@
 
         await loadAssignments();
         await loadOrders();
+        await loadPelanggan();
         cALoadRiwayat();
     }
 
