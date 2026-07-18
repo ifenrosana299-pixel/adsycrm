@@ -1646,20 +1646,24 @@
         if (!sampaiOrders.length) {
             crmCustomers = [];
         } else {
-            // Pisahkan: yang sudah ada tgl_delivered vs yang belum
-            const needsDetail = sampaiOrders.filter(o => !o.tgl_delivered);
+            // Fetch tgl_delivered untuk semua SAMPAI (tidak ada di orders)
+            const needsDetail = sampaiOrders;
 
             const detailMap = {};
             if (needsDetail.length) {
-                // Fetch status_resi_detail hanya untuk yang belum punya tgl_delivered
+                // Fetch tgl_delivered + status_resi_detail untuk yang belum punya tgl_delivered
                 const needIds = needsDetail.map(o => o.id);
                 for (let i = 0; i < needIds.length; i += 500) {
                     const batch = needIds.slice(i, i + 500);
                     const { data: dRows, error: dErr } = await sbApp.from('crm_customers')
-                        .select('id,status_resi_detail')
+                        .select('id,tgl_delivered,status_resi_detail')
                         .in('id', batch);
-                    if (dErr) { console.warn('status_resi_detail fetch error:', dErr.message); }
-                    if (dRows) dRows.forEach(r => { detailMap[r.id] = r.status_resi_detail; });
+                    if (dErr) { console.warn('detail fetch error:', dErr.message); }
+                    if (dRows) dRows.forEach(r => {
+                        // Kalau tgl_delivered sudah ada di DB, pakai langsung
+                        if (r.tgl_delivered) detailMap['_tgl_' + r.id] = normDateISO(r.tgl_delivered);
+                        detailMap[r.id] = r.status_resi_detail;
+                    });
                 }
 
                 // Extract tgl_delivered dari history dan simpan ke DB (fire & forget)
@@ -1684,10 +1688,9 @@
                 }
             }
 
-            // Gabungkan: yang sudah ada tgl_delivered langsung pakai, yang baru extract dari history
             crmCustomers = sampaiOrders.map(o => ({
                 ...o,
-                tgl_delivered: o.tgl_delivered || detailMap['_tgl_' + o.id] || null,
+                tgl_delivered: detailMap['_tgl_' + o.id] || null,
             }));
         }
 
@@ -1808,9 +1811,28 @@
                 else                return `<span style="font-size:11px;color:#10B981;white-space:nowrap;">🟢 ${label} (${diff}h lagi)</span>`;
             })();
 
+            // Badge label untuk kolom Nama
+            const nameBadge = (() => {
+                if (!deliveredDateStr || !potensiRepeatHtml.includes('span')) return '';
+                const sku = (skuList || []).find(s =>
+                    (s.nama_produk || '').toUpperCase() === (c.produk || '').toUpperCase() ||
+                    (s.kode || '').toUpperCase() === (c.produk || '').toUpperCase()
+                );
+                if (!sku || !sku.durasi_hari) return '';
+                const qty = parseInt(c.qty) || 1;
+                const repeatDate = new Date(deliveredDateStr + 'T00:00:00');
+                if (isNaN(repeatDate)) return '';
+                repeatDate.setDate(repeatDate.getDate() + qty * sku.durasi_hari);
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const diff = Math.ceil((repeatDate - today) / (1000 * 60 * 60 * 24));
+                if (diff < 0)       return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;color:#EF4444;font-weight:600;">Terlambat RO</span></div>`;
+                else if (diff <= 3) return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEF3C7;color:#D97706;font-weight:600;">Segera RO</span></div>`;
+                else                return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#D1FAE5;color:#059669;font-weight:600;">On Track</span></div>`;
+            })();
+
             return `<tr>
                 <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
-                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(c.nama||'-')}</td>
+                <td style="font-weight:600;white-space:nowrap;">${escapeHtml(c.nama||'-')}${nameBadge}</td>
                 <td style="font-size:12px;">${escapeHtml(c.no_hp||'-')}</td>
                 <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${tglOrder}</td>
                 <td style="font-size:12px;white-space:nowrap;color:#10B981;">${tglDelivered}</td>
@@ -2288,8 +2310,8 @@
         document.getElementById('crmTbody').innerHTML = '<tr><td colspan="16" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
         let page = 0, hasMore = true;
-        // Tidak select status_resi_detail (JSON besar) — di-fetch terpisah di loadPelanggan hanya jika tgl_delivered belum ada
-        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,qty,total_cod,keluhan,repeat_orders,tgl,tgl_delivered,kabupaten,provinsi,status_resi,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
+        // Tidak select status_resi_detail (JSON besar) dan tgl_delivered — di-fetch terpisah di loadPelanggan
+        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,qty,total_cod,keluhan,repeat_orders,tgl,kabupaten,provinsi,status_resi,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
         while (hasMore) {
             const { data, error } = await sbApp.from('crm_customers')
                 .select(ORDERS_COLS)
