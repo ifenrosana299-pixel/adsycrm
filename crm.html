@@ -3391,15 +3391,22 @@
 
         const dateFrom = document.getElementById('cADateFrom').value;
         const dateTo   = document.getElementById('cADateTo').value;
-        const alreadyAssigned = new Set();
+        const myAssigned    = new Set(); // sudah diassign oleh CRM ini
+        const otherAssigned = new Map(); // key → crm_name yang sudah pegang
 
         if (dateFrom && dateTo && currentUser) {
             const { data } = await sbApp.from('crm_assignments')
-                .select('cs_name, produk')
-                .eq('crm_name', currentUser.username)
+                .select('cs_name, produk, crm_name')
                 .eq('date_from', dateFrom)
                 .eq('date_to', dateTo);
-            (data || []).forEach(a => alreadyAssigned.add(`${a.cs_name}|${a.produk}`));
+            (data || []).forEach(a => {
+                const key = `${a.cs_name}|${a.produk}`;
+                if (normEq(a.crm_name, currentUser.username)) {
+                    myAssigned.add(key);
+                } else {
+                    if (!otherAssigned.has(key)) otherAssigned.set(key, a.crm_name);
+                }
+            });
         }
 
         const selectedTeam   = document.getElementById('cATeamSelect').value;
@@ -3411,7 +3418,8 @@
             csData.products.forEach(product => {
                 if (selectedProduk && product !== selectedProduk) return;
                 const key = `${csData.name}|${product}`;
-                if (alreadyAssigned.has(key)) return;
+                if (myAssigned.has(key)) return;    // sudah diassign oleh saya
+                if (otherAssigned.has(key)) return; // sudah diassign CRM lain
                 if (!productGroups[product]) productGroups[product] = [];
                 productGroups[product].push(csData.name);
             });
@@ -3645,14 +3653,36 @@
 
     async function cADeleteGroup(crmName, dateFrom, dateTo) {
         const periode = dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`;
-        if (!confirm(`Hapus semua assignment periode ${periode}?\n(Order yang udah ke-sync dan gak lagi dicover assignment lain akan ikut kehapus dari Pesanan/Tracking)`)) return;
+        if (!confirm(`Hapus semua assignment periode ${periode}?\n(Semua pesanan periode ini akan ikut terhapus dari Pesanan/Tracking)`)) return;
+
+        // Ambil daftar CS yang akan dihapus dulu sebelum delete assignments
+        const { data: toRemove } = await sbApp.from('crm_assignments')
+            .select('cs_name')
+            .eq('crm_name', crmName)
+            .eq('date_from', dateFrom)
+            .eq('date_to', dateTo);
+
+        // Hapus crm_assignments untuk periode ini
         const { error } = await sbApp.from('crm_assignments').delete()
             .eq('crm_name', crmName)
             .eq('date_from', dateFrom)
             .eq('date_to', dateTo);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
-        await caPruneOrphanCustomers(crmName);
+
+        // Langsung hapus crm_customers yang CS-nya masuk periode ini
+        if (toRemove && toRemove.length) {
+            const csNames = [...new Set(toRemove.map(r => r.cs_name))];
+            for (const csName of csNames) {
+                await sbApp.from('crm_customers').delete()
+                    .eq('crm', crmName)
+                    .eq('nama_cs', csName)
+                    .gte('tgl', dateFrom)
+                    .lte('tgl', dateTo);
+            }
+        }
+
         await loadAssignments();
+        await loadOrders();
         cALoadRiwayat();
     }
 
