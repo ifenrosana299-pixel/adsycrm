@@ -521,13 +521,7 @@
             </div>
             <div id="crmGroup-pengelompokan" class="hidden">
                 <div class="crm-nav-sub" id="crmNavItem-pengelompokan" onclick="crmShow('pengelompokan', this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Label
-                </div>
-                <div class="crm-nav-sub" id="crmNavItem-segmentasi" onclick="crmShow('segmentasi', this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Segmentasi
-                </div>
-                <div class="crm-nav-sub" id="crmNavItem-grup" onclick="crmShow('grup', this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Grup
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Member Tier
                 </div>
             </div>
 
@@ -1033,23 +1027,29 @@
                 </div>
             </section>
 
-            <!-- ═══ PENGELOMPOKAN ═══ -->
+            <!-- ═══ MEMBER TIER ═══ -->
             <section id="crmSec-pengelompokan" class="crm-section">
-                <div class="crm-page-title"><div class="crm-page-title-icon">🏷️</div><h2>Label</h2></div>
-                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">🏷️</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur label & pengelompokan pelanggan sedang dikembangkan</div></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">⭐</div>
+                        <h2>Member Tier</h2>
+                    </div>
+                    <button onclick="loadMemberTier()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Tier tabs -->
+                <div id="memberTierTabs" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;"></div>
+
+                <!-- Table wrap -->
+                <div id="memberTierWrap">
+                    <p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>
+                </div>
             </section>
 
             <!-- ═══ SEGMENTASI ═══ -->
-            <section id="crmSec-segmentasi" class="crm-section">
-                <div class="crm-page-title"><div class="crm-page-title-icon">📊</div><h2>Segmentasi</h2></div>
-                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">📊</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur segmentasi pelanggan sedang dikembangkan</div></div>
-            </section>
-
+            <section id="crmSec-segmentasi" class="crm-section" style="display:none;"></section>
             <!-- ═══ GRUP ═══ -->
-            <section id="crmSec-grup" class="crm-section">
-                <div class="crm-page-title"><div class="crm-page-title-icon">👨‍👩‍👧</div><h2>Grup</h2></div>
-                <div class="crm-coming-soon"><div class="crm-coming-soon-icon">👨‍👩‍👧</div><div class="crm-coming-soon-title">Segera Hadir</div><div class="crm-coming-soon-sub">Fitur grup pelanggan sedang dikembangkan</div></div>
-            </section>
+            <section id="crmSec-grup" class="crm-section" style="display:none;"></section>
 
             <!-- ═══ ULANG TAHUN ═══ -->
             <section id="crmSec-ultah" class="crm-section">
@@ -1490,6 +1490,7 @@
         if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
+        if (name === 'pengelompokan') loadMemberTier();
         if (name === 'testimoni') loadTestimoni();
         if (name === 'ultah') loadUltah();
     }
@@ -1896,6 +1897,127 @@
     // ══════════════════════════════════════════
     // ULANG TAHUN
     // ══════════════════════════════════════════
+    // ═══════════════════════════════
+    // MEMBER TIER
+    // ═══════════════════════════════
+    let memberTierActive = 'bronze';
+
+    const TIER_META = {
+        bronze:   { label: '🥉 Bronze',   color: '#92400e', bg: '#fef3c7', border: '#f59e0b' },
+        silver:   { label: '🥈 Silver',   color: '#475569', bg: '#f1f5f9', border: '#94a3b8' },
+        gold:     { label: '🥇 Gold',     color: '#92400e', bg: '#fde68a', border: '#d97706' },
+        platinum: { label: '💎 Platinum', color: '#6d28d9', bg: '#ede9fe', border: '#7c3aed' },
+        diamond:  { label: '👑 Diamond',  color: '#0369a1', bg: '#e0f2fe', border: '#0284c7' },
+    };
+
+    function getCustomerTier(repeatCount, sku) {
+        if (!sku || !sku.tier_silver_min) return 'bronze';
+        if (sku.tier_diamond_min  && repeatCount >= sku.tier_diamond_min)  return 'diamond';
+        if (sku.tier_platinum_min && repeatCount >= sku.tier_platinum_min) return 'platinum';
+        if (sku.tier_gold_min     && repeatCount >= sku.tier_gold_min)     return 'gold';
+        if (repeatCount >= sku.tier_silver_min) return 'silver';
+        return 'bronze';
+    }
+
+    function loadMemberTier() {
+        const tabsEl = document.getElementById('memberTierTabs');
+        const wrap   = document.getElementById('memberTierWrap');
+        if (!tabsEl || !wrap) return;
+
+        if (!crmCustomers || !crmCustomers.length) {
+            tabsEl.innerHTML = '';
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">Belum ada data pelanggan (status SAMPAI).</p>';
+            return;
+        }
+
+        // Grup per tier
+        const groups = { bronze: [], silver: [], gold: [], platinum: [], diamond: [] };
+
+        crmCustomers.forEach(c => {
+            const repeatCount = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
+            const produkNorm  = (c.produk || '').trim().toLowerCase();
+            const sku = skuList.find(s =>
+                s.kode?.toLowerCase() === produkNorm ||
+                s.nama_produk?.toLowerCase() === produkNorm
+            );
+            const tier = getCustomerTier(repeatCount, sku);
+            groups[tier].push({ ...c, _repeatCount: repeatCount });
+        });
+
+        // Render tabs
+        tabsEl.innerHTML = Object.entries(TIER_META).map(([key, m]) => {
+            const count   = groups[key].length;
+            const active  = key === memberTierActive;
+            return `<button onclick="setMemberTierTab('${key}')"
+                style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;border:2px solid ${active ? m.border : '#e2e8f0'};background:${active ? m.bg : '#fff'};color:${active ? m.color : '#6b7280'};font-size:13px;font-weight:${active ? '700' : '500'};cursor:pointer;transition:all .15s;">
+                ${m.label}
+                <span style="background:${active ? m.border : '#e2e8f0'};color:${active ? '#fff' : '#6b7280'};padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;">${count}</span>
+            </button>`;
+        }).join('');
+
+        renderMemberTierTable(groups[memberTierActive]);
+    }
+
+    function setMemberTierTab(tier) {
+        memberTierActive = tier;
+        loadMemberTier();
+    }
+
+    function renderMemberTierTable(list) {
+        const wrap = document.getElementById('memberTierWrap');
+        const m    = TIER_META[memberTierActive];
+
+        if (!list.length) {
+            wrap.innerHTML = `<div style="text-align:center;padding:48px;color:#94a3b8;">
+                <div style="font-size:32px;margin-bottom:8px;">${m.label}</div>
+                <div style="font-size:14px;">Belum ada pelanggan di tier ini</div>
+            </div>`;
+            return;
+        }
+
+        const rows = list.map(c => {
+            const repeats   = Array.isArray(c.repeat_orders) ? c.repeat_orders : [];
+            const lastTgl   = repeats.length ? (repeats[repeats.length - 1].tgl || c.tgl) : c.tgl;
+            const totalBox  = repeats.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
+
+            const fmtDate = (d) => {
+                if (!d) return '—';
+                const dt = new Date(d);
+                if (isNaN(dt)) return d;
+                return dt.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+            };
+
+            return `<tr>
+                <td style="font-weight:600;">${escapeHtml(c.nama || '—')}</td>
+                <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
+                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
+                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
+                <td style="text-align:center;color:#94a3b8;font-size:13px;">—</td>
+                <td style="text-align:center;font-size:13px;color:#374151;">${fmtDate(lastTgl)}</td>
+                <td style="text-align:center;font-size:13px;font-weight:600;color:${totalBox ? '#1e293b' : '#94a3b8'};">${totalBox ? totalBox + ' box' : '—'}</td>
+            </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `
+            <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;">${list.length} pelanggan</div>
+            <div style="overflow-x:auto;">
+                <table class="data-table" style="width:100%;min-width:700px;">
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>Nomer</th>
+                            <th style="text-align:center;">Point</th>
+                            <th style="text-align:center;">Tgl Redeem Point</th>
+                            <th style="text-align:center;">Total Point Diredeem</th>
+                            <th style="text-align:center;">Last Order</th>
+                            <th style="text-align:center;">Jumlah BOX Repeat</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    }
+
     let ultahData       = [];   // semua pelanggan dengan tgl_lahir
     let ultahFiltered   = [];
     let ultahPage       = 1;
