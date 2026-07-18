@@ -1969,6 +1969,9 @@
             sampaiList.push(o);
         });
 
+        // Populate crmCustomers supaya openPelangganDetail bisa lookup
+        if (!crmCustomers.length) crmCustomers = sampaiList;
+
         // Filter sesuai tier aktif
         const list = sampaiList.filter(c => {
             const repeatCount = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
@@ -1986,9 +1989,17 @@
     let tierPage = 1;
     let tierPageSize = 10;
     let tierCurrentList = [];
+    let tierCardFilter = ''; // '' | 'belumRepeat' | 'hampirNaik' | 'potensiLewat'
 
     function renderMemberTierTable(list) {
         tierCurrentList = list;
+        tierCardFilter  = '';
+        tierPage        = 1;
+        renderMemberTierPage();
+    }
+
+    function tierSetCardFilter(f) {
+        tierCardFilter = (tierCardFilter === f) ? '' : f; // toggle
         tierPage = 1;
         renderMemberTierPage();
     }
@@ -1996,9 +2007,9 @@
     function renderMemberTierPage() {
         const wrap = document.getElementById('memberTierWrap');
         const m    = TIER_META[memberTierActive];
-        const list = tierCurrentList;
+        const fullList = tierCurrentList;
 
-        if (!list.length) {
+        if (!fullList.length) {
             wrap.innerHTML = `<div style="text-align:center;padding:48px;color:#94a3b8;">
                 <div style="font-size:32px;margin-bottom:8px;">${m.label}</div>
                 <div style="font-size:14px;">Belum ada pelanggan di tier ini</div>
@@ -2013,12 +2024,11 @@
             return dt.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
         };
 
-        // Stats untuk cards
+        // Stats untuk cards (selalu dari fullList)
         const today = new Date(); today.setHours(0,0,0,0);
 
-        const belumRepeat = list.filter(c => (c._repeatCount || 0) === 0).length;
-
-        const hampirNaik = list.filter(c => {
+        const isBelumRepeat  = c => (c._repeatCount || 0) === 0;
+        const isHampirNaik   = c => {
             const repeatCount = c._repeatCount || 0;
             const produkNorm  = (c.produk || '').trim().toLowerCase();
             const sku = skuList.find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
@@ -2026,9 +2036,8 @@
             const thresholds = [sku.tier_silver_min, sku.tier_gold_min, sku.tier_platinum_min, sku.tier_diamond_min].filter(Boolean);
             const nextTier = thresholds.find(t => t > repeatCount);
             return nextTier && (nextTier - repeatCount) <= 2;
-        }).length;
-
-        const potensiLewat = list.filter(c => {
+        };
+        const isPotensiLewat = c => {
             if (!c.tgl_delivered) return false;
             const produkNorm = (c.produk || '').trim().toLowerCase();
             const sku = skuList.find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
@@ -2039,7 +2048,17 @@
             const potensi = new Date(delivered);
             potensi.setDate(potensi.getDate() + qty * sku.durasi_hari);
             return potensi < today;
-        }).length;
+        };
+
+        const belumRepeatCount  = fullList.filter(isBelumRepeat).length;
+        const hampirNaikCount   = fullList.filter(isHampirNaik).length;
+        const potensiLewatCount = fullList.filter(isPotensiLewat).length;
+
+        // Apply card filter
+        const list = tierCardFilter === 'belumRepeat'  ? fullList.filter(isBelumRepeat)
+                   : tierCardFilter === 'hampirNaik'   ? fullList.filter(isHampirNaik)
+                   : tierCardFilter === 'potensiLewat' ? fullList.filter(isPotensiLewat)
+                   : fullList;
 
         // Pagination
         const totalPages = Math.ceil(list.length / tierPageSize);
@@ -2052,7 +2071,7 @@
             const totalBox = repeats.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
             return `<tr>
                 <td style="color:#9ca3af;font-size:12px;">${start + i + 1}</td>
-                <td style="font-weight:600;">${escapeHtml(c.nama || '—')}</td>
+                <td style="font-weight:600;cursor:pointer;color:#4F46E5;" onclick="openPelangganDetail(${c.id})">${escapeHtml(c.nama || '—')}</td>
                 <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
@@ -2078,20 +2097,20 @@
 
         wrap.innerHTML = `
             <div class="crm-stats-row" style="margin-bottom:16px;">
-                <div class="crm-stat">
-                    <div><div class="crm-stat-label">Total Member</div><div class="crm-stat-value" style="color:${m.color};">${list.length}</div></div>
+                <div class="crm-stat" onclick="tierSetCardFilter('')" style="cursor:pointer;outline:${tierCardFilter===''?'2px solid #4F46E5':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Total Member</div><div class="crm-stat-value" style="color:${m.color};">${fullList.length}</div></div>
                     <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
                 </div>
-                <div class="crm-stat">
-                    <div><div class="crm-stat-label">Belum Repeat</div><div class="crm-stat-value" style="color:#6366f1;">${belumRepeat}</div></div>
+                <div class="crm-stat" onclick="tierSetCardFilter('belumRepeat')" style="cursor:pointer;outline:${tierCardFilter==='belumRepeat'?'2px solid #4F46E5':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Belum Repeat</div><div class="crm-stat-value" style="color:#6366f1;">${belumRepeatCount}</div></div>
                     <div class="crm-stat-icon" style="background:#EEF2FF;">🔔</div>
                 </div>
-                <div class="crm-stat">
-                    <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaik}</div></div>
+                <div class="crm-stat" onclick="tierSetCardFilter('hampirNaik')" style="cursor:pointer;outline:${tierCardFilter==='hampirNaik'?'2px solid #F59E0B':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaikCount}</div></div>
                     <div class="crm-stat-icon" style="background:#FEF3C7;">⬆️</div>
                 </div>
-                <div class="crm-stat">
-                    <div><div class="crm-stat-label">Potensi RO Lewat</div><div class="crm-stat-value" style="color:#EF4444;">${potensiLewat}</div></div>
+                <div class="crm-stat" onclick="tierSetCardFilter('potensiLewat')" style="cursor:pointer;outline:${tierCardFilter==='potensiLewat'?'2px solid #EF4444':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Potensi RO Lewat</div><div class="crm-stat-value" style="color:#EF4444;">${potensiLewatCount}</div></div>
                     <div class="crm-stat-icon" style="background:#FEE2E2;">🔴</div>
                 </div>
             </div>
