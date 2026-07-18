@@ -1010,7 +1010,7 @@
                                 <th>Last FU</th>
                                 <th>Tgl Lahir</th>
                                 <th>CS</th>
-                                <th>Aksi</th>
+                                <th style="position:sticky;right:0;background:#F1F5F9;z-index:2;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="pelangganTbody">
@@ -1018,7 +1018,18 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="crm-pagination" id="pelangganPagination"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;">
+                    <div id="pelangganPaginationInfo" style="font-size:13px;color:#64748b;"></div>
+                    <div id="pelangganPagination" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"></div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:12px;color:#64748b;">Baris/hal:</span>
+                        <select id="pelangganPageSizeSelect" class="crm-select" style="width:80px;height:32px;font-size:13px;" onchange="pelangganChangePageSize(this.value)">
+                            <option value="20">20</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
             </section>
 
             <!-- ═══ PENGELOMPOKAN ═══ -->
@@ -1619,7 +1630,7 @@
     let crmCustomers = [];
     let filteredCustomers = [];
     let pelangganPage = 1;
-    const pelangganPageSize = 50;
+    let pelangganPageSize = 50;
 
     async function loadPelanggan() {
         const tb = document.getElementById('pelangganTbody');
@@ -1646,52 +1657,35 @@
         if (!sampaiOrders.length) {
             crmCustomers = [];
         } else {
-            // Fetch tgl_delivered untuk semua SAMPAI (tidak ada di orders)
-            const needsDetail = sampaiOrders;
+            // tgl_delivered & status_resi_detail sudah ada di orders (loadOrders pakai select('*'))
+            // Tidak perlu fetch ulang ke DB — baca langsung dari orders
+            const toUpdate = [];
+            crmCustomers = sampaiOrders.map(o => {
+                // Kalau tgl_delivered sudah ada, pakai langsung
+                if (o.tgl_delivered) return { ...o, tgl_delivered: normDateISO(o.tgl_delivered) };
 
-            const detailMap = {};
-            if (needsDetail.length) {
-                // Fetch tgl_delivered + status_resi_detail untuk yang belum punya tgl_delivered
-                const needIds = needsDetail.map(o => o.id);
-                for (let i = 0; i < needIds.length; i += 500) {
-                    const batch = needIds.slice(i, i + 500);
-                    const { data: dRows, error: dErr } = await sbApp.from('crm_customers')
-                        .select('id,tgl_delivered,status_resi_detail')
-                        .in('id', batch);
-                    if (dErr) { console.warn('detail fetch error:', dErr.message); }
-                    if (dRows) dRows.forEach(r => {
-                        // Kalau tgl_delivered sudah ada di DB, pakai langsung
-                        if (r.tgl_delivered) detailMap['_tgl_' + r.id] = normDateISO(r.tgl_delivered);
-                        detailMap[r.id] = r.status_resi_detail;
-                    });
-                }
-
-                // Extract tgl_delivered dari history dan simpan ke DB (fire & forget)
-                const toUpdate = [];
-                needsDetail.forEach(o => {
-                    const history = detailMap[o.id]?.history;
-                    if (!Array.isArray(history) || !history.length) return;
+                // Kalau belum, extract dari status_resi_detail.history
+                const history = o.status_resi_detail?.history;
+                if (Array.isArray(history) && history.length) {
                     const raw = history[history.length - 1]?.date || '';
-                    if (!raw) return;
-                    const tgl_delivered = normDateISO(raw);
-                    detailMap['_tgl_' + o.id] = tgl_delivered;
-                    toUpdate.push({ id: o.id, tgl_delivered });
-                });
-
-                if (toUpdate.length) {
-                    (async () => {
-                        for (let i = 0; i < toUpdate.length; i += 200) {
-                            await sbApp.from('crm_customers')
-                                .upsert(toUpdate.slice(i, i + 200), { onConflict: 'id' });
-                        }
-                    })();
+                    if (raw) {
+                        const tgl_delivered = normDateISO(raw);
+                        toUpdate.push({ id: o.id, tgl_delivered });
+                        return { ...o, tgl_delivered };
+                    }
                 }
-            }
+                return { ...o, tgl_delivered: null };
+            });
 
-            crmCustomers = sampaiOrders.map(o => ({
-                ...o,
-                tgl_delivered: detailMap['_tgl_' + o.id] || null,
-            }));
+            // Simpan tgl_delivered yang baru ke DB (fire & forget)
+            if (toUpdate.length) {
+                (async () => {
+                    for (let i = 0; i < toUpdate.length; i += 200) {
+                        await sbApp.from('crm_customers')
+                            .upsert(toUpdate.slice(i, i + 200), { onConflict: 'id' });
+                    }
+                })();
+            }
         }
 
         const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
@@ -1844,23 +1838,50 @@
                 <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.last_fu||'—'}</td>
                 <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.tgl_lahir||'—'}</td>
                 <td style="font-size:12px;color:#6B7280;">${escapeHtml(c.nama_cs||'-')}</td>
-                <td><button onclick="openPelangganDetail(${c.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
+                <td style="position:sticky;right:0;background:white;z-index:1;box-shadow:-2px 0 6px rgba(0,0,0,0.06);"><button onclick="openPelangganDetail(${c.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
             </tr>`;
         }).join('');
 
-        // Pagination
+        // Info
+        const info = document.getElementById('pelangganPaginationInfo');
+        if (info) info.textContent = `${start + 1}–${Math.min(start + pelangganPageSize, total)} dari ${total} pelanggan`;
+
+        // Pagination buttons
         const pg = document.getElementById('pelangganPagination');
-        pg.innerHTML = totalPages > 1 ? `
-            <button onclick="pelangganGoPage(${pelangganPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage===1?'disabled':''}>‹ Prev</button>
-            <span style="font-size:13px;color:#6B7280;">Hal ${pelangganPage} / ${totalPages}</span>
-            <button onclick="pelangganGoPage(${pelangganPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage===totalPages?'disabled':''}>Next ›</button>
-        ` : '';
+        if (!pg) return;
+        if (totalPages <= 1) { pg.innerHTML = ''; return; }
+
+        const btnStyle = (active) => `crm-btn crm-btn-sm ${active ? 'crm-btn-primary' : 'crm-btn-secondary'}`;
+        let pages = [];
+
+        // Selalu tampil: prev, halaman pertama, ..., sekitar halaman aktif, ..., halaman terakhir, next
+        const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+        let pageNums = new Set([1, totalPages]);
+        range(Math.max(2, pelangganPage - 2), Math.min(totalPages - 1, pelangganPage + 2)).forEach(p => pageNums.add(p));
+        const sorted = [...pageNums].sort((a, b) => a - b);
+
+        pages.push(`<button onclick="pelangganGoPage(${pelangganPage - 1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage === 1 ? 'disabled' : ''}>← Prev</button>`);
+        let prev = 0;
+        sorted.forEach(p => {
+            if (prev && p - prev > 1) pages.push(`<span style="padding:0 4px;color:#9CA3AF;align-self:center;">...</span>`);
+            pages.push(`<button onclick="pelangganGoPage(${p})" class="${btnStyle(p === pelangganPage)}">${p}</button>`);
+            prev = p;
+        });
+        pages.push(`<button onclick="pelangganGoPage(${pelangganPage + 1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${pelangganPage === totalPages ? 'disabled' : ''}>Next →</button>`);
+
+        pg.innerHTML = pages.join('');
     }
 
     function pelangganGoPage(pg) {
         const total = Math.ceil(filteredCustomers.length / pelangganPageSize);
         if (pg < 1 || pg > total) return;
         pelangganPage = pg;
+        renderPelangganPage();
+    }
+
+    function pelangganChangePageSize(val) {
+        pelangganPageSize = parseInt(val) || 50;
+        pelangganPage = 1;
         renderPelangganPage();
     }
 
