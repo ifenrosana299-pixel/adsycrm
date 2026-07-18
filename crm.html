@@ -2069,9 +2069,27 @@
             const repeats  = Array.isArray(c.repeat_orders) ? c.repeat_orders : [];
             const lastTgl  = repeats.length ? (repeats[repeats.length - 1].tgl || c.tgl) : c.tgl;
             const totalBox = repeats.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
+
+            // Badge potensi repeat di nama
+            const namaBadge = (() => {
+                if (!c.tgl_delivered) return '';
+                const produkNorm = (c.produk || '').trim().toLowerCase();
+                const sku = skuList.find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
+                if (!sku?.durasi_hari) return '';
+                const qty = parseInt(c.qty) || 1;
+                const delivered = new Date(c.tgl_delivered);
+                if (isNaN(delivered)) return '';
+                const potensi = new Date(delivered);
+                potensi.setDate(potensi.getDate() + qty * sku.durasi_hari);
+                const diff = Math.ceil((potensi - today) / (1000 * 60 * 60 * 24));
+                if (diff < 0)       return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;color:#EF4444;font-weight:600;">Terlambat RO</span></div>`;
+                else if (diff <= 3) return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEF3C7;color:#D97706;font-weight:600;">Segera RO</span></div>`;
+                return '';
+            })();
+
             return `<tr>
                 <td style="color:#9ca3af;font-size:12px;">${start + i + 1}</td>
-                <td style="font-weight:600;cursor:pointer;color:#4F46E5;" onclick="openPelangganDetail(${c.id})">${escapeHtml(c.nama || '—')}</td>
+                <td style="font-weight:600;cursor:pointer;" onclick="openPelangganDetail(${c.id})"><span style="color:#4F46E5;">${escapeHtml(c.nama || '—')}</span>${namaBadge}</td>
                 <td style="color:#64748b;font-size:13px;">${escapeHtml(c.no_hp || '—')}</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
                 <td style="text-align:center;color:#94a3b8;">—</td>
