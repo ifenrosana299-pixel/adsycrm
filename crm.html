@@ -1044,9 +1044,9 @@
             </section>
 
             <!-- ═══ SEGMENTASI ═══ -->
-            <section id="crmSec-segmentasi" class="crm-section" style="display:none;"></section>
+            <section id="crmSec-segmentasi" class="crm-section"></section>
             <!-- ═══ GRUP ═══ -->
-            <section id="crmSec-grup" class="crm-section" style="display:none;"></section>
+            <section id="crmSec-grup" class="crm-section"></section>
 
             <!-- ═══ ULANG TAHUN ═══ -->
             <section id="crmSec-ultah" class="crm-section">
@@ -1916,23 +1916,19 @@
     }
 
     async function crmShowTier(tier, el) {
-        // Highlight nav item
-        document.querySelectorAll('[id^="crmNavItem-tier-"]').forEach(n => n.classList.remove('active'));
-        if (el) el.classList.add('active');
+        memberTierActive = tier;
+        // Pakai mekanisme yang sama dengan crmShow
+        CRM_SECTIONS.forEach(s => {
+            const sec = document.getElementById('crmSec-' + s);
+            if (sec) sec.classList.remove('crm-sec-active');
+        });
+        document.querySelectorAll('.crm-nav-item, .crm-nav-sub').forEach(n => n.classList.remove('crm-active'));
+        const sec = document.getElementById('crmSec-pengelompokan');
+        if (sec) sec.classList.add('crm-sec-active');
+        if (el) el.classList.add('crm-active');
         // Pastikan group pengelompokan terbuka
         const grp = document.getElementById('crmGroup-pengelompokan');
         if (grp && grp.classList.contains('hidden')) crmToggleGroup('pengelompokan');
-        // Set tier aktif & tampilkan section
-        memberTierActive = tier;
-        // Show section (pakai mekanisme CRM_SECTIONS)
-        CRM_SECTIONS.forEach(s => {
-            const sec = document.getElementById('crmSec-' + s);
-            if (sec) sec.style.display = 'none';
-        });
-        document.querySelectorAll('.crm-nav-item, .crm-nav-sub').forEach(n => n.classList.remove('active'));
-        if (el) el.classList.add('active');
-        const sec = document.getElementById('crmSec-pengelompokan');
-        if (sec) sec.style.display = 'block';
         await loadMemberTier();
     }
 
@@ -1947,13 +1943,13 @@
         if (iconEl)  iconEl.textContent  = m.label.split(' ')[0];
 
         // Load orders & skuList jika belum ada
-        if (!orders.length) {
+        if (!allOrders.length) {
             wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>';
             await loadOrders();
         }
         if (!skuList.length) await loadSkuList();
 
-        if (!orders.length) {
+        if (!allOrders.length) {
             wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">Belum ada data pesanan.</p>';
             return;
         }
@@ -1961,7 +1957,7 @@
         // Ambil semua SAMPAI, dedup by no_hp+nama_cs (sama seperti loadPelanggan)
         const seen = new Set();
         const sampaiList = [];
-        orders.forEach(o => {
+        allOrders.forEach(o => {
             if (o.status_resi !== 'SAMPAI') return;
             const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
             if (key === '|' || seen.has(key)) return;
