@@ -1000,6 +1000,8 @@
                                 <th>#</th>
                                 <th>Nama</th>
                                 <th>No HP</th>
+                                <th>Tgl Order</th>
+                                <th>Tgl Delivered</th>
                                 <th>Kab/Kota</th>
                                 <th>Penyakit</th>
                                 <th>Status</th>
@@ -1011,7 +1013,7 @@
                             </tr>
                         </thead>
                         <tbody id="pelangganTbody">
-                            <tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                            <tr><td colspan="13" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1609,10 +1611,10 @@
 
     async function loadPelanggan() {
         const tb = document.getElementById('pelangganTbody');
-        tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
+        tb.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
         if (!orders.length) {
-            tb.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan. Buka Pesanan terlebih dahulu.</td></tr>`;
             return;
         }
 
@@ -1699,7 +1701,7 @@
         const slice = filteredCustomers.slice(start, start + pelangganPageSize);
 
         if (!slice.length) {
-            tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data</td></tr>';
+            tb.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data</td></tr>';
             document.getElementById('pelangganPagination').innerHTML = '';
             return;
         }
@@ -1715,10 +1717,17 @@
                 'CENTANG 2':'#6366F1', 'NO RESPON':'#EF4444', 'BLOKIR':'#111827'
             }[c.interaksi_terakhir] || '#9CA3AF';
 
+            const tglOrder = c.tgl ? fmtTanggalShort(c.tgl) : '—';
+            const tglDelivered = c.status_resi_updated_at
+                ? fmtTanggalShort(new Date(new Date(c.status_resi_updated_at).getTime() + 7*3600*1000).toISOString().slice(0,10))
+                : '—';
+
             return `<tr>
                 <td style="color:#9CA3AF;font-size:12px;">${start + i + 1}</td>
                 <td style="font-weight:600;white-space:nowrap;">${escapeHtml(c.nama||'-')}</td>
                 <td style="font-size:12px;">${escapeHtml(c.no_hp||'-')}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${tglOrder}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#10B981;">${tglDelivered}</td>
                 <td style="font-size:12px;">${escapeHtml(c.kabupaten||c.kab||'-')}</td>
                 <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||'')}">${escapeHtml(c.penyakit||'-')}</td>
                 <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
