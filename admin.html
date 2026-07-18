@@ -2156,13 +2156,14 @@
         // KONFIGURASI PRODUK
         // =====================
         let produkConfigData = [];
+        let produkEditIdx = null;
 
         async function loadProdukConfig() {
             const wrap = document.getElementById('produkConfigWrap');
             wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>';
 
             const { data, error } = await sbData.from('sku_produk')
-                .select('id, kode, nama_produk, durasi_hari')
+                .select('id, kode, nama_produk, durasi_hari, tier_silver_min, tier_gold_min, tier_platinum_min, tier_diamond_min')
                 .order('nama_produk');
 
             if (error || !data) {
@@ -2172,14 +2173,20 @@
 
             produkConfigData = data;
 
+            const tierBadge = (p) => {
+                if (!p.tier_silver_min) return '<span style="color:#94a3b8;font-size:12px;">—</span>';
+                return `<span style="font-size:11px;color:#92400e;background:#fef3c7;padding:2px 7px;border-radius:4px;font-weight:600;">B·S·G·P·D</span>`;
+            };
+
             wrap.innerHTML = `
                 <table class="data-table" style="width:100%;">
                     <thead>
                         <tr>
                             <th>Produk</th>
                             <th>Kode</th>
-                            <th style="width:140px;">Durasi 1 Box</th>
-                            <th style="width:130px;"></th>
+                            <th style="width:130px;">Durasi 1 Box</th>
+                            <th style="width:100px;">Tier Member</th>
+                            <th style="width:80px;"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2187,91 +2194,144 @@
                             <tr id="produkRow_${idx}">
                                 <td style="font-weight:600;">${escapeHtml(p.nama_produk)}</td>
                                 <td style="color:#9CA3AF;font-size:12px;">${escapeHtml(p.kode)}</td>
-                                <td id="durasi_view_${idx}" style="font-size:14px;color:${p.durasi_hari ? '#1e293b' : '#94a3b8'};">
+                                <td style="font-size:14px;color:${p.durasi_hari ? '#1e293b' : '#94a3b8'};">
                                     ${p.durasi_hari ? `<strong>${p.durasi_hari}</strong> hari` : '—'}
                                 </td>
-                                <td id="durasi_edit_${idx}" style="display:none;">
-                                    <input type="number" min="1" max="365"
-                                        id="durasi_${idx}"
-                                        value="${p.durasi_hari || ''}"
-                                        placeholder="isi hari..."
-                                        class="form-input" style="width:100px;text-align:center;"
-                                        onkeydown="if(event.key==='Enter') saveProdukRow(${idx}); if(event.key==='Escape') cancelProdukEdit(${idx})">
-                                </td>
-                                <td id="durasi_actions_${idx}">
-                                    <button onclick="startProdukEdit(${idx})" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>
-                                </td>
-                                <td id="durasi_save_${idx}" style="display:none;white-space:nowrap;">
-                                    <button onclick="saveProdukRow(${idx})" class="btn btn-success btn-sm" id="saveBtn_${idx}" style="font-size:12px;padding:4px 12px;">💾 Simpan</button>
-                                    <button onclick="cancelProdukEdit(${idx})" class="btn btn-sm" style="font-size:12px;padding:4px 10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;margin-left:4px;">Batal</button>
+                                <td>${tierBadge(p)}</td>
+                                <td>
+                                    <button onclick="openProdukModal(${idx})" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        Edit
+                                    </button>
                                 </td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
+
+                <!-- Modal Edit Produk -->
+                <div id="produkModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeProdukModal()">
+                    <div style="background:white;border-radius:20px;padding:32px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                            <div>
+                                <div style="font-size:18px;font-weight:800;color:#1e293b;">Edit Produk</div>
+                                <div id="produkModalSub" style="font-size:13px;color:#94a3b8;margin-top:2px;"></div>
+                            </div>
+                            <button onclick="closeProdukModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;padding:4px;">✕</button>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;display:block;margin-bottom:8px;">DURASI 1 BOX</label>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <input type="number" id="modalDurasi" min="1" max="365" placeholder="isi hari..." class="form-input" style="width:100px;text-align:center;">
+                                <span style="font-size:14px;color:#64748b;">hari</span>
+                            </div>
+                        </div>
+
+                        <div style="border-top:1px solid #f1f5f9;padding-top:20px;margin-bottom:20px;">
+                            <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;display:block;margin-bottom:4px;">TIER MEMBER</label>
+                            <p style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Berdasarkan jumlah repeat order pelanggan</p>
+
+                            <div style="display:flex;flex-direction:column;gap:12px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:90px;font-size:13px;font-weight:600;color:#92400e;">🥉 Bronze</span>
+                                    <span style="font-size:12px;color:#94a3b8;">0 s/d</span>
+                                    <input type="number" id="modalBronzeMax" min="0" placeholder="—" class="form-input" style="width:70px;text-align:center;">
+                                    <span style="font-size:12px;color:#94a3b8;">repeat</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:90px;font-size:13px;font-weight:600;color:#64748b;">🥈 Silver</span>
+                                    <input type="number" id="modalSilverMin" min="1" placeholder="—" class="form-input" style="width:70px;text-align:center;">
+                                    <span style="font-size:12px;color:#94a3b8;">ke atas</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:90px;font-size:13px;font-weight:600;color:#d97706;">🥇 Gold</span>
+                                    <input type="number" id="modalGoldMin" min="1" placeholder="—" class="form-input" style="width:70px;text-align:center;">
+                                    <span style="font-size:12px;color:#94a3b8;">ke atas</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:90px;font-size:13px;font-weight:600;color:#7c3aed;">💎 Platinum</span>
+                                    <input type="number" id="modalPlatinumMin" min="1" placeholder="—" class="form-input" style="width:70px;text-align:center;">
+                                    <span style="font-size:12px;color:#94a3b8;">ke atas</span>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="width:90px;font-size:13px;font-weight:600;color:#0ea5e9;">👑 Diamond</span>
+                                    <input type="number" id="modalDiamondMin" min="1" placeholder="—" class="form-input" style="width:70px;text-align:center;">
+                                    <span style="font-size:12px;color:#94a3b8;">ke atas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:10px;margin-top:8px;">
+                            <button onclick="closeProdukModal()" class="btn btn-sm" style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:13px;">Batal</button>
+                            <button onclick="saveProdukModal()" id="produkModalSaveBtn" class="btn btn-success" style="flex:2;padding:10px;font-size:13px;">Simpan</button>
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
-        function startProdukEdit(idx) {
-            document.getElementById('durasi_view_' + idx).style.display = 'none';
-            document.getElementById('durasi_edit_' + idx).style.display = '';
-            document.getElementById('durasi_actions_' + idx).style.display = 'none';
-            document.getElementById('durasi_save_' + idx).style.display = '';
-            document.getElementById('durasi_' + idx).focus();
-        }
-
-        function cancelProdukEdit(idx) {
+        function openProdukModal(idx) {
+            produkEditIdx = idx;
             const p = produkConfigData[idx];
-            document.getElementById('durasi_' + idx).value = p.durasi_hari || '';
-            document.getElementById('durasi_edit_' + idx).style.display = 'none';
-            document.getElementById('durasi_save_' + idx).style.display = 'none';
-            document.getElementById('durasi_view_' + idx).style.display = '';
-            document.getElementById('durasi_actions_' + idx).style.display = '';
+            document.getElementById('produkModalSub').textContent = p.nama_produk;
+            document.getElementById('modalDurasi').value     = p.durasi_hari || '';
+            document.getElementById('modalSilverMin').value  = p.tier_silver_min || '';
+            document.getElementById('modalGoldMin').value    = p.tier_gold_min || '';
+            document.getElementById('modalPlatinumMin').value = p.tier_platinum_min || '';
+            document.getElementById('modalDiamondMin').value = p.tier_diamond_min || '';
+            // Bronze max = silver_min - 1
+            document.getElementById('modalBronzeMax').value  = p.tier_silver_min ? p.tier_silver_min - 1 : '';
+            const modal = document.getElementById('produkModal');
+            modal.style.display = 'flex';
         }
 
-        async function saveProdukRow(idx) {
-            const btn = document.getElementById('saveBtn_' + idx);
-            const input = document.getElementById('durasi_' + idx);
-            if (!input || !produkConfigData[idx]) return;
+        function closeProdukModal() {
+            document.getElementById('produkModal').style.display = 'none';
+            produkEditIdx = null;
+        }
+
+        async function saveProdukModal() {
+            if (produkEditIdx === null) return;
+            const p = produkConfigData[produkEditIdx];
+            const btn = document.getElementById('produkModalSaveBtn');
+
+            const durasi      = parseInt(document.getElementById('modalDurasi').value) || null;
+            const silverMin   = parseInt(document.getElementById('modalSilverMin').value) || null;
+            const goldMin     = parseInt(document.getElementById('modalGoldMin').value) || null;
+            const platinumMin = parseInt(document.getElementById('modalPlatinumMin').value) || null;
+            const diamondMin  = parseInt(document.getElementById('modalDiamondMin').value) || null;
 
             btn.disabled = true;
-            btn.textContent = '⏳ Menyimpan...';
+            btn.textContent = 'Menyimpan...';
 
-            const val = input.value.trim();
-            const durasi = val === '' ? null : parseInt(val);
-            const p = produkConfigData[idx];
-
-            const { error } = await sbData.from('sku_produk')
-                .update({ durasi_hari: durasi })
-                .eq('id', p.id);
+            const { error } = await sbData.from('sku_produk').update({
+                durasi_hari:       durasi,
+                tier_silver_min:   silverMin,
+                tier_gold_min:     goldMin,
+                tier_platinum_min: platinumMin,
+                tier_diamond_min:  diamondMin,
+            }).eq('id', p.id);
 
             btn.disabled = false;
-            btn.textContent = '💾 Simpan';
+            btn.textContent = 'Simpan';
 
             if (error) {
-                btn.textContent = '❌ Gagal — coba lagi';
-                btn.style.background = '#FEE2E2';
-                btn.style.color = '#EF4444';
-                setTimeout(() => { btn.textContent = '💾 Simpan'; btn.style.background = ''; btn.style.color = ''; }, 2500);
-            } else {
-                p.durasi_hari = durasi;
-                // Update view
-                const viewCell = document.getElementById('durasi_view_' + idx);
-                viewCell.innerHTML = durasi ? `<strong>${durasi}</strong> hari` : '—';
-                viewCell.style.color = durasi ? '#1e293b' : '#94a3b8';
-                // Kembali ke view mode
-                document.getElementById('durasi_edit_' + idx).style.display = 'none';
-                document.getElementById('durasi_save_' + idx).style.display = 'none';
-                document.getElementById('durasi_view_' + idx).style.display = '';
-                const actBtn = document.getElementById('durasi_actions_' + idx);
-                actBtn.style.display = '';
-                actBtn.innerHTML = '<span style="font-size:12px;color:#10B981;margin-right:8px;">✅ Tersimpan</span><button onclick="startProdukEdit(' + idx + ')" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>';
-                setTimeout(() => {
-                    actBtn.innerHTML = '<button onclick="startProdukEdit(' + idx + ')" class="btn btn-sm" style="font-size:12px;padding:4px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">✏️ Edit</button>';
-                }, 2500);
-                skuList = [];
-                await loadSkuList();
+                alert('Gagal simpan: ' + error.message);
+                return;
             }
+
+            // Update local data
+            p.durasi_hari       = durasi;
+            p.tier_silver_min   = silverMin;
+            p.tier_gold_min     = goldMin;
+            p.tier_platinum_min = platinumMin;
+            p.tier_diamond_min  = diamondMin;
+
+            closeProdukModal();
+            skuList = [];
+            await loadSkuList();
+            await loadProdukConfig();
         }
     </script>
 </body>
