@@ -1943,8 +1943,8 @@
         const m = TIER_META[memberTierActive];
         const titleEl = document.getElementById('memberTierTitle');
         const iconEl  = document.getElementById('memberTierIcon');
-        if (titleEl) titleEl.textContent = m.label;
-        if (iconEl)  iconEl.textContent  = m.label.split(' ')[0];
+        if (titleEl) titleEl.textContent = m.label.split(' ').slice(1).join(' '); // "Bronze", "Silver", dst
+        if (iconEl)  iconEl.textContent  = m.label.split(' ')[0]; // emoji saja
 
         // Load orders & skuList jika belum ada
         if (!allOrders.length) {
@@ -2014,10 +2014,10 @@
         };
 
         // Stats untuk cards
-        const totalRepeat  = list.reduce((s, c) => s + (Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0), 0);
-        const avgRepeat    = list.length ? (totalRepeat / list.length).toFixed(1) : 0;
+        const today = new Date(); today.setHours(0,0,0,0);
 
-        // Hampir naik tier: cek thresholds dari skuList
+        const belumRepeat = list.filter(c => (c._repeatCount || 0) === 0).length;
+
         const hampirNaik = list.filter(c => {
             const repeatCount = c._repeatCount || 0;
             const produkNorm  = (c.produk || '').trim().toLowerCase();
@@ -2026,6 +2026,19 @@
             const thresholds = [sku.tier_silver_min, sku.tier_gold_min, sku.tier_platinum_min, sku.tier_diamond_min].filter(Boolean);
             const nextTier = thresholds.find(t => t > repeatCount);
             return nextTier && (nextTier - repeatCount) <= 2;
+        }).length;
+
+        const potensiLewat = list.filter(c => {
+            if (!c.tgl_delivered) return false;
+            const produkNorm = (c.produk || '').trim().toLowerCase();
+            const sku = skuList.find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
+            if (!sku?.durasi_hari) return false;
+            const qty = parseInt(c.qty) || 1;
+            const delivered = new Date(c.tgl_delivered);
+            if (isNaN(delivered)) return false;
+            const potensi = new Date(delivered);
+            potensi.setDate(potensi.getDate() + qty * sku.durasi_hari);
+            return potensi < today;
         }).length;
 
         // Pagination
@@ -2070,16 +2083,16 @@
                     <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
                 </div>
                 <div class="crm-stat">
-                    <div><div class="crm-stat-label">Total Repeat</div><div class="crm-stat-value">${totalRepeat}</div></div>
-                    <div class="crm-stat-icon" style="background:#EEF2FF;">🔁</div>
-                </div>
-                <div class="crm-stat">
-                    <div><div class="crm-stat-label">Rata-rata Repeat</div><div class="crm-stat-value">${avgRepeat}x</div></div>
-                    <div class="crm-stat-icon" style="background:#F0FDF4;">📊</div>
+                    <div><div class="crm-stat-label">Belum Repeat</div><div class="crm-stat-value" style="color:#6366f1;">${belumRepeat}</div></div>
+                    <div class="crm-stat-icon" style="background:#EEF2FF;">🔔</div>
                 </div>
                 <div class="crm-stat">
                     <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaik}</div></div>
                     <div class="crm-stat-icon" style="background:#FEF3C7;">⬆️</div>
+                </div>
+                <div class="crm-stat">
+                    <div><div class="crm-stat-label">Potensi RO Lewat</div><div class="crm-stat-value" style="color:#EF4444;">${potensiLewat}</div></div>
+                    <div class="crm-stat-icon" style="background:#FEE2E2;">🔴</div>
                 </div>
             </div>
 
