@@ -1838,7 +1838,7 @@
                 <td style="font-size:12px;white-space:nowrap;color:#10B981;">${tglDelivered}</td>
                 <td>${potensiRepeatHtml}</td>
                 <td style="font-size:12px;">${escapeHtml(c.kabupaten||c.kab||'-')}</td>
-                <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||'')}">${escapeHtml(c.penyakit||'-')}</td>
+                <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||c.keluhan||'')}">${escapeHtml(c.penyakit||c.keluhan||'-')}</td>
                 <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
                 <td>${c.interaksi_terakhir ? `<span class="crm-badge" style="background:${interaksiColor}20;color:${interaksiColor};font-size:10px;">${escapeHtml(c.interaksi_terakhir)}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
                 <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.last_fu||'—'}</td>
@@ -3711,7 +3711,7 @@
             // dst — semua kolom di luar payload upsert di bawah) tidak ikut hilang tiap kali simpan assignment.
             const { data: existingRows, error: existingErr } = await sbApp
                 .from('crm_customers')
-                .select('id, no_hp, nama_cs, tgl, repeat_orders')
+                .select('id, no_hp, nama_cs, tgl, repeat_orders, penyakit')
                 .eq('crm', crmName);
             if (existingErr) console.warn('[cA Sync] Gagal load existing rows (non-fatal):', existingErr);
             const existingMap = {};
@@ -3805,6 +3805,7 @@
                         qty:           first.quantity            || null,
                         total_cod:     first.total_pembayaran    || null,
                         keluhan:       first.keluhan             || null,
+                        penyakit:      existingMap[key]?.penyakit || first.keluhan || null,
                         repeat_orders: repeats,
                     };
                 });
