@@ -2310,11 +2310,9 @@
         document.getElementById('crmTbody').innerHTML = '<tr><td colspan="16" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
         let page = 0, hasMore = true;
-        // Tidak select status_resi_detail (JSON besar) dan tgl_delivered — di-fetch terpisah di loadPelanggan
-        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,ekspedisi,qty,total_cod,keluhan,repeat_orders,tgl,created_at,kabupaten,provinsi,status_resi,status_resi_step,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
         while (hasMore) {
             const { data, error } = await sbApp.from('crm_customers')
-                .select(ORDERS_COLS)
+                .select('*')
                 .eq('crm', currentUser.username)
                 .order('tgl', { ascending: false })
                 .range(page*1000, (page+1)*1000-1);
