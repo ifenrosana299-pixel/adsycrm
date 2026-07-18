@@ -1622,14 +1622,31 @@
         // Hanya pelanggan yang sudah DELIVERED (status_resi = SAMPAI)
         // Dedup by no_hp + nama_cs — ambil record pertama per pelanggan
         const seen = new Set();
-        crmCustomers = [];
+        const sampaiOrders = [];
         orders.forEach(o => {
             if (o.status_resi !== 'SAMPAI') return;
             const key = (o.no_hp || '') + '|' + (o.nama_cs || '');
             if (key === '|' || seen.has(key)) return;
             seen.add(key);
-            crmCustomers.push(o);
+            sampaiOrders.push(o);
         });
+
+        // Fetch status_resi_detail hanya untuk record SAMPAI (jauh lebih sedikit)
+        const sampaiIds = sampaiOrders.map(o => o.id);
+        const detailMap = {};
+        if (sampaiIds.length) {
+            // Batch per 500 ID
+            for (let i = 0; i < sampaiIds.length; i += 500) {
+                const batch = sampaiIds.slice(i, i + 500);
+                const { data: dRows } = await sbApp.from('crm_customers')
+                    .select('id,status_resi_detail')
+                    .in('id', batch);
+                if (dRows) dRows.forEach(r => { detailMap[r.id] = r.status_resi_detail; });
+            }
+        }
+
+        // Merge status_resi_detail ke sampaiOrders
+        crmCustomers = sampaiOrders.map(o => ({ ...o, status_resi_detail: detailMap[o.id] || null }));
 
         const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
@@ -2230,9 +2247,11 @@
         document.getElementById('crmTbody').innerHTML = '<tr><td colspan="16" style="text-align:center;padding:56px;color:#9CA3AF;">Memuat data...</td></tr>';
         allOrders = [];
         let page = 0, hasMore = true;
+        // Tidak select status_resi_detail (JSON besar) — di-fetch terpisah di loadPelanggan
+        const ORDERS_COLS = 'id,crm,nama,no_hp,nama_cs,produk,resi,qty,total_cod,keluhan,repeat_orders,tgl,kabupaten,provinsi,status_resi,status_resi_updated_at,interaksi_terakhir,last_fu,type,penyakit,tgl_lahir,usia,jenis_kelamin,pekerjaan,perkembangan,catatan';
         while (hasMore) {
             const { data, error } = await sbApp.from('crm_customers')
-                .select('*')
+                .select(ORDERS_COLS)
                 .eq('crm', currentUser.username)
                 .order('tgl', { ascending: false })
                 .range(page*1000, (page+1)*1000-1);
