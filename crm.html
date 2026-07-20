@@ -878,7 +878,11 @@
                         <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
                     </div>
                     <div class="crm-stat tr-stat-clickable" id="trStatCard-ON_PROSES" onclick="trSetFilter('ON_PROSES_GROUP')">
-                        <div><div class="crm-stat-label">On Proses</div><div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div></div>
+                        <div>
+                            <div class="crm-stat-label">On Proses</div>
+                            <div class="crm-stat-value" id="trStatOnProses" style="color:#2563EB;">0</div>
+                            <div id="trPctOnProses" style="font-size:11px;font-weight:700;color:#2563EB;margin-top:2px;"></div>
+                        </div>
                         <div class="crm-stat-icon" style="background:#DBEAFE;">🔄</div>
                     </div>
                     <div class="crm-stat tr-stat-clickable" id="trStatCard-UNDEL" onclick="trSetFilter('BERMASALAH')">
@@ -886,11 +890,19 @@
                         <div class="crm-stat-icon" style="background:#FEE2E2;">⚠️</div>
                     </div>
                     <div class="crm-stat tr-stat-clickable" id="trStatCard-RETUR" onclick="trSetFilter('RETUR')">
-                        <div><div class="crm-stat-label">Retur</div><div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div></div>
+                        <div>
+                            <div class="crm-stat-label">Retur</div>
+                            <div class="crm-stat-value" id="trStatRetur" style="color:#B91C1C;">0</div>
+                            <div id="trPctRetur" style="font-size:11px;font-weight:700;color:#B91C1C;margin-top:2px;"></div>
+                        </div>
                         <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
                     </div>
                     <div class="crm-stat tr-stat-clickable" id="trStatCard-DELIVERY" onclick="trSetFilter('SAMPAI')">
-                        <div><div class="crm-stat-label">Delivery</div><div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div></div>
+                        <div>
+                            <div class="crm-stat-label">Delivery</div>
+                            <div class="crm-stat-value" id="trStatDelivery" style="color:#059669;">0</div>
+                            <div id="trPctDelivery" style="font-size:11px;font-weight:700;color:#059669;margin-top:2px;"></div>
+                        </div>
                         <div class="crm-stat-icon" style="background:#D1FAE5;">✅</div>
                     </div>
                 </div>
@@ -3153,11 +3165,16 @@
         const inRange = trOrdersInRange();
         const counts = { ON_PROSES:0, UNDEL:0, RETUR:0, DELIVERY:0 };
         inRange.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
-        document.getElementById('trStatTotal').textContent     = inRange.length;
-        document.getElementById('trStatOnProses').textContent  = counts.ON_PROSES;
-        document.getElementById('trStatUndel').textContent     = counts.UNDEL;
-        document.getElementById('trStatRetur').textContent     = counts.RETUR;
-        document.getElementById('trStatDelivery').textContent  = counts.DELIVERY;
+        const total = inRange.length;
+        const pct = (n) => total > 0 ? (n / total * 100).toFixed(1) + '%' : '—';
+        document.getElementById('trStatTotal').textContent       = total;
+        document.getElementById('trStatOnProses').textContent    = counts.ON_PROSES;
+        document.getElementById('trPctOnProses').textContent     = pct(counts.ON_PROSES);
+        document.getElementById('trStatUndel').textContent       = counts.UNDEL;
+        document.getElementById('trStatRetur').textContent       = counts.RETUR;
+        document.getElementById('trPctRetur').textContent        = pct(counts.RETUR);
+        document.getElementById('trStatDelivery').textContent    = counts.DELIVERY;
+        document.getElementById('trPctDelivery').textContent     = pct(counts.DELIVERY);
     }
 
     function trSetFilter(key) { trFilterStage = key; renderTrackingResi(); }
