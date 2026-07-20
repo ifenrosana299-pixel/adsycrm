@@ -1032,6 +1032,7 @@
                                 <th>Status</th>
                                 <th>Interaksi</th>
                                 <th>Last FU</th>
+                                <th>Kategori FU</th>
                                 <th>Tgl Lahir</th>
                                 <th>CS</th>
                                 <th style="position:sticky;right:0;background:#F1F5F9;z-index:2;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">Aksi</th>
@@ -2019,8 +2020,9 @@
                 <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||c.keluhan||'')}">${escapeHtml(c.penyakit||c.keluhan||'-')}</td>
                 <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
                 <td>${c.interaksi_terakhir ? `<span class="crm-badge" style="background:${interaksiColor}20;color:${interaksiColor};font-size:10px;">${escapeHtml(c.interaksi_terakhir)}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
-                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.last_fu||'—'}</td>
-                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.tgl_lahir||'—'}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.last_fu ? fmtTanggal(c.last_fu) : '—'}</td>
+                <td style="font-size:12px;color:#6B7280;max-width:140px;">${c.last_fu_kategori ? `<span style="font-size:11px;background:#EEF2FF;color:#4F46E5;padding:2px 7px;border-radius:8px;font-weight:600;">${escapeHtml(c.last_fu_kategori)}</span>` : '—'}</td>
+                <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${c.tgl_lahir ? fmtTanggal(c.tgl_lahir) : '—'}</td>
                 <td style="font-size:12px;color:#6B7280;">${escapeHtml(c.nama_cs||'-')}</td>
                 <td style="position:sticky;right:0;background:white;z-index:1;box-shadow:-2px 0 6px rgba(0,0,0,0.06);"><button onclick="openPelangganDetail(${c.id})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button></td>
             </tr>`;
@@ -2800,8 +2802,14 @@
         btn.disabled = false; btn.textContent = '+ Tambah Follow-up';
         if (error) { alert('Gagal simpan: ' + error.message); return; }
 
-        // Update last_fu di crm_customers
-        await sbApp.from('crm_customers').update({ last_fu: tgl }).eq('id', editPelangganId);
+        // Update last_fu + last_fu_kategori di crm_customers
+        const kategoriLabel = kategori.filter(k => k !== 'Lainnya').join(' · ') + (kategoriLainnya ? (kategori.filter(k=>k!=='Lainnya').length ? ' · ' : '') + kategoriLainnya : '');
+        await sbApp.from('crm_customers').update({ last_fu: tgl, last_fu_kategori: kategoriLabel || null }).eq('id', editPelangganId);
+
+        // Update local array
+        const cIdx = crmCustomers.findIndex(x => x.id === editPelangganId);
+        if (cIdx >= 0) { crmCustomers[cIdx].last_fu = tgl; crmCustomers[cIdx].last_fu_kategori = kategoriLabel || null; }
+        renderPelangganTable();
 
         // Reset form
         document.getElementById('fuPerkembangan').value = '';
