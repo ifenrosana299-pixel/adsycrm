@@ -2191,6 +2191,7 @@
         document.getElementById('pointModalTier').style.color    = m.color;
         document.getElementById('pointModalPoint').textContent   = sisaPoint;
         document.getElementById('pointModalJumlahRedeem').value  = '';
+        document.getElementById('pointModalTglInput').value      = new Date().toISOString().slice(0, 10);
         document.getElementById('pointModalTotalDisplay').textContent = c.total_point_diredeem != null ? c.total_point_diredeem : '—';
         document.getElementById('pointModalTglDisplay').textContent   = c.tgl_redeem ? fmtDate(c.tgl_redeem) : '—';
         document.getElementById('pointPreviewWrap').style.display = 'none';
@@ -2231,7 +2232,7 @@
         const newPoint  = sisaPoint - jumlahRedeem;
         if (newPoint < 0) { alert('Point tidak cukup! Sisa point: ' + sisaPoint); return; }
 
-        const today    = new Date().toISOString().slice(0, 10);
+        const today    = document.getElementById('pointModalTglInput').value || new Date().toISOString().slice(0, 10);
         const newTotal = (c.total_point_diredeem != null ? c.total_point_diredeem : 0) + jumlahRedeem;
 
         const btn = document.getElementById('pointModalSaveBtn');
@@ -4720,9 +4721,15 @@
             </div>
 
             <!-- Redeem input -->
-            <div style="display:flex;flex-direction:column;gap:6px;">
-                <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">💸 JUMLAH POINT YANG DIREDEEM</label>
-                <input type="number" id="pointModalJumlahRedeem" class="crm-input" min="0" placeholder="0" style="width:100%;" oninput="updatePointPreview()">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">💸 JUMLAH POINT REDEEM</label>
+                    <input type="number" id="pointModalJumlahRedeem" class="crm-input" min="0" placeholder="0" style="width:100%;" oninput="updatePointPreview()">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">📅 TANGGAL REDEEM</label>
+                    <input type="date" id="pointModalTglInput" class="crm-input" style="width:100%;">
+                </div>
             </div>
 
             <!-- Preview sisa setelah redeem -->
