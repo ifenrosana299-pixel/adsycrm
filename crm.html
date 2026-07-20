@@ -488,6 +488,11 @@
         .rp-badge-berhasil { background:#D1FAE5; color:#059669; }
         .rp-badge-gagal { background:#FEE2E2; color:#DC2626; }
         .rp-badge-pending { background:#FEF3C7; color:#D97706; }
+
+        /* Repeat toggle pills */
+        .rp-toggle { display:flex;gap:0;background:#F3F4F6;border-radius:10px;padding:3px;margin-bottom:16px; }
+        .rp-toggle-btn { flex:1;padding:7px 0;border:none;background:none;border-radius:8px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;transition:all .15s; }
+        .rp-toggle-btn.active { background:white;color:#4F46E5;box-shadow:0 1px 4px rgba(0,0,0,0.10); }
     </style>
 </head>
 <body>
@@ -1543,8 +1548,14 @@
 
             <!-- ── TAB 3: REPEAT ORDER ── -->
             <div id="epTab-repeat" style="display:none;">
-                <!-- Form tambah repeat -->
-                <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:18px;margin-bottom:20px;">
+                <!-- Toggle -->
+                <div class="rp-toggle">
+                    <button class="rp-toggle-btn active" id="rpToggleRepeat" onclick="rpSwitchForm('repeat')">🔁 Repeat</button>
+                    <button class="rp-toggle-btn" id="rpToggleGagal" onclick="rpSwitchForm('gagal')">❌ Gagal Repeat</button>
+                </div>
+
+                <!-- Form Repeat -->
+                <div id="rpFormRepeat" style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:18px;margin-bottom:20px;">
                     <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">+ Tambah Repeat Order</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
                         <div>
@@ -1553,10 +1564,9 @@
                         </div>
                         <div>
                             <label class="crm-form-label">STATUS</label>
-                            <select id="rpStatus" class="crm-select" style="width:100%;margin-top:5px;" onchange="rpToggleGagal()">
+                            <select id="rpStatus" class="crm-select" style="width:100%;margin-top:5px;">
                                 <option value="Pending">Pending</option>
                                 <option value="Berhasil">Berhasil</option>
-                                <option value="Gagal">Gagal</option>
                             </select>
                         </div>
                         <div>
@@ -1593,27 +1603,27 @@
                             <label for="rpIsCrosselling" style="font-size:13px;color:#374151;font-weight:500;cursor:pointer;">Crosselling (produk berbeda dari order awal)</label>
                         </div>
                     </div>
-                    <!-- Gagal section -->
-                    <div id="rpGagalSection" style="display:none;border-top:1px solid #F3F4F6;padding-top:14px;margin-bottom:12px;">
-                        <div style="margin-bottom:12px;">
-                            <label class="crm-form-label">ALASAN GAGAL</label>
-                            <select id="rpAlasanGagal" class="crm-select" style="width:100%;margin-top:5px;">
-                                <option value="">— Pilih —</option>
-                                <option value="Tidak Angkat">Tidak Angkat</option>
-                                <option value="Tidak Ada Dana">Tidak Ada Dana</option>
-                                <option value="Sakit">Sakit</option>
-                                <option value="Tidak Berminat">Tidak Berminat</option>
-                                <option value="Belum Habis">Belum Habis</option>
-                                <option value="Lainnya">Lainnya</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="crm-form-label">SS CHAT GAGAL (bisa multiple)</label>
-                            <input type="file" id="rpGagalFiles" accept="image/*" multiple style="margin-top:5px;font-size:13px;width:100%;">
-                            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Screenshot percakapan — akan dianalisis AI otomatis</div>
-                        </div>
-                    </div>
                     <button onclick="saveRepeat()" id="rpSaveBtn" class="crm-btn crm-btn-primary" style="width:100%;justify-content:center;">+ Tambah Repeat</button>
+                </div>
+
+                <!-- Form Gagal Repeat -->
+                <div id="rpFormGagal" style="display:none;background:#fff;border:1.5px solid #FEE2E2;border-radius:14px;padding:18px;margin-bottom:20px;">
+                    <div style="font-size:13px;font-weight:700;color:#DC2626;margin-bottom:14px;">❌ Tambah Gagal Repeat</div>
+                    <div style="margin-bottom:14px;">
+                        <label class="crm-form-label">TANGGAL</label>
+                        <input type="date" id="grTgl" class="crm-input" style="max-width:200px;margin-top:5px;">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="crm-form-label">UPLOAD SS CHAT (bisa multiple)</label>
+                        <input type="file" id="grFiles" accept="image/*" multiple style="margin-top:5px;font-size:13px;width:100%;">
+                        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Screenshot percakapan WA dengan pelanggan</div>
+                    </div>
+                    <button onclick="parseGagalRepeat()" id="grParseBtn" class="crm-btn crm-btn-secondary" style="width:100%;justify-content:center;margin-bottom:14px;">🤖 Parse AI dari SS</button>
+                    <div id="grParseResult" style="display:none;margin-bottom:14px;">
+                        <label class="crm-form-label">HASIL PARSE AI (bisa diedit)</label>
+                        <textarea id="grHasilParse" class="crm-input" style="width:100%;margin-top:5px;height:100px;resize:vertical;"></textarea>
+                    </div>
+                    <button onclick="saveGagalRepeat()" id="grSaveBtn" class="crm-btn crm-btn-primary" style="width:100%;justify-content:center;">Simpan Gagal Repeat</button>
                 </div>
 
                 <!-- List repeats -->
@@ -2673,7 +2683,10 @@
         document.getElementById('rpResi').value   = '';
         document.getElementById('rpEkspedisi').value = c.ekspedisi || '';
         document.getElementById('rpIsCrosselling').checked = false;
-        document.getElementById('rpGagalSection').style.display = 'none';
+        document.getElementById('grTgl').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('grFiles').value = '';
+        document.getElementById('grParseResult').style.display = 'none';
+        rpSwitchForm('repeat');
 
         // Reset to Tab 1
         epShowTab('profil', document.getElementById('epTabBtn-profil'));
@@ -2831,9 +2844,91 @@
     }
 
     // ── REPEAT ORDER ──
-    function rpToggleGagal() {
-        const status = document.getElementById('rpStatus').value;
-        document.getElementById('rpGagalSection').style.display = status === 'Gagal' ? '' : 'none';
+    function rpSwitchForm(mode) {
+        document.getElementById('rpFormRepeat').style.display = mode === 'repeat' ? '' : 'none';
+        document.getElementById('rpFormGagal').style.display  = mode === 'gagal'  ? '' : 'none';
+        document.getElementById('rpToggleRepeat').classList.toggle('active', mode === 'repeat');
+        document.getElementById('rpToggleGagal').classList.toggle('active', mode === 'gagal');
+    }
+
+    async function parseGagalRepeat() {
+        const files = document.getElementById('grFiles').files;
+        if (!files || !files.length) { alert('Upload SS chat terlebih dahulu.'); return; }
+
+        const btn = document.getElementById('grParseBtn');
+        btn.disabled = true; btn.textContent = '🤖 Parsing...';
+
+        const results = [];
+        for (const file of files) {
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            try {
+                const res = await fetch('/api/analyze-gagal-repeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
+                });
+                const data = await res.json();
+                if (data.hasil) results.push(data.hasil);
+            } catch(e) { /* skip failed */ }
+        }
+
+        btn.disabled = false; btn.textContent = '🤖 Parse AI dari SS';
+
+        if (!results.length) { alert('Gagal parse — coba lagi.'); return; }
+        document.getElementById('grHasilParse').value = results.join('\n\n---\n\n');
+        document.getElementById('grParseResult').style.display = '';
+    }
+
+    async function saveGagalRepeat() {
+        if (!editPelangganId) return;
+        const tgl   = document.getElementById('grTgl').value;
+        const files = document.getElementById('grFiles').files;
+        const hasil = document.getElementById('grHasilParse').value || null;
+        if (!tgl) { alert('Tanggal harus diisi.'); return; }
+
+        const btn = document.getElementById('grSaveBtn');
+        btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+        // Upload images to Supabase Storage
+        let gagalImages = [];
+        for (const file of (files || [])) {
+            const ext  = file.name.split('.').pop();
+            const path = `repeat-gagal/${editPelangganId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await sbApp.storage.from('testimoni').upload(path, file, { upsert: true });
+            if (!upErr) {
+                const { data: pub } = sbApp.storage.from('testimoni').getPublicUrl(path);
+                if (pub?.publicUrl) gagalImages.push(pub.publicUrl);
+            }
+        }
+
+        // Get next no_repeat
+        const { data: existing } = await sbApp.from('crm_repeats').select('no_repeat').eq('customer_id', editPelangganId).order('no_repeat', { ascending: false }).limit(1);
+        const noRepeat = (existing && existing.length ? existing[0].no_repeat : 0) + 1;
+
+        const { error } = await sbApp.from('crm_repeats').insert({
+            customer_id:    editPelangganId,
+            no_repeat:      noRepeat,
+            tgl,
+            status:         'Gagal',
+            gagal_images:   gagalImages,
+            gagal_ai_parse: hasil,
+        });
+
+        btn.disabled = false; btn.textContent = 'Simpan Gagal Repeat';
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+
+        // Reset form
+        document.getElementById('grTgl').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('grFiles').value = '';
+        document.getElementById('grHasilParse').value = '';
+        document.getElementById('grParseResult').style.display = 'none';
+
+        loadRepeats(editPelangganId);
     }
 
     async function loadRepeats(customerId) {
@@ -2892,8 +2987,6 @@
         const resi   = document.getElementById('rpResi').value || null;
         const eks    = document.getElementById('rpEkspedisi').value || null;
         const cross  = document.getElementById('rpIsCrosselling').checked;
-        const alasan = status === 'Gagal' ? (document.getElementById('rpAlasanGagal').value || null) : null;
-        const files  = status === 'Gagal' ? document.getElementById('rpGagalFiles').files : null;
 
         if (!tgl) { alert('Tanggal harus diisi.'); return; }
 
@@ -2904,27 +2997,11 @@
         const { data: existing } = await sbApp.from('crm_repeats').select('no_repeat').eq('customer_id', editPelangganId).order('no_repeat', { ascending: false }).limit(1);
         const noRepeat = (existing && existing.length ? existing[0].no_repeat : 0) + 1;
 
-        // Upload images if any
-        let gagalImages = [];
-        if (files && files.length) {
-            for (const file of files) {
-                const ext  = file.name.split('.').pop();
-                const path = `repeat-gagal/${editPelangganId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-                const { data: up, error: upErr } = await sbApp.storage.from('testimoni').upload(path, file, { upsert: true });
-                if (!upErr) {
-                    const { data: pub } = sbApp.storage.from('testimoni').getPublicUrl(path);
-                    if (pub?.publicUrl) gagalImages.push(pub.publicUrl);
-                }
-            }
-        }
-
         const { error } = await sbApp.from('crm_repeats').insert({
             customer_id: editPelangganId,
             no_repeat: noRepeat,
             tgl, produk, qty, resi, ekspedisi: eks, status,
             is_crosselling: cross,
-            alasan_gagal: alasan,
-            gagal_images: gagalImages,
         });
 
         if (error) { alert('Gagal simpan: ' + error.message); btn.disabled = false; btn.textContent = '+ Tambah Repeat'; return; }
@@ -2946,10 +3023,7 @@
         // Reset form
         document.getElementById('rpQty').value  = '';
         document.getElementById('rpResi').value = '';
-        document.getElementById('rpAlasanGagal').value = '';
-        document.getElementById('rpGagalFiles').value  = '';
         document.getElementById('rpStatus').value = 'Pending';
-        document.getElementById('rpGagalSection').style.display = 'none';
 
         loadRepeats(editPelangganId);
     }
