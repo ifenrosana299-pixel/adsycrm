@@ -2366,12 +2366,28 @@
     let tierPage = 1;
     let tierPageSize = 10;
     let tierCurrentList = [];
-    let tierCardFilter = ''; // '' | 'belumRepeat' | 'hampirNaik' | 'potensiLewat'
+    let tierCardFilter  = ''; // '' | 'belumRepeat' | 'hampirNaik' | 'potensiLewat'
+    let tierProdukFilter = '';
+    let tierSearch = '';
 
     function renderMemberTierTable(list) {
-        tierCurrentList = list;
-        tierCardFilter  = '';
-        tierPage        = 1;
+        tierCurrentList  = list;
+        tierCardFilter   = '';
+        tierProdukFilter = '';
+        tierSearch       = '';
+        tierPage         = 1;
+        renderMemberTierPage();
+    }
+
+    function tierSetProdukFilter(val) {
+        tierProdukFilter = val;
+        tierPage = 1;
+        renderMemberTierPage();
+    }
+
+    function tierSetSearch(val) {
+        tierSearch = (val || '').toLowerCase().trim();
+        tierPage = 1;
         renderMemberTierPage();
     }
 
@@ -2427,15 +2443,27 @@
             return potensi < today;
         };
 
-        const belumRepeatCount  = fullList.filter(isBelumRepeat).length;
-        const hampirNaikCount   = fullList.filter(isHampirNaik).length;
-        const potensiLewatCount = fullList.filter(isPotensiLewat).length;
+        // Apply produk + search filter (before card filter, stats reflect filtered list)
+        let produkFiltered = tierProdukFilter
+            ? fullList.filter(c => (c.produk || '') === tierProdukFilter)
+            : fullList;
+        if (tierSearch) {
+            produkFiltered = produkFiltered.filter(c =>
+                (c.nama || '').toLowerCase().includes(tierSearch) ||
+                (c.no_hp || '').toLowerCase().includes(tierSearch)
+            );
+        }
+
+        // Stats dari produkFiltered
+        const belumRepeatCount  = produkFiltered.filter(isBelumRepeat).length;
+        const hampirNaikCount   = produkFiltered.filter(isHampirNaik).length;
+        const potensiLewatCount = produkFiltered.filter(isPotensiLewat).length;
 
         // Apply card filter
-        const list = tierCardFilter === 'belumRepeat'  ? fullList.filter(isBelumRepeat)
-                   : tierCardFilter === 'hampirNaik'   ? fullList.filter(isHampirNaik)
-                   : tierCardFilter === 'potensiLewat' ? fullList.filter(isPotensiLewat)
-                   : fullList;
+        const list = tierCardFilter === 'belumRepeat'  ? produkFiltered.filter(isBelumRepeat)
+                   : tierCardFilter === 'hampirNaik'   ? produkFiltered.filter(isHampirNaik)
+                   : tierCardFilter === 'potensiLewat' ? produkFiltered.filter(isPotensiLewat)
+                   : produkFiltered;
 
         // Pagination
         const totalPages = Math.ceil(list.length / tierPageSize);
@@ -2493,10 +2521,35 @@
             return btns;
         })();
 
+        // Opsi produk dari fullList
+        const produkOptions = [...new Set(fullList.map(c => c.produk).filter(Boolean))].sort();
+
         wrap.innerHTML = `
+            <!-- Filter produk + cari -->
+            <div class="crm-filters" style="margin-bottom:16px;">
+                <div class="crm-form-group">
+                    <label class="crm-form-label">Produk</label>
+                    <select class="crm-select" onchange="tierSetProdukFilter(this.value)">
+                        <option value="">Semua Produk</option>
+                        ${produkOptions.map(p => `<option value="${p}" ${tierProdukFilter===p?'selected':''}>${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="crm-form-group" style="flex:2;min-width:180px;">
+                    <label class="crm-form-label">Cari</label>
+                    <input type="text" class="crm-input" placeholder="🔍 Nama / No HP..." value="${tierSearch}" oninput="tierSetSearch(this.value)">
+                </div>
+                <div class="crm-form-group" style="min-width:120px;">
+                    <label class="crm-form-label">Per halaman</label>
+                    <select class="crm-select" onchange="tierChangePageSize(this.value)">
+                        <option value="10" ${tierPageSize===10?'selected':''}>10</option>
+                        <option value="20" ${tierPageSize===20?'selected':''}>20</option>
+                        <option value="50" ${tierPageSize===50?'selected':''}>50</option>
+                    </select>
+                </div>
+            </div>
             <div class="crm-stats-row" style="margin-bottom:16px;">
                 <div class="crm-stat" onclick="tierSetCardFilter('')" style="cursor:pointer;outline:${tierCardFilter===''?'2px solid #4F46E5':'none'};outline-offset:2px;">
-                    <div><div class="crm-stat-label">Total Member</div><div class="crm-stat-value" style="color:${m.color};">${fullList.length}</div></div>
+                    <div><div class="crm-stat-label">Total Member${tierProdukFilter?' ('+tierProdukFilter+')':''}</div><div class="crm-stat-value" style="color:${m.color};">${produkFiltered.length}</div></div>
                     <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
                 </div>
                 <div class="crm-stat" onclick="tierSetCardFilter('belumRepeat')" style="cursor:pointer;outline:${tierCardFilter==='belumRepeat'?'2px solid #4F46E5':'none'};outline-offset:2px;">
@@ -2533,12 +2586,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px;">
                 <div style="font-size:12px;color:#9ca3af;">${start+1}–${Math.min(start+tierPageSize, list.length)} dari ${list.length} pelanggan</div>
                 <div style="display:flex;gap:4px;align-items:center;">${pgBtns}</div>
-                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;">
-                    Baris/hal:
-                    <select onchange="tierChangePageSize(this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:12px;">
-                        ${[10,20,50,100].map(n => `<option value="${n}" ${n===tierPageSize?'selected':''}>${n}</option>`).join('')}
-                    </select>
-                </div>
+                <div style="font-size:12px;color:#6b7280;">${start+1}–${Math.min(start+tierPageSize,list.length)} dari ${list.length}</div>
             </div>`;
     }
 
