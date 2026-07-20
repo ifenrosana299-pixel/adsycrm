@@ -1465,14 +1465,6 @@
                         <label class="crm-form-label">PEKERJAAN</label>
                         <input type="text" id="epPekerjaan" class="crm-input" style="width:100%;margin-top:5px;">
                     </div>
-                    <div>
-                        <label class="crm-form-label">BERAT BADAN (kg)</label>
-                        <input type="number" id="epBeratBadan" class="crm-input" style="width:100%;margin-top:5px;" placeholder="misal: 65">
-                    </div>
-                    <div>
-                        <label class="crm-form-label">SUMBER KENAL</label>
-                        <input type="text" id="epSumberKenal" class="crm-input" style="width:100%;margin-top:5px;" placeholder="FB Ads, TikTok, Referral...">
-                    </div>
                     <div style="grid-column:1/-1;">
                         <label class="crm-form-label">ALAMAT</label>
                         <textarea id="epAlamat" class="crm-input" style="width:100%;margin-top:5px;height:56px;resize:vertical;"></textarea>
@@ -1676,6 +1668,7 @@
 
     // Format tanggal: "2024-01-10" → "10 Januari 2024"
     const IDN_MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    function fmtDate(str) { return fmtTanggal(str); } // alias global
     function fmtTanggal(str) {
         if (!str) return '—';
         const d = new Date(str + 'T00:00:00');
@@ -2653,8 +2646,6 @@
         document.getElementById('epTglLahir').value    = c.tgl_lahir || '';
         document.getElementById('epJK').value          = c.jenis_kelamin || '';
         document.getElementById('epPekerjaan').value   = c.pekerjaan || '';
-        document.getElementById('epBeratBadan').value  = c.berat_badan || '';
-        document.getElementById('epSumberKenal').value = c.sumber_kenal || '';
         document.getElementById('epAlamat').value      = c.alamat || '';
         document.getElementById('epKelurahan').value   = c.kelurahan || '';
         document.getElementById('epKecamatan').value   = c.kecamatan || '';
@@ -2718,8 +2709,6 @@
             tgl_lahir:     document.getElementById('epTglLahir').value || null,
             jenis_kelamin: document.getElementById('epJK').value || null,
             pekerjaan:     document.getElementById('epPekerjaan').value || null,
-            berat_badan:   parseFloat(document.getElementById('epBeratBadan').value) || null,
-            sumber_kenal:  document.getElementById('epSumberKenal').value || null,
             alamat:        document.getElementById('epAlamat').value || null,
             kelurahan:     document.getElementById('epKelurahan').value || null,
             kecamatan:     document.getElementById('epKecamatan').value || null,
