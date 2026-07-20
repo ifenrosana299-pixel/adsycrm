@@ -594,12 +594,13 @@
                     <div class="drp-wrap">
                         <button class="drp-trigger" onclick="dDrpToggle()" id="dDrp-trigger">
                             <span class="drp-icon">📅</span>
-                            <span id="dDrp-label">Hari Ini</span>
+                            <span id="dDrp-label">Semua Waktu</span>
                             <span style="color:#9CA3AF;">▾</span>
                         </button>
                         <div class="drp-dropdown" id="dDrp-dropdown" style="left:auto;right:0;">
                             <div class="drp-presets">
-                                <button class="drp-preset active" onclick="dDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
+                                <button class="drp-preset active" onclick="dDrpLifetime(this)">Semua Waktu</button>
+                                <button class="drp-preset" onclick="dDrpPreset(1,'Hari Ini',this)">Hari Ini</button>
                                 <button class="drp-preset" onclick="dDrpPresetYesterday(this)">Kemarin</button>
                                 <hr style="border:none;border-top:1px solid #F3F4F6;margin:6px 0;">
                                 <button class="drp-preset" onclick="dDrpPreset(7,'7 Hari Terakhir',this)">7 Hari Terakhir</button>
@@ -637,11 +638,11 @@
                 <div class="crm-stats-row">
                     <div class="crm-stat">
                         <div>
-                            <div class="crm-stat-label">Total Order</div>
+                            <div class="crm-stat-label">Total Customer</div>
                             <div class="crm-stat-value" id="dashTotal">—</div>
-                            <div class="crm-stat-sub" id="dashPendingInfo">— pending</div>
+                            <div class="crm-stat-sub" id="dashPendingInfo">— total order</div>
                         </div>
-                        <div class="crm-stat-icon" style="background:#EEF2FF;">📦</div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">👤</div>
                     </div>
                     <div class="crm-stat">
                         <div>
@@ -653,19 +654,19 @@
                     </div>
                     <div class="crm-stat">
                         <div>
-                            <div class="crm-stat-label">Cancelled</div>
+                            <div class="crm-stat-label">RTS</div>
                             <div class="crm-stat-value" id="dashCancelled" style="color:#EF4444;">—</div>
                             <div class="crm-stat-sub" id="dashCancelledPct" style="color:#EF4444;">— %</div>
                         </div>
-                        <div class="crm-stat-icon" style="background:#FEE2E2;">❌</div>
+                        <div class="crm-stat-icon" style="background:#FEE2E2;">↩️</div>
                     </div>
                     <div class="crm-stat">
                         <div>
-                            <div class="crm-stat-label">Pelanggan</div>
+                            <div class="crm-stat-label">Belum Repeat</div>
                             <div class="crm-stat-value" id="dashPelanggan">—</div>
-                            <div class="crm-stat-sub">unik dari data</div>
+                            <div class="crm-stat-sub" id="dashBelumRepeatSub">dari yang delivered</div>
                         </div>
-                        <div class="crm-stat-icon" style="background:#FEF3C7;">👥</div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">⏳</div>
                     </div>
                 </div>
 
@@ -1548,19 +1549,33 @@
 
         // Delivered/Cancelled dihitung dari status_resi (fitur Tracking Resi) — sebelumnya
         // pakai field "status" yang memang tidak pernah diisi di crm_customers, jadi selalu 0.
-        const total     = display.length;
-        const delivered = display.filter(o => o.status_resi === 'SAMPAI').length;
-        const cancelled = display.filter(o => o.status_resi === 'RETUR').length;
-        const pending    = total - delivered - cancelled;
-        const uniqueCustomers = new Set(display.map(o => o.hp || o.nama).filter(Boolean)).size;
+        const totalOrder    = display.length;
+        const delivered     = display.filter(o => o.status_resi === 'SAMPAI').length;
+        const rts           = display.filter(o => o.status_resi === 'RETUR').length;
 
-        document.getElementById('dashTotal').textContent       = total;
-        document.getElementById('dashPendingInfo').textContent = `${pending} pending`;
-        document.getElementById('dashDelivered').textContent   = delivered;
-        document.getElementById('dashDeliveredPct').textContent= total ? `${Math.round(delivered/total*100)}% dari total` : '0%';
-        document.getElementById('dashCancelled').textContent   = cancelled;
-        document.getElementById('dashCancelledPct').textContent= total ? `${Math.round(cancelled/total*100)}% dari total` : '0%';
-        document.getElementById('dashPelanggan').textContent   = uniqueCustomers;
+        // Total Customer = unique no_hp dari semua order di range
+        const uniqueCustomers = new Set(display.map(o => (o.no_hp || '').trim()).filter(Boolean)).size;
+
+        // Belum Repeat = unique delivered customer yang repeat_orders-nya kosong
+        const seenHp = new Set();
+        let belumRepeat = 0;
+        display.forEach(o => {
+            if (o.status_resi !== 'SAMPAI') return;
+            const hp = (o.no_hp || '').trim();
+            if (!hp || seenHp.has(hp)) return;
+            seenHp.add(hp);
+            const repeatCount = Array.isArray(o.repeat_orders) ? o.repeat_orders.length : 0;
+            if (repeatCount === 0) belumRepeat++;
+        });
+
+        document.getElementById('dashTotal').textContent          = uniqueCustomers;
+        document.getElementById('dashPendingInfo').textContent    = `${totalOrder} total order`;
+        document.getElementById('dashDelivered').textContent      = delivered;
+        document.getElementById('dashDeliveredPct').textContent   = totalOrder ? `${Math.round(delivered/totalOrder*100)}% dari total` : '0%';
+        document.getElementById('dashCancelled').textContent      = rts;
+        document.getElementById('dashCancelledPct').textContent   = totalOrder ? `${Math.round(rts/totalOrder*100)}% dari total` : '0%';
+        document.getElementById('dashPelanggan').textContent      = belumRepeat;
+        document.getElementById('dashBelumRepeatSub').textContent = `dari ${delivered} delivered`;
 
         // Recent 10
         const recent = [...display].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,10);
@@ -3508,8 +3523,8 @@
     // ══════════════════════════════════════════
     let dDrpSelStart=null, dDrpSelEnd=null;
     let dDrpViewYear=wibYMD().y, dDrpViewMonth=wibYMD().m;
-    let dFilterStart = wibDayStart(wibYMD().y, wibYMD().m, wibYMD().d);
-    let dFilterEnd   = wibDayEnd(wibYMD().y, wibYMD().m, wibYMD().d);
+    let dFilterStart = null; // null = Lifetime (no filter)
+    let dFilterEnd   = null;
 
     function dDrpToggle() {
         const dd = document.getElementById('dDrp-dropdown');
@@ -3525,6 +3540,15 @@
         const dd=document.getElementById('dDrp-dropdown'), tr=document.getElementById('dDrp-trigger');
         if (!dd.contains(e.target) && !tr.contains(e.target)) dDrpClose();
     }
+    function dDrpLifetime(btn) {
+        dFilterStart = null; dFilterEnd = null;
+        document.getElementById('dDrp-label').textContent = 'Semua Waktu';
+        document.querySelectorAll('#dDrp-dropdown .drp-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        dDrpClose();
+        renderDashboard();
+    }
+
     function dDrpPreset(days, label, btn) {
         const t = wibYMD(), s = wibYMDOffset(-(days-1));
         dDrpSelStart = new Date(s.y, s.m, s.d);
