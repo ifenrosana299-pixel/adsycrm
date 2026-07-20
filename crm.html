@@ -2773,11 +2773,21 @@
             return `<div style="border-left:3px solid #4F46E5;padding:10px 14px;margin-bottom:12px;background:#FAFBFF;border-radius:0 10px 10px 0;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
                     <div style="display:flex;flex-wrap:wrap;gap:4px;">${label}${lainnya}</div>
-                    <div style="font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:8px;">${fmtDate(fu.tgl)}</div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px;">
+                        <span style="font-size:11px;color:#94a3b8;">${fmtDate(fu.tgl)}</span>
+                        <button onclick="deleteFollowUp(${fu.id})" style="background:none;border:none;cursor:pointer;color:#e2a2a2;padding:0;line-height:0;" title="Hapus"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+                    </div>
                 </div>
                 ${fu.perkembangan ? `<div style="font-size:13px;color:#374151;">${escapeHtml(fu.perkembangan)}</div>` : ''}
             </div>`;
         }).join('');
+    }
+
+    async function deleteFollowUp(id) {
+        if (!confirm('Hapus riwayat follow-up ini?')) return;
+        const { error } = await sbApp.from('crm_followups').delete().eq('id', id);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+        loadFollowUps(editPelangganId);
     }
 
     async function saveFollowUp() {
@@ -2842,7 +2852,10 @@
             <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <div style="font-size:13px;font-weight:700;color:#1e293b;">Repeat #${r.no_repeat} ${r.is_crosselling ? '<span style="font-size:11px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:6px;margin-left:4px;">Crosselling</span>' : ''}</div>
-                    <div style="display:flex;align-items:center;gap:6px;">${statusBadge(r.status)}<span style="font-size:11px;color:#94a3b8;">${fmtDate(r.tgl)}</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        ${statusBadge(r.status)}<span style="font-size:11px;color:#94a3b8;">${fmtDate(r.tgl)}</span>
+                        <button onclick="deleteRepeat(${r.id})" style="background:none;border:none;cursor:pointer;color:#e2a2a2;padding:0;line-height:0;" title="Hapus"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+                    </div>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:#64748b;">
                     <span>📦 ${escapeHtml(r.produk||'-')} × ${r.qty||'-'}</span>
@@ -2851,6 +2864,23 @@
                 ${r.status === 'Gagal' ? `<div style="margin-top:8px;padding:8px 10px;background:#FFF1F2;border-radius:8px;font-size:12px;color:#DC2626;">⚠️ ${escapeHtml(r.alasan_gagal||'Alasan tidak diisi')}${r.gagal_ai_parse ? '<br><span style="color:#64748b;">AI: '+escapeHtml(r.gagal_ai_parse)+'</span>' : ''}</div>` : ''}
                 ${r.gagal_images && r.gagal_images.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${r.gagal_images.map(url=>`<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="window.open('${url}','_blank')">`).join('')}</div>` : ''}
             </div>`).join('');
+    }
+
+    async function deleteRepeat(id) {
+        if (!confirm('Hapus riwayat repeat order ini?')) return;
+        const { error } = await sbApp.from('crm_repeats').delete().eq('id', id);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+
+        // Sync repeat_orders JSON di crm_customers
+        const { data } = await sbApp.from('crm_repeats').select('tgl,resi,ekspedisi,produk,qty,status').eq('customer_id', editPelangganId).order('no_repeat', { ascending: true });
+        const repeats = (data || []).map(r => ({ tgl: r.tgl, resi: r.resi, ekspedisi: r.ekspedisi, produk: r.produk, qty: r.qty, status_resi: r.status === 'Berhasil' ? 'SAMPAI' : r.status === 'Gagal' ? 'RETUR' : null }));
+        await sbApp.from('crm_customers').update({ repeat_orders: repeats }).eq('id', editPelangganId);
+        const c = crmCustomers.find(x => x.id === editPelangganId);
+        if (c) c.repeat_orders = repeats;
+        const o = allOrders.find(x => x.id === editPelangganId);
+        if (o) o.repeat_orders = repeats;
+
+        loadRepeats(editPelangganId);
     }
 
     async function saveRepeat() {
