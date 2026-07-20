@@ -545,6 +545,7 @@
                 <div class="crm-nav-sub" id="crmNavItem-tier-gold" onclick="crmShowTier('gold', this)">🥇 Gold</div>
                 <div class="crm-nav-sub" id="crmNavItem-tier-platinum" onclick="crmShowTier('platinum', this)">💎 Platinum</div>
                 <div class="crm-nav-sub" id="crmNavItem-tier-diamond" onclick="crmShowTier('diamond', this)">👑 Diamond</div>
+                <div class="crm-nav-sub" id="crmNavItem-gagalRepeat" onclick="crmShowGagalRepeat(this)">❌ Gagal Repeat</div>
             </div>
 
             <div class="crm-nav-item" id="crmNavItem-ultah" onclick="crmShow('ultah', this)">
@@ -1032,6 +1033,7 @@
                                 <th>Tgl Order</th>
                                 <th>Tgl Delivered</th>
                                 <th>Potensi Repeat</th>
+                                <th>Repeat</th>
                                 <th>Kab/Kota</th>
                                 <th>Penyakit</th>
                                 <th>Status</th>
@@ -1044,7 +1046,7 @@
                             </tr>
                         </thead>
                         <tbody id="pelangganTbody">
-                            <tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
+                            <tr><td colspan="15" style="text-align:center;padding:48px;color:#9CA3AF;">Klik Refresh untuk memuat data</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1822,18 +1824,24 @@
     let filteredCustomers = [];
     let pelangganPage = 1;
     let pelangganPageSize = 10;
+    let gagalRepeatMap = {}; // customer_id → count (for pelanggan table column)
+
+    // ── GAGAL REPEAT PENGELOMPOKAN ──
+    let gagalRepeatList = [];
+    let gagalRepeatFiltered = null;
+    let gagalPage = 1, gagalPageSize = 20;
 
     async function loadPelanggan() {
         const tb = document.getElementById('pelangganTbody');
-        tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
+        tb.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>';
 
         try {
         if (!allOrders.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:48px;color:#9CA3AF;">Memuat data...</td></tr>`;
             if (ordersReady) await ordersReady; else await loadOrders();
         }
         if (!allOrders.length) {
-            tb.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan.</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:48px;color:#9CA3AF;">Belum ada data pesanan.</td></tr>`;
             return;
         }
 
@@ -1883,6 +1891,11 @@
             }
         }
 
+        // Load gagal repeat counts untuk kolom Repeat di tabel
+        const { data: gagalCountData } = await sbApp.from('crm_repeats').select('customer_id').eq('status', 'Gagal');
+        gagalRepeatMap = {};
+        (gagalCountData || []).forEach(r => { gagalRepeatMap[r.customer_id] = (gagalRepeatMap[r.customer_id] || 0) + 1; });
+
         const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
             '<option value="">Semua CS</option>' + csSet.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1895,7 +1908,7 @@
         } catch(err) {
             console.error('loadPelanggan error:', err);
             document.getElementById('pelangganTbody').innerHTML =
-                `<tr><td colspan="14" style="text-align:center;padding:48px;color:#EF4444;">Error: ${err.message}</td></tr>`;
+                `<tr><td colspan="15" style="text-align:center;padding:48px;color:#EF4444;">Error: ${err.message}</td></tr>`;
         }
     }
 
@@ -1959,7 +1972,7 @@
         const slice = filteredCustomers.slice(start, start + pelangganPageSize);
 
         if (!slice.length) {
-            tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data</td></tr>';
+            tb.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:48px;color:#9CA3AF;">Tidak ada data</td></tr>';
             document.getElementById('pelangganPagination').innerHTML = '';
             return;
         }
@@ -2026,6 +2039,13 @@
                 <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${tglOrder}</td>
                 <td style="font-size:12px;white-space:nowrap;color:#10B981;">${tglDelivered}</td>
                 <td>${potensiRepeatHtml}</td>
+                <td>${(() => {
+                    const rc = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
+                    const gc = gagalRepeatMap[c.id] || 0;
+                    if (!rc && !gc) return '<span style="color:#9CA3AF;font-size:12px;">Belum</span>';
+                    return (rc > 0 ? `<div><span style="font-size:11px;background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:8px;font-weight:600;">🔁 Repeat ke-${rc}</span></div>` : '')
+                         + (gc > 0 ? `<div style="margin-top:${rc>0?'3':'0'}px;"><span style="font-size:11px;background:#FEE2E2;color:#EF4444;padding:2px 8px;border-radius:8px;font-weight:600;">❌ Gagal ${gc}x</span></div>` : '');
+                })()}</td>
                 <td style="font-size:12px;">${escapeHtml(c.kabupaten||c.kab||'-')}</td>
                 <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||c.keluhan||'')}">${escapeHtml(c.penyakit||c.keluhan||'-')}</td>
                 <td>${typeKey ? `<span class="crm-badge" style="background:${tc}20;color:${tc};">${typeEmoji[typeKey]} ${typeKey}</span>` : '<span style="color:#9CA3AF;font-size:12px;">—</span>'}</td>
@@ -2130,7 +2150,170 @@
         await loadMemberTier();
     }
 
+    // ── GAGAL REPEAT PENGELOMPOKAN ──
+    async function crmShowGagalRepeat(el) {
+        memberTierActive = 'gagalRepeat';
+        CRM_SECTIONS.forEach(s => {
+            const sec = document.getElementById('crmSec-' + s);
+            if (sec) sec.classList.remove('crm-sec-active');
+        });
+        document.querySelectorAll('.crm-nav-item, .crm-nav-sub').forEach(n => n.classList.remove('crm-active'));
+        const sec = document.getElementById('crmSec-pengelompokan');
+        if (sec) sec.classList.add('crm-sec-active');
+        if (el) el.classList.add('crm-active');
+        const grp = document.getElementById('crmGroup-pengelompokan');
+        if (grp && grp.classList.contains('hidden')) crmToggleGroup('pengelompokan');
+        const titleEl = document.getElementById('memberTierTitle');
+        const iconEl  = document.getElementById('memberTierIcon');
+        if (titleEl) titleEl.textContent = 'Gagal Repeat';
+        if (iconEl)  iconEl.textContent  = '❌';
+        await loadGagalRepeat();
+    }
+
+    async function loadGagalRepeat() {
+        const wrap = document.getElementById('memberTierWrap');
+        if (!wrap) return;
+        wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat data...</p>';
+
+        // Pastikan orders sudah ada buat lookup nama/HP
+        if (!allOrders.length) {
+            if (ordersReady) await ordersReady; else await loadOrders();
+        }
+        // Build crmCustomers map sementara kalau kosong
+        const custMap = {};
+        allOrders.forEach(o => { if (o.id) custMap[o.id] = o; });
+
+        // Fetch semua gagal repeat dari crm_repeats
+        const { data: gagalData, error } = await sbApp.from('crm_repeats')
+            .select('*').eq('status', 'Gagal').order('tgl', { ascending: false });
+        if (error) {
+            wrap.innerHTML = '<p style="color:#EF4444;text-align:center;padding:32px;">Gagal memuat data.</p>';
+            return;
+        }
+        if (!gagalData || !gagalData.length) {
+            wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:48px;">Belum ada data gagal repeat.</p>';
+            return;
+        }
+
+        // Group by customer_id
+        const byCustomer = {};
+        gagalData.forEach(r => {
+            if (!byCustomer[r.customer_id]) byCustomer[r.customer_id] = [];
+            byCustomer[r.customer_id].push(r);
+        });
+
+        // Build list dengan info customer
+        gagalRepeatFiltered = null;
+        gagalPage = 1;
+        gagalRepeatList = Object.entries(byCustomer).map(([cid, records]) => {
+            const c = custMap[parseInt(cid)] || crmCustomers.find(x => x.id == cid) || {};
+            return { customerId: parseInt(cid), customer: c, records };
+        }).sort((a, b) => b.records.length - a.records.length);
+
+        renderGagalRepeatTable();
+    }
+
+    function renderGagalRepeatTable() {
+        const wrap = document.getElementById('memberTierWrap');
+        if (!wrap) return;
+
+        const displayList = gagalRepeatFiltered !== null ? gagalRepeatFiltered : gagalRepeatList;
+        const total = displayList.length;
+        const totalGagal = gagalRepeatList.reduce((s, x) => s + x.records.length, 0); // always full count for stats
+
+        const start = (gagalPage - 1) * gagalPageSize;
+        const slice = displayList.slice(start, start + gagalPageSize);
+        const totalPages = Math.ceil(total / gagalPageSize);
+
+        const pagBtns = totalPages <= 1 ? '' : (() => {
+            let btns = `<button onclick="gagalGoPage(${gagalPage-1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${gagalPage===1?'disabled':''}>← Prev</button>`;
+            for (let p = 1; p <= totalPages; p++) btns += `<button onclick="gagalGoPage(${p})" class="crm-btn crm-btn-sm ${p===gagalPage?'crm-btn-primary':'crm-btn-secondary'}">${p}</button>`;
+            btns += `<button onclick="gagalGoPage(${gagalPage+1})" class="crm-btn crm-btn-secondary crm-btn-sm" ${gagalPage===totalPages?'disabled':''}>Next →</button>`;
+            return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;">${btns}</div>`;
+        })();
+
+        wrap.innerHTML = `
+        <!-- Stats cards -->
+        <div class="crm-stats-row" style="margin-bottom:20px;">
+            <div class="crm-stat">
+                <div><div class="crm-stat-label">Total Pelanggan Gagal</div><div class="crm-stat-value" style="color:#EF4444;">${total}</div></div>
+                <div class="crm-stat-icon" style="background:#FEE2E2;">❌</div>
+            </div>
+            <div class="crm-stat">
+                <div><div class="crm-stat-label">Total Kejadian Gagal</div><div class="crm-stat-value" style="color:#F59E0B;">${totalGagal}</div></div>
+                <div class="crm-stat-icon" style="background:#FEF3C7;">📋</div>
+            </div>
+        </div>
+        <!-- Search + page size -->
+        <div class="crm-filters" style="margin-bottom:16px;">
+            <div class="crm-form-group" style="flex:2;min-width:200px;">
+                <label class="crm-form-label">Cari</label>
+                <input type="text" id="gagalSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="filterGagalRepeat()">
+            </div>
+            <div class="crm-form-group">
+                <label class="crm-form-label">Per halaman</label>
+                <select class="crm-select" onchange="gagalPageSize=parseInt(this.value)||20;gagalPage=1;renderGagalRepeatTable()">
+                    <option value="20" ${gagalPageSize===20?'selected':''}>20</option>
+                    <option value="50" ${gagalPageSize===50?'selected':''}>50</option>
+                    <option value="100" ${gagalPageSize===100?'selected':''}>100</option>
+                </select>
+            </div>
+        </div>
+        <div style="font-size:12px;color:#9CA3AF;margin-bottom:10px;">${start+1}–${Math.min(start+gagalPageSize,total)} dari ${total} pelanggan</div>
+        <!-- Tabel -->
+        <div class="crm-table-wrap">
+            <table class="crm-table">
+                <thead><tr>
+                    <th>#</th><th>Nama</th><th>No HP</th><th>CS</th>
+                    <th>Jumlah Gagal</th><th>Alasan Terakhir</th><th>Tgl Terakhir</th><th style="position:sticky;right:0;background:#F9FAFB;z-index:2;">Aksi</th>
+                </tr></thead>
+                <tbody>
+                ${slice.length ? slice.map((item, i) => {
+                    const c = item.customer;
+                    const latest = item.records[0]; // sudah sorted desc by tgl
+                    const alasan = latest.gagal_ai_parse || '—';
+                    return `<tr>
+                        <td style="color:#9CA3AF;font-size:12px;">${start+i+1}</td>
+                        <td style="font-weight:600;">${escapeHtml(c.nama||'-')}</td>
+                        <td style="font-size:12px;">${escapeHtml(c.no_hp||'-')}</td>
+                        <td style="font-size:12px;">${escapeHtml(c.nama_cs||'-')}</td>
+                        <td style="text-align:center;"><span style="font-size:13px;font-weight:700;color:#EF4444;">${item.records.length}x</span></td>
+                        <td style="font-size:12px;color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(alasan)}">${escapeHtml(alasan)}</td>
+                        <td style="font-size:12px;white-space:nowrap;color:#6B7280;">${fmtDate(latest.tgl)}</td>
+                        <td style="position:sticky;right:0;background:white;z-index:1;box-shadow:-2px 0 6px rgba(0,0,0,0.06);">
+                            <button onclick="openPelangganDetail(${item.customerId})" class="crm-btn crm-btn-secondary crm-btn-sm">Detail</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:#9CA3AF;">Tidak ada data</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+        ${pagBtns}`;
+    }
+
+    function filterGagalRepeat() {
+        const q = (document.getElementById('gagalSearch')?.value || '').toLowerCase().trim();
+        gagalPage = 1;
+        if (!q) { gagalRepeatFiltered = null; }
+        else {
+            gagalRepeatFiltered = gagalRepeatList.filter(item => {
+                const c = item.customer;
+                return (c.nama||'').toLowerCase().includes(q) || (c.no_hp||'').toLowerCase().includes(q);
+            });
+        }
+        renderGagalRepeatTable();
+    }
+
+    function gagalGoPage(p) {
+        const list = gagalRepeatFiltered !== null ? gagalRepeatFiltered : gagalRepeatList;
+        const total = Math.ceil(list.length / gagalPageSize);
+        if (p < 1 || p > total) return;
+        gagalPage = p;
+        renderGagalRepeatTable();
+    }
+
     async function loadMemberTier() {
+        if (memberTierActive === 'gagalRepeat') { await loadGagalRepeat(); return; }
         const wrap = document.getElementById('memberTierWrap');
         if (!wrap) return;
 
@@ -2747,6 +2930,7 @@
         if (error) { alert('Gagal simpan: ' + error.message); return; }
         const idx = crmCustomers.findIndex(x => x.id === editPelangganId);
         if (idx >= 0) crmCustomers[idx] = { ...crmCustomers[idx], ...updates };
+        renderPelangganTable();
         alert('Status tersimpan!');
     }
 
@@ -2922,6 +3106,10 @@
         btn.disabled = false; btn.textContent = 'Simpan Gagal Repeat';
         if (error) { alert('Gagal simpan: ' + error.message); return; }
 
+        // Update local gagalRepeatMap supaya kolom Repeat di tabel langsung update
+        gagalRepeatMap[editPelangganId] = (gagalRepeatMap[editPelangganId] || 0) + 1;
+        renderPelangganTable();
+
         // Reset form
         document.getElementById('grTgl').value = new Date().toISOString().slice(0, 10);
         document.getElementById('grFiles').value = '';
@@ -2968,12 +3156,15 @@
 
         // Sync repeat_orders JSON di crm_customers
         const { data } = await sbApp.from('crm_repeats').select('tgl,resi,ekspedisi,produk,qty,status').eq('customer_id', editPelangganId).order('no_repeat', { ascending: true });
-        const repeats = (data || []).map(r => ({ tgl: r.tgl, resi: r.resi, ekspedisi: r.ekspedisi, produk: r.produk, qty: r.qty, status_resi: r.status === 'Berhasil' ? 'SAMPAI' : r.status === 'Gagal' ? 'RETUR' : null }));
+        const repeats = (data || []).filter(r => r.status !== 'Gagal').map(r => ({ tgl: r.tgl, resi: r.resi, ekspedisi: r.ekspedisi, produk: r.produk, qty: r.qty, status_resi: r.status === 'Berhasil' ? 'SAMPAI' : null }));
         await sbApp.from('crm_customers').update({ repeat_orders: repeats }).eq('id', editPelangganId);
         const c = crmCustomers.find(x => x.id === editPelangganId);
         if (c) c.repeat_orders = repeats;
         const o = allOrders.find(x => x.id === editPelangganId);
         if (o) o.repeat_orders = repeats;
+        // Update gagal count
+        gagalRepeatMap[editPelangganId] = (data || []).filter(r => r.status === 'Gagal').length;
+        renderPelangganTable();
 
         loadRepeats(editPelangganId);
     }
@@ -3016,6 +3207,7 @@
             // Also update in allOrders
             const o = allOrders.find(x => x.id === editPelangganId);
             if (o) o.repeat_orders = repeats;
+            renderPelangganTable();
         }
 
         btn.disabled = false; btn.textContent = '+ Tambah Repeat';
