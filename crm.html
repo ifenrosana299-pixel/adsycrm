@@ -2142,7 +2142,7 @@
                         <th>#</th>
                         <th>Nama</th>
                         <th>Nomer</th>
-                        <th style="text-align:center;">Point</th>
+                        <th style="text-align:center;">Sisa Point</th>
                         <th style="text-align:center;">Tgl Redeem Point</th>
                         <th style="text-align:center;">Total Point Diredeem</th>
                         <th style="text-align:center;">Last Order</th>
@@ -2183,14 +2183,35 @@
         if (!c) return;
         pointModalId = id;
         const m = TIER_META[memberTierActive];
-        document.getElementById('pointModalName').textContent  = c.nama || '—';
-        document.getElementById('pointModalNomer').textContent = c.no_hp || '—';
-        document.getElementById('pointModalTier').textContent  = m.label;
-        document.getElementById('pointModalTier').style.color  = m.color;
-        document.getElementById('pointModalPoint').textContent = c.point != null ? c.point : '—';
-        document.getElementById('pointModalTglInput').value    = c.tgl_redeem || '';
-        document.getElementById('pointModalRedeemInput').value = c.total_point_diredeem ?? '';
-        document.getElementById('pointModal').style.display    = 'flex';
+        const sisaPoint = c.point != null ? c.point : 0;
+
+        document.getElementById('pointModalName').textContent    = c.nama || '—';
+        document.getElementById('pointModalNomer').textContent   = c.no_hp || '—';
+        document.getElementById('pointModalTier').textContent    = m.label;
+        document.getElementById('pointModalTier').style.color    = m.color;
+        document.getElementById('pointModalPoint').textContent   = sisaPoint;
+        document.getElementById('pointModalJumlahRedeem').value  = '';
+        document.getElementById('pointModalTotalDisplay').textContent = c.total_point_diredeem != null ? c.total_point_diredeem : '—';
+        document.getElementById('pointModalTglDisplay').textContent   = c.tgl_redeem ? fmtDate(c.tgl_redeem) : '—';
+        document.getElementById('pointPreviewWrap').style.display = 'none';
+        document.getElementById('pointModal').style.display      = 'flex';
+    }
+
+    function updatePointPreview() {
+        const c = crmCustomers.find(x => x.id === pointModalId) || allOrders.find(x => x.id === pointModalId);
+        const sisaPoint = c ? (c.point != null ? c.point : 0) : 0;
+        const jumlah    = parseInt(document.getElementById('pointModalJumlahRedeem').value) || 0;
+        const wrap      = document.getElementById('pointPreviewWrap');
+        const valEl     = document.getElementById('pointPreviewVal');
+        if (jumlah > 0) {
+            wrap.style.display = 'block';
+            const sisaBaru = sisaPoint - jumlah;
+            valEl.textContent  = sisaBaru + ' point';
+            wrap.style.background = sisaBaru < 0 ? '#fee2e2' : '#fef3c7';
+            wrap.style.color      = sisaBaru < 0 ? '#991b1b' : '#92400e';
+        } else {
+            wrap.style.display = 'none';
+        }
     }
 
     function closePointModal() {
@@ -2200,27 +2221,42 @@
 
     async function savePointModal() {
         if (!pointModalId) return;
-        const btn = document.getElementById('pointModalSaveBtn');
-        const tglRedeem    = document.getElementById('pointModalTglInput').value || null;
-        const totalRedeem  = parseInt(document.getElementById('pointModalRedeemInput').value) || 0;
+        const c = crmCustomers.find(x => x.id === pointModalId) || allOrders.find(x => x.id === pointModalId);
+        if (!c) return;
 
+        const jumlahRedeem = parseInt(document.getElementById('pointModalJumlahRedeem').value) || 0;
+        if (jumlahRedeem <= 0) { alert('Masukkan jumlah point yang ingin diredeem.'); return; }
+
+        const sisaPoint = c.point != null ? c.point : 0;
+        const newPoint  = sisaPoint - jumlahRedeem;
+        if (newPoint < 0) { alert('Point tidak cukup! Sisa point: ' + sisaPoint); return; }
+
+        const today    = new Date().toISOString().slice(0, 10);
+        const newTotal = (c.total_point_diredeem != null ? c.total_point_diredeem : 0) + jumlahRedeem;
+
+        const btn = document.getElementById('pointModalSaveBtn');
         btn.disabled = true;
         btn.textContent = 'Menyimpan...';
 
         const { error } = await sbApp.from('crm_customers').update({
-            tgl_redeem:           tglRedeem,
-            total_point_diredeem: totalRedeem,
+            point:                newPoint,
+            tgl_redeem:           today,
+            total_point_diredeem: newTotal,
         }).eq('id', pointModalId);
 
         btn.disabled = false;
-        btn.textContent = 'Simpan';
+        btn.textContent = 'Redeem Point';
 
         if (error) { alert('Gagal simpan: ' + error.message); return; }
 
         // Update local data
         [crmCustomers, allOrders, tierCurrentList].forEach(arr => {
-            const c = arr.find(x => x.id === pointModalId);
-            if (c) { c.tgl_redeem = tglRedeem; c.total_point_diredeem = totalRedeem; }
+            const row = arr.find(x => x.id === pointModalId);
+            if (row) {
+                row.point                = newPoint;
+                row.tgl_redeem           = today;
+                row.total_point_diredeem = newTotal;
+            }
         });
 
         closePointModal();
@@ -4677,23 +4713,39 @@
         </div>
 
         <div style="display:flex;flex-direction:column;gap:14px;">
-            <div style="padding:14px 16px;background:#f8fafc;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-size:13px;color:#64748b;font-weight:500;">🎯 Point Saat Ini</div>
+            <!-- Sisa Point display -->
+            <div style="padding:14px 16px;background:#f0f0ff;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:#64748b;font-weight:500;">🎯 Sisa Point</div>
                 <div style="font-size:22px;font-weight:800;color:#4F46E5;" id="pointModalPoint">—</div>
             </div>
+
+            <!-- Redeem input -->
             <div style="display:flex;flex-direction:column;gap:6px;">
-                <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">📅 TANGGAL REDEEM TERAKHIR</label>
-                <input type="date" id="pointModalTglInput" class="crm-input" style="width:100%;">
+                <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">💸 JUMLAH POINT YANG DIREDEEM</label>
+                <input type="number" id="pointModalJumlahRedeem" class="crm-input" min="0" placeholder="0" style="width:100%;" oninput="updatePointPreview()">
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-                <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;">🎁 TOTAL POINT DIREDEEM</label>
-                <input type="number" id="pointModalRedeemInput" class="crm-input" min="0" placeholder="0" style="width:100%;">
+
+            <!-- Preview sisa setelah redeem -->
+            <div id="pointPreviewWrap" style="display:none;padding:10px 14px;background:#fef3c7;border-radius:10px;font-size:13px;color:#92400e;">
+                Sisa setelah redeem: <strong id="pointPreviewVal">—</strong>
+            </div>
+
+            <!-- Info section (read-only, ditampilkan) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="padding:10px 12px;background:#f8fafc;border-radius:10px;">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Total Diredeem</div>
+                    <div style="font-size:15px;font-weight:700;color:#374151;" id="pointModalTotalDisplay">—</div>
+                </div>
+                <div style="padding:10px 12px;background:#f8fafc;border-radius:10px;">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Redeem Terakhir</div>
+                    <div style="font-size:13px;font-weight:600;color:#374151;" id="pointModalTglDisplay">—</div>
+                </div>
             </div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button onclick="closePointModal()" class="crm-btn crm-btn-secondary" style="flex:1;padding:10px;">Batal</button>
-            <button onclick="savePointModal()" id="pointModalSaveBtn" class="crm-btn crm-btn-primary" style="flex:2;padding:10px;">Simpan</button>
+            <button onclick="savePointModal()" id="pointModalSaveBtn" class="crm-btn crm-btn-primary" style="flex:2;padding:10px;">Redeem Point</button>
         </div>
     </div>
 </div>
