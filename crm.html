@@ -1425,6 +1425,9 @@
     </div>
 </div>
 
+<!-- Hidden canvas for E-Member Card generation -->
+<canvas id="memberCardCanvas" width="760" height="440" style="display:none;"></canvas>
+
 <!-- ═══ EDIT PELANGGAN MODAL ═══ -->
 <div id="editPelangganModal" class="crm-modal hidden" onclick="if(event.target===this)closeEditPelangganModal()">
     <div class="crm-modal-box" style="max-width:680px;padding:0;display:flex;flex-direction:column;max-height:88vh;">
@@ -3183,6 +3186,35 @@
             const map = { Berhasil:'rp-badge-berhasil', Gagal:'rp-badge-gagal', Pending:'rp-badge-pending' };
             return `<span class="crm-badge ${map[s]||'rp-badge-pending'}">${s}</span>`;
         };
+        // Hitung tier dari jumlah repeat non-gagal
+        const c = crmCustomers.find(x => x.id === customerId) || allOrders.find(x => x.id === customerId) || {};
+        const produkNorm = (c.produk || '').trim().toLowerCase();
+        const sku = (skuList || []).find(s => s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm);
+        const totalRepeat = data.filter(r => r.status !== 'Gagal').length;
+        const currentTier = getCustomerTier(totalRepeat, sku);
+        const tierCfg = CARD_TIER[currentTier] || CARD_TIER.bronze;
+
+        // Mini card HTML
+        function miniCard(repeatNo) {
+            return `<div style="
+                position:relative;width:100%;height:80px;border-radius:12px;overflow:hidden;
+                background:linear-gradient(135deg,${tierCfg.grad[0]},${tierCfg.grad[1]},${tierCfg.grad[2]});
+                margin-top:10px;display:flex;align-items:center;padding:0 16px;gap:14px;">
+                <div style="position:absolute;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.07);right:-20px;top:-30px;"></div>
+                <div style="font-size:24px;">${tierCfg.label.split(' ')[0]}</div>
+                <div style="flex:1;">
+                    <div style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:1px;text-transform:uppercase;">E-Member Card · ${tierCfg.label.split(' ').slice(1).join(' ')}</div>
+                    <div style="font-size:16px;font-weight:700;color:#fff;margin-top:2px;">${escapeHtml(c.nama||'-')}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">Repeat ke-${repeatNo} · ${Number(c.point||0).toLocaleString('id')} pt</div>
+                </div>
+                <button onclick="downloadMemberCard(${customerId}, ${repeatNo})"
+                    style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:8px;
+                    color:#fff;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;white-space:nowrap;backdrop-filter:blur(4px);">
+                    ⬇️ Download
+                </button>
+            </div>`;
+        }
+
         wrap.innerHTML = data.map(r => `
             <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -3196,7 +3228,10 @@
                     <span>📦 ${escapeHtml(r.produk||'-')} × ${r.qty||'-'}</span>
                     ${r.resi ? `<span>🚚 ${escapeHtml(r.resi)} · ${escapeHtml(r.ekspedisi||'-')}</span>` : ''}
                 </div>
-                ${r.status === 'Gagal' ? `<div style="margin-top:8px;padding:8px 10px;background:#FFF1F2;border-radius:8px;font-size:12px;color:#DC2626;">⚠️ ${escapeHtml(r.alasan_gagal||'Alasan tidak diisi')}${r.gagal_ai_parse ? '<br><span style="color:#64748b;">AI: '+escapeHtml(r.gagal_ai_parse)+'</span>' : ''}</div>` : ''}
+                ${r.status === 'Gagal'
+                    ? `<div style="margin-top:8px;padding:8px 10px;background:#FFF1F2;border-radius:8px;font-size:12px;color:#DC2626;">⚠️ ${escapeHtml(r.alasan_gagal||'Alasan tidak diisi')}${r.gagal_ai_parse ? '<br><span style="color:#64748b;">AI: '+escapeHtml(r.gagal_ai_parse)+'</span>' : ''}</div>`
+                    : miniCard(r.no_repeat)
+                }
                 ${r.gagal_images && r.gagal_images.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${r.gagal_images.map(url=>`<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="window.open('${url}','_blank')">`).join('')}</div>` : ''}
             </div>`).join('');
     }
@@ -3219,6 +3254,118 @@
         renderPelangganTable();
 
         loadRepeats(editPelangganId);
+    }
+
+    // ── E-MEMBER CARD ──
+    const CARD_TIER = {
+        bronze:   { label:'🥉 Bronze',   grad:['#78350f','#b45309','#d97706'] },
+        silver:   { label:'🥈 Silver',   grad:['#334155','#64748b','#94a3b8'] },
+        gold:     { label:'🥇 Gold',     grad:['#713f12','#ca8a04','#eab308'] },
+        platinum: { label:'💎 Platinum', grad:['#4c1d95','#6d28d9','#8b5cf6'] },
+        diamond:  { label:'👑 Diamond',  grad:['#0c4a6e','#0369a1','#0ea5e9'] },
+    };
+
+    function drawMemberCardCanvas(nama, tier, repeatCount, point) {
+        const canvas = document.getElementById('memberCardCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = 760, H = 440;
+        const cfg = CARD_TIER[tier] || CARD_TIER.bronze;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Background gradient
+        const grd = ctx.createLinearGradient(0, 0, W, H);
+        grd.addColorStop(0, cfg.grad[0]);
+        grd.addColorStop(0.5, cfg.grad[1]);
+        grd.addColorStop(1, cfg.grad[2]);
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, W, H, 36);
+        ctx.fill();
+
+        // Decorative circles
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(W - 80, -60, 220, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-60, H + 40, 180, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Brand
+        ctx.font = 'bold 28px "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.textAlign = 'left';
+        ctx.fillText('ADSY', 52, 72);
+
+        // Tier badge
+        const badgeText = cfg.label;
+        ctx.font = 'bold 22px "Segoe UI", sans-serif';
+        const bw = ctx.measureText(badgeText).width + 40;
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath(); ctx.roundRect(W - bw - 52, 44, bw, 40, 20); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(badgeText, W - bw / 2 - 52, 71);
+        ctx.textAlign = 'left';
+
+        // Label + Name
+        ctx.font = '500 18px "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillText('NAMA MEMBER', 52, 200);
+        ctx.font = 'bold 44px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#fff';
+        // Truncate name if too long
+        let displayName = nama;
+        while (ctx.measureText(displayName).width > W - 120 && displayName.length > 5) {
+            displayName = displayName.slice(0, -1);
+        }
+        if (displayName !== nama) displayName += '…';
+        ctx.fillText(displayName, 52, 256);
+
+        // Divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(52, 292); ctx.lineTo(W - 52, 292); ctx.stroke();
+
+        // Bottom info
+        const infos = [
+            { label: 'REPEAT ORDER', value: `${repeatCount}x` },
+            { label: 'SISA POINT',   value: `${Number(point || 0).toLocaleString('id')} pt` },
+        ];
+        const colW = (W - 104) / 3;
+        infos.forEach((info, i) => {
+            const x = 52 + i * colW;
+            ctx.font = '500 16px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.fillText(info.label, x, 342);
+            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(info.value, x, 382);
+        });
+
+        // Member ID
+        const memberId = 'ADY-' + String(editPelangganId || '').padStart(5, '0');
+        ctx.font = '500 15px "Courier New", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.textAlign = 'right';
+        ctx.fillText(memberId, W - 52, 418);
+
+        return canvas.toDataURL('image/png');
+    }
+
+    function downloadMemberCard(customerId, noRepeat) {
+        const c = crmCustomers.find(x => x.id === customerId) ||
+                  allOrders.find(x => x.id === customerId) || {};
+        const repeatCount = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : noRepeat;
+        const produkNorm  = (c.produk || '').trim().toLowerCase();
+        const sku = (skuList || []).find(s =>
+            s.kode?.toLowerCase() === produkNorm || s.nama_produk?.toLowerCase() === produkNorm
+        );
+        const tier = getCustomerTier(repeatCount, sku);
+        const dataUrl = drawMemberCardCanvas(c.nama || 'Member', tier, repeatCount, c.point);
+        const link = document.createElement('a');
+        link.download = `emember-${(c.nama||'member').replace(/\s+/g,'-')}-repeat${noRepeat}.png`;
+        link.href = dataUrl;
+        link.click();
     }
 
     async function saveRepeat() {
