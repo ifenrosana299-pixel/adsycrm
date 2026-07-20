@@ -1828,8 +1828,8 @@
 
     // ── GAGAL REPEAT PENGELOMPOKAN ──
     let gagalRepeatList = [];
-    let gagalRepeatFiltered = null;
     let gagalPage = 1, gagalPageSize = 20;
+    let gagalProdukFilter = '', gagalSearchStr = '';
 
     async function loadPelanggan() {
         const tb = document.getElementById('pelangganTbody');
@@ -2203,7 +2203,8 @@
         });
 
         // Build list dengan info customer
-        gagalRepeatFiltered = null;
+        gagalProdukFilter = '';
+        gagalSearchStr = '';
         gagalPage = 1;
         gagalRepeatList = Object.entries(byCustomer).map(([cid, records]) => {
             const c = custMap[parseInt(cid)] || crmCustomers.find(x => x.id == cid) || {};
@@ -2217,9 +2218,15 @@
         const wrap = document.getElementById('memberTierWrap');
         if (!wrap) return;
 
-        const displayList = gagalRepeatFiltered !== null ? gagalRepeatFiltered : gagalRepeatList;
+        // Apply produk + search filter
+        let displayList = gagalRepeatList;
+        if (gagalProdukFilter) displayList = displayList.filter(item => (item.customer?.produk || '') === gagalProdukFilter);
+        if (gagalSearchStr)    displayList = displayList.filter(item =>
+            (item.customer?.nama || '').toLowerCase().includes(gagalSearchStr) ||
+            (item.customer?.no_hp || '').toLowerCase().includes(gagalSearchStr)
+        );
         const total = displayList.length;
-        const totalGagal = gagalRepeatList.reduce((s, x) => s + x.records.length, 0); // always full count for stats
+        const totalGagal = displayList.reduce((s, x) => s + x.records.length, 0);
 
         const start = (gagalPage - 1) * gagalPageSize;
         const slice = displayList.slice(start, start + gagalPageSize);
@@ -2232,9 +2239,12 @@
             return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;">${btns}</div>`;
         })();
 
+        // Produk options dari full list
+        const gagalProdukOptions = [...new Set(gagalRepeatList.map(item => item.customer?.produk).filter(Boolean))].sort();
+
         wrap.innerHTML = `
         <!-- Stats cards -->
-        <div class="crm-stats-row" style="margin-bottom:20px;">
+        <div class="crm-stats-row" style="margin-bottom:16px;">
             <div class="crm-stat">
                 <div><div class="crm-stat-label">Total Pelanggan Gagal</div><div class="crm-stat-value" style="color:#EF4444;">${total}</div></div>
                 <div class="crm-stat-icon" style="background:#FEE2E2;">❌</div>
@@ -2244,13 +2254,20 @@
                 <div class="crm-stat-icon" style="background:#FEF3C7;">📋</div>
             </div>
         </div>
-        <!-- Search + page size -->
+        <!-- Filter produk + cari + page size -->
         <div class="crm-filters" style="margin-bottom:16px;">
-            <div class="crm-form-group" style="flex:2;min-width:200px;">
-                <label class="crm-form-label">Cari</label>
-                <input type="text" id="gagalSearch" class="crm-input" placeholder="🔍 Nama / HP..." oninput="filterGagalRepeat()">
-            </div>
             <div class="crm-form-group">
+                <label class="crm-form-label">Produk</label>
+                <select class="crm-select" onchange="gagalProdukFilter=this.value;gagalPage=1;renderGagalRepeatTable()">
+                    <option value="">Semua Produk</option>
+                    ${gagalProdukOptions.map(p => `<option value="${p}" ${gagalProdukFilter===p?'selected':''}>${p}</option>`).join('')}
+                </select>
+            </div>
+            <div class="crm-form-group" style="flex:2;min-width:180px;">
+                <label class="crm-form-label">Cari</label>
+                <input type="text" class="crm-input" placeholder="🔍 Nama / HP..." value="${gagalSearchStr}" oninput="gagalSearchStr=this.value.toLowerCase();gagalPage=1;renderGagalRepeatTable()">
+            </div>
+            <div class="crm-form-group" style="min-width:120px;">
                 <label class="crm-form-label">Per halaman</label>
                 <select class="crm-select" onchange="gagalPageSize=parseInt(this.value)||20;gagalPage=1;renderGagalRepeatTable()">
                     <option value="20" ${gagalPageSize===20?'selected':''}>20</option>
@@ -2291,22 +2308,8 @@
         ${pagBtns}`;
     }
 
-    function filterGagalRepeat() {
-        const q = (document.getElementById('gagalSearch')?.value || '').toLowerCase().trim();
-        gagalPage = 1;
-        if (!q) { gagalRepeatFiltered = null; }
-        else {
-            gagalRepeatFiltered = gagalRepeatList.filter(item => {
-                const c = item.customer;
-                return (c.nama||'').toLowerCase().includes(q) || (c.no_hp||'').toLowerCase().includes(q);
-            });
-        }
-        renderGagalRepeatTable();
-    }
-
     function gagalGoPage(p) {
-        const list = gagalRepeatFiltered !== null ? gagalRepeatFiltered : gagalRepeatList;
-        const total = Math.ceil(list.length / gagalPageSize);
+        const total = Math.ceil(gagalRepeatList.length / gagalPageSize);
         if (p < 1 || p > total) return;
         gagalPage = p;
         renderGagalRepeatTable();
@@ -2525,6 +2528,25 @@
         const produkOptions = [...new Set(fullList.map(c => c.produk).filter(Boolean))].sort();
 
         wrap.innerHTML = `
+            <div class="crm-stats-row" style="margin-bottom:16px;">
+                <div class="crm-stat" onclick="tierSetCardFilter('')" style="cursor:pointer;outline:${tierCardFilter===''?'2px solid #4F46E5':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Total Member${tierProdukFilter?' ('+tierProdukFilter+')':''}</div><div class="crm-stat-value" style="color:${m.color};">${produkFiltered.length}</div></div>
+                    <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
+                </div>
+                <div class="crm-stat" onclick="tierSetCardFilter('belumRepeat')" style="cursor:pointer;outline:${tierCardFilter==='belumRepeat'?'2px solid #4F46E5':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Belum Repeat</div><div class="crm-stat-value" style="color:#6366f1;">${belumRepeatCount}</div></div>
+                    <div class="crm-stat-icon" style="background:#EEF2FF;">🔔</div>
+                </div>
+                <div class="crm-stat" onclick="tierSetCardFilter('hampirNaik')" style="cursor:pointer;outline:${tierCardFilter==='hampirNaik'?'2px solid #F59E0B':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaikCount}</div></div>
+                    <div class="crm-stat-icon" style="background:#FEF3C7;">⬆️</div>
+                </div>
+                <div class="crm-stat" onclick="tierSetCardFilter('potensiLewat')" style="cursor:pointer;outline:${tierCardFilter==='potensiLewat'?'2px solid #EF4444':'none'};outline-offset:2px;">
+                    <div><div class="crm-stat-label">Potensi RO Lewat</div><div class="crm-stat-value" style="color:#EF4444;">${potensiLewatCount}</div></div>
+                    <div class="crm-stat-icon" style="background:#FEE2E2;">🔴</div>
+                </div>
+            </div>
+
             <!-- Filter produk + cari -->
             <div class="crm-filters" style="margin-bottom:16px;">
                 <div class="crm-form-group">
@@ -2545,24 +2567,6 @@
                         <option value="20" ${tierPageSize===20?'selected':''}>20</option>
                         <option value="50" ${tierPageSize===50?'selected':''}>50</option>
                     </select>
-                </div>
-            </div>
-            <div class="crm-stats-row" style="margin-bottom:16px;">
-                <div class="crm-stat" onclick="tierSetCardFilter('')" style="cursor:pointer;outline:${tierCardFilter===''?'2px solid #4F46E5':'none'};outline-offset:2px;">
-                    <div><div class="crm-stat-label">Total Member${tierProdukFilter?' ('+tierProdukFilter+')':''}</div><div class="crm-stat-value" style="color:${m.color};">${produkFiltered.length}</div></div>
-                    <div class="crm-stat-icon" style="background:${m.bg};">${m.label.split(' ')[0]}</div>
-                </div>
-                <div class="crm-stat" onclick="tierSetCardFilter('belumRepeat')" style="cursor:pointer;outline:${tierCardFilter==='belumRepeat'?'2px solid #4F46E5':'none'};outline-offset:2px;">
-                    <div><div class="crm-stat-label">Belum Repeat</div><div class="crm-stat-value" style="color:#6366f1;">${belumRepeatCount}</div></div>
-                    <div class="crm-stat-icon" style="background:#EEF2FF;">🔔</div>
-                </div>
-                <div class="crm-stat" onclick="tierSetCardFilter('hampirNaik')" style="cursor:pointer;outline:${tierCardFilter==='hampirNaik'?'2px solid #F59E0B':'none'};outline-offset:2px;">
-                    <div><div class="crm-stat-label">Hampir Naik Tier</div><div class="crm-stat-value" style="color:#F59E0B;">${hampirNaikCount}</div></div>
-                    <div class="crm-stat-icon" style="background:#FEF3C7;">⬆️</div>
-                </div>
-                <div class="crm-stat" onclick="tierSetCardFilter('potensiLewat')" style="cursor:pointer;outline:${tierCardFilter==='potensiLewat'?'2px solid #EF4444':'none'};outline-offset:2px;">
-                    <div><div class="crm-stat-label">Potensi RO Lewat</div><div class="crm-stat-value" style="color:#EF4444;">${potensiLewatCount}</div></div>
-                    <div class="crm-stat-icon" style="background:#FEE2E2;">🔴</div>
                 </div>
             </div>
 
