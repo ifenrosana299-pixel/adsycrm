@@ -3233,6 +3233,7 @@
         const totalCOD = o.total_cod ? 'Rp' + Number(o.total_cod).toLocaleString('id-ID') : '-';
         const repeats  = Array.isArray(o.repeat_orders) ? o.repeat_orders : [];
 
+        const isFinished = stage === 'SAMPAI' || stage === 'RETUR';
         return `<div class="tr-card" onclick="trOpenDetail(${o.id})">
             <div class="tr-card-top">
                 <div class="tr-card-left">
@@ -3240,9 +3241,10 @@
                     <div>
                         <div class="tr-name">${escapeHtml(o.nama||'-')}</div>
                         <div class="tr-phone">${escapeHtml(o.no_hp||'-')}</div>
-                        <div class="tr-meta">
+                        <div class="tr-meta" style="display:flex;align-items:center;gap:6px;">
                             <span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span>
-                            ${o.ekspedisi ? `<span class="crm-badge" style="background:#F3F4F6;color:#6B7280;">${escapeHtml(o.ekspedisi)}</span>` : ''}
+                            <span class="crm-badge" style="background:#F3F4F6;color:#6B7280;">${escapeHtml(o.ekspedisi||'—')}</span>
+                            <button onclick="event.stopPropagation();trEditEkspedisi(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm" style="padding:3px 7px;line-height:0;" title="Ganti ekspedisi"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                         </div>
                         <div class="tr-produk">${escapeHtml(o.produk||'-')} × ${o.qty||'-'}</div>
                     </div>
@@ -3262,7 +3264,95 @@
                     <span class="crm-badge" style="background:${rMeta.bg};color:${rMeta.color};">${rMeta.label}</span>
                 </div>`;
             }).join('')}</div>` : ''}
+            ${!isFinished ? `<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F3F4F6;" onclick="event.stopPropagation()">
+                <button onclick="trManualStatus(${o.id},'SAMPAI')" style="flex:1;padding:6px 0;border:1.5px solid #10B981;background:#F0FDF4;color:#059669;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ Delivered</button>
+                <button onclick="trManualStatus(${o.id},'RETUR')"  style="flex:1;padding:6px 0;border:1.5px solid #EF4444;background:#FFF1F2;color:#DC2626;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">↩️ RTS</button>
+            </div>` : ''}
         </div>`;
+    }
+
+    let eksModalId = null;
+
+    function trEditEkspedisi(id) {
+        const o = orders.find(x => x.id === id);
+        if (!o) return;
+        eksModalId = id;
+        document.getElementById('eksModalNama').textContent = o.nama || '—';
+        document.getElementById('eksModalResi').textContent = o.resi || '—';
+        // Set select ke nilai saat ini
+        const sel = document.getElementById('eksModalSelect');
+        const cur = (o.ekspedisi || '').toUpperCase();
+        for (let opt of sel.options) {
+            opt.selected = opt.value === cur || cur.includes(opt.value) || opt.value.includes(cur);
+        }
+        document.getElementById('eksModal').style.display = 'flex';
+    }
+
+    function closeEksModal() {
+        document.getElementById('eksModal').style.display = 'none';
+        eksModalId = null;
+    }
+
+    async function saveEksModal() {
+        if (!eksModalId) return;
+        const newEks = document.getElementById('eksModalSelect').value;
+        const btn = document.getElementById('eksModalSaveBtn');
+        btn.disabled = true;
+        btn.textContent = 'Menyimpan...';
+
+        const { error } = await sbApp.from('crm_customers').update({ ekspedisi: newEks }).eq('id', eksModalId);
+        if (error) { alert('Gagal simpan: ' + error.message); btn.disabled = false; btn.textContent = 'Simpan & Cek Ulang'; return; }
+
+        // Update local data
+        const o = orders.find(x => x.id === eksModalId);
+        if (o) o.ekspedisi = newEks;
+        const o2 = allOrders.find(x => x.id === eksModalId);
+        if (o2) o2.ekspedisi = newEks;
+
+        closeEksModal();
+        btn.disabled = false;
+        btn.textContent = 'Simpan & Cek Ulang';
+
+        // Langsung re-check resi pakai ekspedisi baru
+        if (o && o.resi) {
+            const result = await checkResiTracking(o.resi, newEks);
+            if (result) {
+                o.status_resi        = result.stage;
+                o.status_resi_step   = result.step;
+                o.status_resi_detail = result.detail;
+                await sbApp.from('crm_customers').update({
+                    status_resi:        result.stage,
+                    status_resi_step:   result.step,
+                    status_resi_detail: result.detail,
+                }).eq('id', eksModalId);
+            }
+        }
+        renderTrackingResi();
+        trUpdateStats();
+    }
+
+    async function trManualStatus(id, newStatus) {
+        const label = newStatus === 'SAMPAI' ? 'Delivered' : 'RTS';
+        if (!confirm(`Tandai order ini sebagai ${label}?`)) return;
+
+        const today = new Date().toISOString().slice(0, 10);
+        const payload = { status_resi: newStatus };
+        if (newStatus === 'SAMPAI') payload.tgl_delivered = today;
+
+        const { error } = await sbApp.from('crm_customers').update(payload).eq('id', id);
+        if (error) { alert('Gagal update: ' + error.message); return; }
+
+        // Update local data
+        [allOrders, orders].forEach(arr => {
+            const o = arr.find(x => x.id === id);
+            if (o) {
+                o.status_resi = newStatus;
+                if (newStatus === 'SAMPAI') o.tgl_delivered = today;
+            }
+        });
+
+        renderTrackingResi();
+        trUpdateStats();
     }
 
     function trOpenDetail(id) {
@@ -4741,6 +4831,35 @@
         loadTestimoni();
     }
 </script>
+
+<!-- ═══ EKSPEDISI MODAL ═══ -->
+<div id="eksModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;" onclick="if(event.target===this)closeEksModal()">
+    <div style="background:white;border-radius:20px;padding:28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div style="font-size:16px;font-weight:800;color:#1e293b;">✏️ Ganti Ekspedisi</div>
+            <button onclick="closeEksModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;">✕</button>
+        </div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:6px;">Nama pelanggan: <strong id="eksModalNama">—</strong></div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:14px;">No. Resi: <strong id="eksModalResi">—</strong></div>
+        <select id="eksModalSelect" class="crm-select" style="width:100%;margin-bottom:20px;">
+            <option value="JNE">JNE</option>
+            <option value="LION">LION PARCEL</option>
+            <option value="J&T">J&T EXPRESS</option>
+            <option value="SICEPAT">SICEPAT</option>
+            <option value="ANTERAJA">ANTERAJA</option>
+            <option value="NINJA">NINJA XPRESS</option>
+            <option value="SAP">SAP EXPRESS</option>
+            <option value="TIKI">TIKI</option>
+            <option value="WAHANA">WAHANA</option>
+            <option value="ID EXPRESS">ID EXPRESS</option>
+            <option value="POS">POS INDONESIA</option>
+        </select>
+        <div style="display:flex;gap:10px;">
+            <button onclick="closeEksModal()" class="crm-btn crm-btn-secondary" style="flex:1;padding:10px;">Batal</button>
+            <button onclick="saveEksModal()" id="eksModalSaveBtn" class="crm-btn crm-btn-primary" style="flex:2;padding:10px;">Simpan & Cek Ulang</button>
+        </div>
+    </div>
+</div>
 
 <!-- ═══ POINT MODAL ═══ -->
 <div id="pointModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;" onclick="if(event.target===this)closePointModal()">
