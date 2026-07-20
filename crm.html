@@ -2094,9 +2094,9 @@
                 const potensi = new Date(delivered);
                 potensi.setDate(potensi.getDate() + qty * sku.durasi_hari);
                 const diff = Math.ceil((potensi - today) / (1000 * 60 * 60 * 24));
-                if (diff < 0)       return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;color:#EF4444;font-weight:600;">Terlambat RO</span></div>`;
-                else if (diff <= 3) return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEF3C7;color:#D97706;font-weight:600;">Segera RO</span></div>`;
-                return '';
+                if (diff < 0)       return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEE2E2;color:#EF4444;font-weight:600;">🔴 Terlambat RO</span></div>`;
+                else if (diff <= 3) return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#FEF3C7;color:#D97706;font-weight:600;">🟡 Segera RO</span></div>`;
+                else                return `<div style="margin-top:3px;"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#D1FAE5;color:#059669;font-weight:600;">🟢 On Track</span></div>`;
             })();
 
             return `<tr>
