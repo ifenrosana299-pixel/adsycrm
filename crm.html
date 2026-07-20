@@ -473,6 +473,21 @@
         .drp-apply:hover { opacity:.85; }
         .drp-cancel { padding:6px 12px; border-radius:7px; border:1px solid #E5E7EB; background:none; color:#6B7280; font-size:12px; cursor:pointer; }
         .drp-cancel:hover { border-color:#EF4444; color:#EF4444; }
+
+        /* Edit Pelanggan Tabs */
+        .ep-tab { padding:10px 18px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:600; color:#94a3b8; border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .15s,border-color .15s; }
+        .ep-tab:hover { color:#4F46E5; }
+        .ep-tab-active { color:#4F46E5; border-bottom-color:#4F46E5; }
+
+        /* Category chips */
+        .fu-chip { padding:6px 14px; border-radius:20px; border:1.5px solid #E5E7EB; background:white; font-size:12px; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; }
+        .fu-chip:hover { border-color:#4F46E5; color:#4F46E5; }
+        .fu-chip-active { background:#EEF2FF; border-color:#4F46E5; color:#4F46E5; }
+
+        /* Repeat status badges */
+        .rp-badge-berhasil { background:#D1FAE5; color:#059669; }
+        .rp-badge-gagal { background:#FEE2E2; color:#DC2626; }
+        .rp-badge-pending { background:#FEF3C7; color:#D97706; }
     </style>
 </head>
 <body>
@@ -1403,71 +1418,218 @@
 </div>
 
 <!-- ═══ EDIT PELANGGAN MODAL ═══ -->
-<div id="editPelangganModal" class="crm-modal hidden">
-    <div class="crm-modal-box" style="max-width:620px;">
-        <div class="crm-modal-title">✏️ Edit Pelanggan</div>
-        <div class="crm-modal-sub" id="editPelangganSub"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
-            <div>
-                <label class="crm-form-label">Type</label>
-                <select id="epType" class="crm-select" style="width:100%;margin-top:5px;">
-                    <option value="">— Pilih —</option>
-                    <option value="🟢 Aktif">🟢 Aktif</option>
-                    <option value="🟡 Pasif">🟡 Pasif</option>
-                    <option value="🟠 Jenuh">🟠 Jenuh</option>
-                </select>
+<div id="editPelangganModal" class="crm-modal hidden" onclick="if(event.target===this)closeEditPelangganModal()">
+    <div class="crm-modal-box" style="max-width:680px;padding:0;display:flex;flex-direction:column;max-height:88vh;">
+        <!-- Header -->
+        <div style="padding:24px 28px 0;flex-shrink:0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+                <div>
+                    <div class="crm-modal-title" style="margin-bottom:4px;">✏️ Edit Pelanggan</div>
+                    <div class="crm-modal-sub" id="editPelangganSub"></div>
+                </div>
+                <button onclick="closeEditPelangganModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;padding:4px;line-height:1;">✕</button>
             </div>
-            <div>
-                <label class="crm-form-label">Interaksi Terakhir</label>
-                <select id="epInteraksi" class="crm-select" style="width:100%;margin-top:5px;">
-                    <option value="">— Pilih —</option>
-                    <option value="RESPON BAIK">RESPON BAIK</option>
-                    <option value="READ">READ</option>
-                    <option value="CENTANG 2">CENTANG 2</option>
-                    <option value="NO RESPON">NO RESPON</option>
-                    <option value="BLOKIR">BLOKIR</option>
-                </select>
-            </div>
-            <div>
-                <label class="crm-form-label">Penyakit</label>
-                <input type="text" id="epPenyakit" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Tgl Lahir</label>
-                <input type="date" id="epTglLahir" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Usia</label>
-                <input type="text" id="epUsia" class="crm-input" style="width:100%;margin-top:5px;" placeholder="misal: 45">
-            </div>
-            <div>
-                <label class="crm-form-label">Jenis Kelamin</label>
-                <select id="epJK" class="crm-select" style="width:100%;margin-top:5px;">
-                    <option value="">— Pilih —</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                </select>
-            </div>
-            <div>
-                <label class="crm-form-label">Pekerjaan</label>
-                <input type="text" id="epPekerjaan" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div>
-                <label class="crm-form-label">Last Follow-Up</label>
-                <input type="date" id="epLastFU" class="crm-input" style="width:100%;margin-top:5px;">
-            </div>
-            <div style="grid-column:1/-1;">
-                <label class="crm-form-label">Perkembangan</label>
-                <textarea id="epPerkembangan" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
-            </div>
-            <div style="grid-column:1/-1;">
-                <label class="crm-form-label">Catatan</label>
-                <textarea id="epCatatan" class="crm-input" style="width:100%;margin-top:5px;height:72px;resize:vertical;"></textarea>
+            <div style="display:flex;gap:0;margin-top:16px;border-bottom:2px solid #F3F4F6;">
+                <button class="ep-tab ep-tab-active" id="epTabBtn-profil" onclick="epShowTab('profil',this)">👤 Profil</button>
+                <button class="ep-tab" id="epTabBtn-followup" onclick="epShowTab('followup',this)">📋 Follow-up</button>
+                <button class="ep-tab" id="epTabBtn-repeat" onclick="epShowTab('repeat',this)">🔁 Repeat Order</button>
             </div>
         </div>
-        <div style="display:flex;gap:12px;">
-            <button onclick="savePelanggan()" class="crm-btn crm-btn-primary" style="flex:1;justify-content:center;">💾 Simpan</button>
-            <button onclick="closeEditPelangganModal()" class="crm-btn crm-btn-secondary" style="flex:1;justify-content:center;">Batal</button>
+
+        <div style="flex:1;overflow-y:auto;padding:20px 28px 24px;">
+
+            <!-- ── TAB 1: PROFIL ── -->
+            <div id="epTab-profil">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+                    <div style="grid-column:1/-1;">
+                        <label class="crm-form-label">PENYAKIT / KELUHAN</label>
+                        <input type="text" id="epPenyakit" class="crm-input" style="width:100%;margin-top:5px;">
+                    </div>
+                    <div>
+                        <label class="crm-form-label">TGL LAHIR</label>
+                        <input type="date" id="epTglLahir" class="crm-input" style="width:100%;margin-top:5px;" oninput="epCalcUsia()">
+                    </div>
+                    <div>
+                        <label class="crm-form-label">USIA</label>
+                        <div id="epUsiaDisplay" style="margin-top:5px;padding:9px 14px;background:#F8FAFC;border-radius:10px;font-size:14px;font-weight:600;color:#374151;">—</div>
+                    </div>
+                    <div>
+                        <label class="crm-form-label">JENIS KELAMIN</label>
+                        <select id="epJK" class="crm-select" style="width:100%;margin-top:5px;">
+                            <option value="">— Pilih —</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="crm-form-label">PEKERJAAN</label>
+                        <input type="text" id="epPekerjaan" class="crm-input" style="width:100%;margin-top:5px;">
+                    </div>
+                    <div>
+                        <label class="crm-form-label">BERAT BADAN (kg)</label>
+                        <input type="number" id="epBeratBadan" class="crm-input" style="width:100%;margin-top:5px;" placeholder="misal: 65">
+                    </div>
+                    <div>
+                        <label class="crm-form-label">SUMBER KENAL</label>
+                        <input type="text" id="epSumberKenal" class="crm-input" style="width:100%;margin-top:5px;" placeholder="FB Ads, TikTok, Referral...">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="crm-form-label">ALAMAT</label>
+                        <textarea id="epAlamat" class="crm-input" style="width:100%;margin-top:5px;height:56px;resize:vertical;"></textarea>
+                    </div>
+                    <div>
+                        <label class="crm-form-label">KELURAHAN</label>
+                        <input type="text" id="epKelurahan" class="crm-input" style="width:100%;margin-top:5px;">
+                    </div>
+                    <div>
+                        <label class="crm-form-label">KECAMATAN</label>
+                        <input type="text" id="epKecamatan" class="crm-input" style="width:100%;margin-top:5px;">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="crm-form-label">KABUPATEN / KOTA</label>
+                        <input type="text" id="epKabupaten" class="crm-input" style="width:100%;margin-top:5px;">
+                    </div>
+                </div>
+                <button onclick="savePelangganProfil()" class="crm-btn crm-btn-primary" style="width:100%;justify-content:center;">💾 Simpan Profil</button>
+            </div>
+
+            <!-- ── TAB 2: FOLLOW-UP ── -->
+            <div id="epTab-followup" style="display:none;">
+                <!-- Status customer -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;padding:16px;background:#F8FAFC;border-radius:12px;">
+                    <div>
+                        <label class="crm-form-label">TYPE CUSTOMER</label>
+                        <select id="epType" class="crm-select" style="width:100%;margin-top:5px;">
+                            <option value="">— Pilih —</option>
+                            <option value="🟢 Aktif">🟢 Aktif</option>
+                            <option value="🟡 Pasif">🟡 Pasif</option>
+                            <option value="🟠 Jenuh">🟠 Jenuh</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="crm-form-label">INTERAKSI TERAKHIR</label>
+                        <select id="epInteraksi" class="crm-select" style="width:100%;margin-top:5px;">
+                            <option value="">— Pilih —</option>
+                            <option value="RESPON BAIK">RESPON BAIK</option>
+                            <option value="READ">READ</option>
+                            <option value="CENTANG 2">CENTANG 2</option>
+                            <option value="NO RESPON">NO RESPON</option>
+                            <option value="BLOKIR">BLOKIR</option>
+                        </select>
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <button onclick="savePelangganStatus()" class="crm-btn crm-btn-secondary crm-btn-sm">💾 Simpan Status</button>
+                    </div>
+                </div>
+
+                <!-- Form tambah follow-up -->
+                <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:18px;margin-bottom:20px;">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">+ Tambah Follow-up</div>
+                    <div style="margin-bottom:14px;">
+                        <label class="crm-form-label">TANGGAL</label>
+                        <input type="date" id="fuTgl" class="crm-input" style="max-width:200px;margin-top:5px;">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="crm-form-label">KATEGORI</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;" id="fuKategoriChips"></div>
+                        <input type="text" id="fuKategoriLainnya" class="crm-input" style="width:100%;margin-top:10px;display:none;" placeholder="Tulis kategori lainnya...">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <label class="crm-form-label">PERKEMBANGAN</label>
+                        <textarea id="fuPerkembangan" class="crm-input" style="width:100%;margin-top:5px;height:80px;resize:vertical;"></textarea>
+                    </div>
+                    <button onclick="saveFollowUp()" id="fuSaveBtn" class="crm-btn crm-btn-primary" style="width:100%;justify-content:center;">+ Tambah Follow-up</button>
+                </div>
+
+                <!-- Riwayat -->
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">📋 Riwayat Follow-up</div>
+                    <div id="fuRiwayat"><div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Memuat...</div></div>
+                </div>
+            </div>
+
+            <!-- ── TAB 3: REPEAT ORDER ── -->
+            <div id="epTab-repeat" style="display:none;">
+                <!-- Form tambah repeat -->
+                <div style="background:#fff;border:1.5px solid #E5E7EB;border-radius:14px;padding:18px;margin-bottom:20px;">
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">+ Tambah Repeat Order</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                        <div>
+                            <label class="crm-form-label">TANGGAL</label>
+                            <input type="date" id="rpTgl" class="crm-input" style="width:100%;margin-top:5px;">
+                        </div>
+                        <div>
+                            <label class="crm-form-label">STATUS</label>
+                            <select id="rpStatus" class="crm-select" style="width:100%;margin-top:5px;" onchange="rpToggleGagal()">
+                                <option value="Pending">Pending</option>
+                                <option value="Berhasil">Berhasil</option>
+                                <option value="Gagal">Gagal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="crm-form-label">PRODUK</label>
+                            <input type="text" id="rpProduk" class="crm-input" style="width:100%;margin-top:5px;">
+                        </div>
+                        <div>
+                            <label class="crm-form-label">QTY (box)</label>
+                            <input type="number" id="rpQty" class="crm-input" style="width:100%;margin-top:5px;" min="1" placeholder="1">
+                        </div>
+                        <div>
+                            <label class="crm-form-label">NO. RESI</label>
+                            <input type="text" id="rpResi" class="crm-input" style="width:100%;margin-top:5px;">
+                        </div>
+                        <div>
+                            <label class="crm-form-label">EKSPEDISI</label>
+                            <select id="rpEkspedisi" class="crm-select" style="width:100%;margin-top:5px;">
+                                <option value="">— Pilih —</option>
+                                <option value="JNE">JNE</option>
+                                <option value="LION">LION PARCEL</option>
+                                <option value="J&T">J&T EXPRESS</option>
+                                <option value="SICEPAT">SICEPAT</option>
+                                <option value="ANTERAJA">ANTERAJA</option>
+                                <option value="NINJA">NINJA XPRESS</option>
+                                <option value="SAP">SAP EXPRESS</option>
+                                <option value="TIKI">TIKI</option>
+                                <option value="WAHANA">WAHANA</option>
+                                <option value="ID EXPRESS">ID EXPRESS</option>
+                                <option value="POS">POS INDONESIA</option>
+                            </select>
+                        </div>
+                        <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:4px 0;">
+                            <input type="checkbox" id="rpIsCrosselling" style="width:16px;height:16px;accent-color:#4F46E5;cursor:pointer;">
+                            <label for="rpIsCrosselling" style="font-size:13px;color:#374151;font-weight:500;cursor:pointer;">Crosselling (produk berbeda dari order awal)</label>
+                        </div>
+                    </div>
+                    <!-- Gagal section -->
+                    <div id="rpGagalSection" style="display:none;border-top:1px solid #F3F4F6;padding-top:14px;margin-bottom:12px;">
+                        <div style="margin-bottom:12px;">
+                            <label class="crm-form-label">ALASAN GAGAL</label>
+                            <select id="rpAlasanGagal" class="crm-select" style="width:100%;margin-top:5px;">
+                                <option value="">— Pilih —</option>
+                                <option value="Tidak Angkat">Tidak Angkat</option>
+                                <option value="Tidak Ada Dana">Tidak Ada Dana</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Tidak Berminat">Tidak Berminat</option>
+                                <option value="Belum Habis">Belum Habis</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="crm-form-label">SS CHAT GAGAL (bisa multiple)</label>
+                            <input type="file" id="rpGagalFiles" accept="image/*" multiple style="margin-top:5px;font-size:13px;width:100%;">
+                            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Screenshot percakapan — akan dianalisis AI otomatis</div>
+                        </div>
+                    </div>
+                    <button onclick="saveRepeat()" id="rpSaveBtn" class="crm-btn crm-btn-primary" style="width:100%;justify-content:center;">+ Tambah Repeat</button>
+                </div>
+
+                <!-- List repeats -->
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">🔁 Riwayat Repeat Order</div>
+                    <div id="rpList"><div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Memuat...</div></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -2483,48 +2645,291 @@
         const c = crmCustomers.find(x => x.id === id);
         if (!c) return;
         editPelangganId = id;
+
         document.getElementById('editPelangganSub').textContent = `${c.nama || '-'} · ${c.no_hp || '-'} · ${c.kabupaten || c.kab || '-'}`;
-        document.getElementById('epType').value        = c.type || '';
-        document.getElementById('epInteraksi').value   = c.interaksi_terakhir || '';
-        document.getElementById('epPenyakit').value    = c.penyakit || '';
+
+        // Tab 1 — Profil
+        document.getElementById('epPenyakit').value    = c.penyakit || c.keluhan || '';
         document.getElementById('epTglLahir').value    = c.tgl_lahir || '';
-        document.getElementById('epUsia').value        = c.usia || '';
         document.getElementById('epJK').value          = c.jenis_kelamin || '';
         document.getElementById('epPekerjaan').value   = c.pekerjaan || '';
-        document.getElementById('epLastFU').value      = c.last_fu || '';
-        document.getElementById('epPerkembangan').value= c.perkembangan || '';
-        document.getElementById('epCatatan').value     = c.catatan || '';
+        document.getElementById('epBeratBadan').value  = c.berat_badan || '';
+        document.getElementById('epSumberKenal').value = c.sumber_kenal || '';
+        document.getElementById('epAlamat').value      = c.alamat || '';
+        document.getElementById('epKelurahan').value   = c.kelurahan || '';
+        document.getElementById('epKecamatan').value   = c.kecamatan || '';
+        document.getElementById('epKabupaten').value   = c.kabupaten || c.kab || '';
+        epCalcUsia();
+
+        // Tab 2 — status fields
+        document.getElementById('epType').value      = c.type || '';
+        document.getElementById('epInteraksi').value = c.interaksi_terakhir || '';
+
+        // Tab 2 — follow-up form defaults
+        document.getElementById('fuTgl').value          = new Date().toISOString().slice(0, 10);
+        document.getElementById('fuPerkembangan').value = '';
+        document.getElementById('fuKategoriLainnya').value = '';
+        fuSelectedKategori = [];
+        epRenderFuChips();
+
+        // Tab 3 — repeat form defaults
+        document.getElementById('rpTgl').value    = new Date().toISOString().slice(0, 10);
+        document.getElementById('rpStatus').value = 'Pending';
+        document.getElementById('rpProduk').value = c.produk || '';
+        document.getElementById('rpQty').value    = '';
+        document.getElementById('rpResi').value   = '';
+        document.getElementById('rpEkspedisi').value = c.ekspedisi || '';
+        document.getElementById('rpIsCrosselling').checked = false;
+        document.getElementById('rpGagalSection').style.display = 'none';
+
+        // Reset to Tab 1
+        epShowTab('profil', document.getElementById('epTabBtn-profil'));
+
         document.getElementById('editPelangganModal').classList.remove('hidden');
+
+        // Load async data
+        loadFollowUps(id);
+        loadRepeats(id);
+    }
+
+    function epShowTab(tab, btn) {
+        ['profil','followup','repeat'].forEach(t => {
+            document.getElementById('epTab-' + t).style.display = t === tab ? '' : 'none';
+            document.getElementById('epTabBtn-' + t).classList.toggle('ep-tab-active', t === tab);
+        });
+    }
+
+    function epCalcUsia() {
+        const val = document.getElementById('epTglLahir').value;
+        const el  = document.getElementById('epUsiaDisplay');
+        if (!val) { el.textContent = '—'; return; }
+        const birth = new Date(val);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        el.textContent = age >= 0 ? age + ' tahun' : '—';
+    }
+
+    async function savePelangganProfil() {
+        if (!editPelangganId) return;
+        const updates = {
+            penyakit:      document.getElementById('epPenyakit').value || null,
+            tgl_lahir:     document.getElementById('epTglLahir').value || null,
+            jenis_kelamin: document.getElementById('epJK').value || null,
+            pekerjaan:     document.getElementById('epPekerjaan').value || null,
+            berat_badan:   parseFloat(document.getElementById('epBeratBadan').value) || null,
+            sumber_kenal:  document.getElementById('epSumberKenal').value || null,
+            alamat:        document.getElementById('epAlamat').value || null,
+            kelurahan:     document.getElementById('epKelurahan').value || null,
+            kecamatan:     document.getElementById('epKecamatan').value || null,
+            kabupaten:     document.getElementById('epKabupaten').value || null,
+        };
+        const { error } = await sbApp.from('crm_customers').update(updates).eq('id', editPelangganId);
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+        const idx = crmCustomers.findIndex(x => x.id === editPelangganId);
+        if (idx >= 0) crmCustomers[idx] = { ...crmCustomers[idx], ...updates };
+        alert('Profil tersimpan!');
+        renderPelangganTable();
+    }
+
+    async function savePelangganStatus() {
+        if (!editPelangganId) return;
+        const updates = {
+            type:               document.getElementById('epType').value || null,
+            interaksi_terakhir: document.getElementById('epInteraksi').value || null,
+        };
+        const { error } = await sbApp.from('crm_customers').update(updates).eq('id', editPelangganId);
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+        const idx = crmCustomers.findIndex(x => x.id === editPelangganId);
+        if (idx >= 0) crmCustomers[idx] = { ...crmCustomers[idx], ...updates };
+        alert('Status tersimpan!');
+    }
+
+    // ── FOLLOW-UP ──
+    const FU_KATEGORI = ['Info Konsumsi','Reminder Konsumsi','Info Testimoni','Perkembangan','Edukasi','Promo','Lainnya'];
+    let fuSelectedKategori = [];
+
+    function epRenderFuChips() {
+        const wrap = document.getElementById('fuKategoriChips');
+        if (!wrap) return;
+        wrap.innerHTML = FU_KATEGORI.map(k =>
+            `<button type="button" class="fu-chip ${fuSelectedKategori.includes(k) ? 'fu-chip-active' : ''}" onclick="fuToggleKategori('${k}')">${k}</button>`
+        ).join('');
+        const showLainnya = fuSelectedKategori.includes('Lainnya');
+        document.getElementById('fuKategoriLainnya').style.display = showLainnya ? '' : 'none';
+    }
+
+    function fuToggleKategori(k) {
+        const idx = fuSelectedKategori.indexOf(k);
+        if (idx >= 0) fuSelectedKategori.splice(idx, 1);
+        else fuSelectedKategori.push(k);
+        epRenderFuChips();
+    }
+
+    async function loadFollowUps(customerId) {
+        const wrap = document.getElementById('fuRiwayat');
+        if (!wrap) return;
+        wrap.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Memuat...</div>';
+        const { data, error } = await sbApp.from('crm_followups')
+            .select('*').eq('customer_id', customerId).order('tgl', { ascending: false });
+        if (error) { wrap.innerHTML = '<div style="color:#EF4444;font-size:13px;">Gagal memuat riwayat.</div>'; return; }
+        if (!data || !data.length) { wrap.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Belum ada riwayat follow-up.</div>'; return; }
+        wrap.innerHTML = data.map(fu => {
+            const kategoris = Array.isArray(fu.kategori) ? fu.kategori : [];
+            const label = kategoris.length ? kategoris.map(k => `<span style="padding:2px 8px;border-radius:10px;background:#EEF2FF;color:#4F46E5;font-size:11px;font-weight:600;">${k}</span>`).join(' ') : '';
+            const lainnya = fu.kategori_lainnya ? `<span style="padding:2px 8px;border-radius:10px;background:#F3F4F6;color:#64748b;font-size:11px;">${fu.kategori_lainnya}</span>` : '';
+            return `<div style="border-left:3px solid #4F46E5;padding:10px 14px;margin-bottom:12px;background:#FAFBFF;border-radius:0 10px 10px 0;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;">${label}${lainnya}</div>
+                    <div style="font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:8px;">${fmtDate(fu.tgl)}</div>
+                </div>
+                ${fu.perkembangan ? `<div style="font-size:13px;color:#374151;">${escapeHtml(fu.perkembangan)}</div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    async function saveFollowUp() {
+        if (!editPelangganId) return;
+        const tgl = document.getElementById('fuTgl').value;
+        if (!tgl) { alert('Tanggal follow-up harus diisi.'); return; }
+        const kategori = [...fuSelectedKategori];
+        const kategoriLainnya = kategori.includes('Lainnya') ? (document.getElementById('fuKategoriLainnya').value || null) : null;
+        const perkembangan = document.getElementById('fuPerkembangan').value || null;
+
+        const btn = document.getElementById('fuSaveBtn');
+        btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+        const { error } = await sbApp.from('crm_followups').insert({
+            customer_id: editPelangganId,
+            tgl,
+            kategori,
+            kategori_lainnya: kategoriLainnya,
+            perkembangan,
+        });
+
+        btn.disabled = false; btn.textContent = '+ Tambah Follow-up';
+        if (error) { alert('Gagal simpan: ' + error.message); return; }
+
+        // Update last_fu di crm_customers
+        await sbApp.from('crm_customers').update({ last_fu: tgl }).eq('id', editPelangganId);
+
+        // Reset form
+        document.getElementById('fuPerkembangan').value = '';
+        document.getElementById('fuKategoriLainnya').value = '';
+        fuSelectedKategori = [];
+        epRenderFuChips();
+
+        loadFollowUps(editPelangganId);
+    }
+
+    // ── REPEAT ORDER ──
+    function rpToggleGagal() {
+        const status = document.getElementById('rpStatus').value;
+        document.getElementById('rpGagalSection').style.display = status === 'Gagal' ? '' : 'none';
+    }
+
+    async function loadRepeats(customerId) {
+        const wrap = document.getElementById('rpList');
+        if (!wrap) return;
+        wrap.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Memuat...</div>';
+        const { data, error } = await sbApp.from('crm_repeats')
+            .select('*').eq('customer_id', customerId).order('no_repeat', { ascending: true });
+        if (error) { wrap.innerHTML = '<div style="color:#EF4444;font-size:13px;">Gagal memuat.</div>'; return; }
+        if (!data || !data.length) { wrap.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px;">Belum ada riwayat repeat order.</div>'; return; }
+        const statusBadge = s => {
+            const map = { Berhasil:'rp-badge-berhasil', Gagal:'rp-badge-gagal', Pending:'rp-badge-pending' };
+            return `<span class="crm-badge ${map[s]||'rp-badge-pending'}">${s}</span>`;
+        };
+        wrap.innerHTML = data.map(r => `
+            <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="font-size:13px;font-weight:700;color:#1e293b;">Repeat #${r.no_repeat} ${r.is_crosselling ? '<span style="font-size:11px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:6px;margin-left:4px;">Crosselling</span>' : ''}</div>
+                    <div style="display:flex;align-items:center;gap:6px;">${statusBadge(r.status)}<span style="font-size:11px;color:#94a3b8;">${fmtDate(r.tgl)}</span></div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:#64748b;">
+                    <span>📦 ${escapeHtml(r.produk||'-')} × ${r.qty||'-'}</span>
+                    ${r.resi ? `<span>🚚 ${escapeHtml(r.resi)} · ${escapeHtml(r.ekspedisi||'-')}</span>` : ''}
+                </div>
+                ${r.status === 'Gagal' ? `<div style="margin-top:8px;padding:8px 10px;background:#FFF1F2;border-radius:8px;font-size:12px;color:#DC2626;">⚠️ ${escapeHtml(r.alasan_gagal||'Alasan tidak diisi')}${r.gagal_ai_parse ? '<br><span style="color:#64748b;">AI: '+escapeHtml(r.gagal_ai_parse)+'</span>' : ''}</div>` : ''}
+                ${r.gagal_images && r.gagal_images.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${r.gagal_images.map(url=>`<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="window.open('${url}','_blank')">`).join('')}</div>` : ''}
+            </div>`).join('');
+    }
+
+    async function saveRepeat() {
+        if (!editPelangganId) return;
+        const tgl    = document.getElementById('rpTgl').value;
+        const status = document.getElementById('rpStatus').value;
+        const produk = document.getElementById('rpProduk').value || null;
+        const qty    = parseInt(document.getElementById('rpQty').value) || null;
+        const resi   = document.getElementById('rpResi').value || null;
+        const eks    = document.getElementById('rpEkspedisi').value || null;
+        const cross  = document.getElementById('rpIsCrosselling').checked;
+        const alasan = status === 'Gagal' ? (document.getElementById('rpAlasanGagal').value || null) : null;
+        const files  = status === 'Gagal' ? document.getElementById('rpGagalFiles').files : null;
+
+        if (!tgl) { alert('Tanggal harus diisi.'); return; }
+
+        const btn = document.getElementById('rpSaveBtn');
+        btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+        // Get next no_repeat
+        const { data: existing } = await sbApp.from('crm_repeats').select('no_repeat').eq('customer_id', editPelangganId).order('no_repeat', { ascending: false }).limit(1);
+        const noRepeat = (existing && existing.length ? existing[0].no_repeat : 0) + 1;
+
+        // Upload images if any
+        let gagalImages = [];
+        if (files && files.length) {
+            for (const file of files) {
+                const ext  = file.name.split('.').pop();
+                const path = `repeat-gagal/${editPelangganId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                const { data: up, error: upErr } = await sbApp.storage.from('testimoni').upload(path, file, { upsert: true });
+                if (!upErr) {
+                    const { data: pub } = sbApp.storage.from('testimoni').getPublicUrl(path);
+                    if (pub?.publicUrl) gagalImages.push(pub.publicUrl);
+                }
+            }
+        }
+
+        const { error } = await sbApp.from('crm_repeats').insert({
+            customer_id: editPelangganId,
+            no_repeat: noRepeat,
+            tgl, produk, qty, resi, ekspedisi: eks, status,
+            is_crosselling: cross,
+            alasan_gagal: alasan,
+            gagal_images: gagalImages,
+        });
+
+        if (error) { alert('Gagal simpan: ' + error.message); btn.disabled = false; btn.textContent = '+ Tambah Repeat'; return; }
+
+        // Sync repeat_orders JSON di crm_customers
+        const c = crmCustomers.find(x => x.id === editPelangganId);
+        if (c) {
+            const repeats = Array.isArray(c.repeat_orders) ? [...c.repeat_orders] : [];
+            repeats.push({ tgl, resi, ekspedisi: eks, produk, qty, status_resi: status === 'Berhasil' ? 'SAMPAI' : status === 'Gagal' ? 'RETUR' : null });
+            await sbApp.from('crm_customers').update({ repeat_orders: repeats }).eq('id', editPelangganId);
+            c.repeat_orders = repeats;
+            // Also update in allOrders
+            const o = allOrders.find(x => x.id === editPelangganId);
+            if (o) o.repeat_orders = repeats;
+        }
+
+        btn.disabled = false; btn.textContent = '+ Tambah Repeat';
+
+        // Reset form
+        document.getElementById('rpQty').value  = '';
+        document.getElementById('rpResi').value = '';
+        document.getElementById('rpAlasanGagal').value = '';
+        document.getElementById('rpGagalFiles').value  = '';
+        document.getElementById('rpStatus').value = 'Pending';
+        document.getElementById('rpGagalSection').style.display = 'none';
+
+        loadRepeats(editPelangganId);
     }
 
     function closeEditPelangganModal() {
         document.getElementById('editPelangganModal').classList.add('hidden');
         editPelangganId = null;
-    }
-
-    async function savePelanggan() {
-        if (!editPelangganId) return;
-        const updates = {
-            type:               document.getElementById('epType').value || null,
-            interaksi_terakhir: document.getElementById('epInteraksi').value || null,
-            penyakit:           document.getElementById('epPenyakit').value || null,
-            tgl_lahir:          document.getElementById('epTglLahir').value || null,
-            usia:               document.getElementById('epUsia').value || null,
-            jenis_kelamin:      document.getElementById('epJK').value || null,
-            pekerjaan:          document.getElementById('epPekerjaan').value || null,
-            last_fu:            document.getElementById('epLastFU').value || null,
-            perkembangan:       document.getElementById('epPerkembangan').value || null,
-            catatan:            document.getElementById('epCatatan').value || null,
-        };
-        const { error } = await sbApp.from('crm_customers').update(updates).eq('id', editPelangganId);
-        if (error) { alert('Gagal simpan: ' + error.message); return; }
-
-        // Update local array
-        const idx = crmCustomers.findIndex(x => x.id === editPelangganId);
-        if (idx >= 0) crmCustomers[idx] = { ...crmCustomers[idx], ...updates };
-
-        closeEditPelangganModal();
-        renderPelangganTable();
     }
 
     // ── UPLOAD CSV ──
