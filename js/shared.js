@@ -130,7 +130,7 @@ function escapeHtml(str) {
 async function loadSkuList() {
     if (skuList.length) return;
     try {
-        const { data } = await sbData.from('sku_produk').select('kode,nama_produk,durasi_hari,tier_silver_min,tier_gold_min,tier_platinum_min,tier_diamond_min');
+        const { data } = await sbData.from('sku_produk').select('kode,nama_produk,durasi_hari,tier_silver_min,tier_gold_min,tier_platinum_min,tier_diamond_min,point_per_qty');
         skuList = data || [];
     } catch(_) { skuList = []; }
 }
