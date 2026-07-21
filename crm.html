@@ -3396,12 +3396,32 @@
 
         if (error) { alert('Gagal simpan: ' + error.message); btn.disabled = false; btn.textContent = '+ Tambah Repeat'; return; }
 
-        // Sync repeat_orders JSON di crm_customers
+        // Sync repeat_orders JSON + point di crm_customers
         const c = crmCustomers.find(x => x.id === editPelangganId);
         if (c) {
             const repeats = Array.isArray(c.repeat_orders) ? [...c.repeat_orders] : [];
             repeats.push({ tgl, resi, ekspedisi: eks, produk, qty, status_resi: status === 'Berhasil' ? 'SAMPAI' : status === 'Gagal' ? 'RETUR' : null });
-            await sbApp.from('crm_customers').update({ repeat_orders: repeats }).eq('id', editPelangganId);
+
+            // Hitung point: hanya kalau status Berhasil dan produk punya point_per_qty
+            let updatePayload = { repeat_orders: repeats };
+            if (status === 'Berhasil' && qty) {
+                const produkNorm = (produk || '').toLowerCase();
+                const sku = (skuList || []).find(s =>
+                    s.kode?.toLowerCase() === produkNorm ||
+                    s.nama_produk?.toLowerCase() === produkNorm
+                );
+                const pointPerQty = sku?.point_per_qty || 0;
+                if (pointPerQty > 0) {
+                    const earned = qty * pointPerQty;
+                    const newPoint = (c.point || 0) + earned;
+                    updatePayload.point = newPoint;
+                    c.point = newPoint;
+                    const o = allOrders.find(x => x.id === editPelangganId);
+                    if (o) o.point = newPoint;
+                }
+            }
+
+            await sbApp.from('crm_customers').update(updatePayload).eq('id', editPelangganId);
             c.repeat_orders = repeats;
             // Also update in allOrders
             const o = allOrders.find(x => x.id === editPelangganId);

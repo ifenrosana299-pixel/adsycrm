@@ -2163,7 +2163,7 @@
             wrap.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:32px;">Memuat...</p>';
 
             const { data, error } = await sbData.from('sku_produk')
-                .select('id, kode, nama_produk, durasi_hari, tier_silver_min, tier_gold_min, tier_platinum_min, tier_diamond_min')
+                .select('id, kode, nama_produk, durasi_hari, tier_silver_min, tier_gold_min, tier_platinum_min, tier_diamond_min, point_per_qty')
                 .order('nama_produk');
 
             if (error || !data) {
@@ -2192,6 +2192,7 @@
                             <th style="width:70px;text-align:center;color:#b45309;">🥇 Gold</th>
                             <th style="width:70px;text-align:center;color:#6d28d9;">💎 Platinum</th>
                             <th style="width:70px;text-align:center;color:#0369a1;">👑 Diamond</th>
+                            <th style="width:100px;text-align:center;">🎯 Point/Qty</th>
                             <th style="width:80px;"></th>
                         </tr>
                     </thead>
@@ -2208,6 +2209,9 @@
                                 ${tierCell(p.tier_gold_min, '#92400e', '#fde68a', 'G')}
                                 ${tierCell(p.tier_platinum_min, '#6d28d9', '#ede9fe', 'P')}
                                 ${tierCell(p.tier_diamond_min, '#0369a1', '#e0f2fe', 'D')}
+                                <td style="text-align:center;">
+                                    ${p.point_per_qty ? `<span style="font-size:12px;font-weight:700;color:#4F46E5;background:#EEF2FF;padding:3px 10px;border-radius:6px;">${p.point_per_qty} pt</span>` : '<span style="color:#cbd5e1;font-size:12px;">—</span>'}
+                                </td>
                                 <td>
                                     <button onclick="openProdukModal(${idx})" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -2235,6 +2239,15 @@
                             <div style="display:flex;align-items:center;gap:10px;">
                                 <input type="number" id="modalDurasi" min="1" max="365" placeholder="isi hari..." class="form-input" style="width:100px;text-align:center;">
                                 <span style="font-size:14px;color:#64748b;">hari</span>
+                            </div>
+                        </div>
+
+                        <div style="border-top:1px solid #f1f5f9;padding-top:20px;margin-bottom:20px;">
+                            <label style="font-size:11px;font-weight:700;color:#475569;letter-spacing:0.05em;display:block;margin-bottom:8px;">POINT PER QTY</label>
+                            <p style="font-size:12px;color:#94a3b8;margin-bottom:10px;">Point yang didapat pelanggan per 1 qty saat repeat order berhasil</p>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <input type="number" id="modalPointPerQty" min="0" placeholder="0" class="form-input" style="width:100px;text-align:center;">
+                                <span style="font-size:13px;color:#64748b;">point / qty</span>
                             </div>
                         </div>
 
@@ -2285,7 +2298,8 @@
             produkEditIdx = idx;
             const p = produkConfigData[idx];
             document.getElementById('produkModalSub').textContent = p.nama_produk;
-            document.getElementById('modalDurasi').value     = p.durasi_hari || '';
+            document.getElementById('modalDurasi').value       = p.durasi_hari || '';
+            document.getElementById('modalPointPerQty').value  = p.point_per_qty || '';
             document.getElementById('modalSilverMin').value  = p.tier_silver_min || '';
             document.getElementById('modalGoldMin').value    = p.tier_gold_min || '';
             document.getElementById('modalPlatinumMin').value = p.tier_platinum_min || '';
@@ -2306,7 +2320,8 @@
             const p = produkConfigData[produkEditIdx];
             const btn = document.getElementById('produkModalSaveBtn');
 
-            const durasi      = parseInt(document.getElementById('modalDurasi').value) || null;
+            const durasi        = parseInt(document.getElementById('modalDurasi').value) || null;
+            const pointPerQty   = parseInt(document.getElementById('modalPointPerQty').value) || 0;
             const silverMin   = parseInt(document.getElementById('modalSilverMin').value) || null;
             const goldMin     = parseInt(document.getElementById('modalGoldMin').value) || null;
             const platinumMin = parseInt(document.getElementById('modalPlatinumMin').value) || null;
@@ -2317,6 +2332,7 @@
 
             const { error } = await sbData.from('sku_produk').update({
                 durasi_hari:       durasi,
+                point_per_qty:     pointPerQty,
                 tier_silver_min:   silverMin,
                 tier_gold_min:     goldMin,
                 tier_platinum_min: platinumMin,
@@ -2333,6 +2349,7 @@
 
             // Update local data
             p.durasi_hari       = durasi;
+            p.point_per_qty     = pointPerQty;
             p.tier_silver_min   = silverMin;
             p.tier_gold_min     = goldMin;
             p.tier_platinum_min = platinumMin;
