@@ -3316,16 +3316,41 @@
 
     async function deleteRepeat(id) {
         if (!confirm('Hapus riwayat repeat order ini?')) return;
+
+        // Ambil data repeat sebelum dihapus (untuk balik point jika Berhasil)
+        const { data: repeatRow } = await sbApp.from('crm_repeats').select('status, qty, produk').eq('id', id).single();
+
         const { error } = await sbApp.from('crm_repeats').delete().eq('id', id);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
 
         // Sync repeat_orders JSON di crm_customers
         const { data } = await sbApp.from('crm_repeats').select('tgl,resi,ekspedisi,produk,qty,status').eq('customer_id', editPelangganId).order('no_repeat', { ascending: true });
         const repeats = (data || []).filter(r => r.status !== 'Gagal').map(r => ({ tgl: r.tgl, resi: r.resi, ekspedisi: r.ekspedisi, produk: r.produk, qty: r.qty, status_resi: r.status === 'Berhasil' ? 'SAMPAI' : null }));
-        await sbApp.from('crm_customers').update({ repeat_orders: repeats }).eq('id', editPelangganId);
+
         const c = crmCustomers.find(x => x.id === editPelangganId);
-        if (c) c.repeat_orders = repeats;
         const o = allOrders.find(x => x.id === editPelangganId);
+
+        // Balik point jika repeat yang dihapus berstatus Berhasil
+        let customerUpdate = { repeat_orders: repeats };
+        if (repeatRow && repeatRow.status === 'Berhasil' && repeatRow.qty) {
+            const produkNorm = (repeatRow.produk || '').toLowerCase();
+            const sku = (skuList || []).find(s =>
+                s.kode?.toLowerCase() === produkNorm ||
+                s.nama_produk?.toLowerCase() === produkNorm
+            );
+            const pointPerQty = sku?.point_per_qty || 0;
+            if (pointPerQty > 0) {
+                const deducted = repeatRow.qty * pointPerQty;
+                const currentPoint = c ? (c.point || 0) : 0;
+                const newPoint = Math.max(0, currentPoint - deducted);
+                customerUpdate.point = newPoint;
+                if (c) c.point = newPoint;
+                if (o) o.point = newPoint;
+            }
+        }
+
+        await sbApp.from('crm_customers').update(customerUpdate).eq('id', editPelangganId);
+        if (c) c.repeat_orders = repeats;
         if (o) o.repeat_orders = repeats;
         // Update gagal count
         gagalRepeatMap[editPelangganId] = (data || []).filter(r => r.status === 'Gagal').length;
