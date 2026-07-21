@@ -2610,6 +2610,72 @@
 
     let pointModalId = null;
 
+    async function loadPointHistory(customerId) {
+        const wrap = document.getElementById('pointHistoryWrap');
+        if (!wrap) return;
+        const { data, error } = await sbApp.from('crm_point_history')
+            .select('id, tgl, jumlah, created_at')
+            .eq('customer_id', customerId)
+            .order('created_at', { ascending: false });
+
+        if (error || !data || !data.length) {
+            wrap.innerHTML = `<div style="text-align:center;padding:16px;color:#94a3b8;font-size:13px;">Belum ada riwayat redeem</div>`;
+            return;
+        }
+
+        wrap.innerHTML = data.map(h => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;">
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#1e293b;">-${h.jumlah} pt</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${h.tgl ? fmtDate(h.tgl) : '—'}</div>
+                </div>
+                <button onclick="deletePointHistory(${h.id}, ${h.jumlah})" style="background:none;border:none;cursor:pointer;color:#fca5a5;padding:4px;line-height:0;" title="Hapus">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    async function deletePointHistory(histId, jumlah) {
+        if (!pointModalId) return;
+        if (!confirm(`Hapus riwayat redeem ${jumlah} pt? Point akan dikembalikan ke pelanggan.`)) return;
+
+        const c = crmCustomers.find(x => x.id === pointModalId) || allOrders.find(x => x.id === pointModalId);
+        if (!c) return;
+
+        // Hapus record dulu
+        const { error: delErr } = await sbApp.from('crm_point_history').delete().eq('id', histId);
+        if (delErr) { alert('Gagal hapus: ' + delErr.message); return; }
+
+        // Fetch semua riwayat yang tersisa untuk recalculate total & tgl terakhir
+        const { data: remaining } = await sbApp.from('crm_point_history')
+            .select('tgl, jumlah')
+            .eq('customer_id', pointModalId)
+            .order('tgl', { ascending: false });
+
+        const newTotal  = (remaining || []).reduce((sum, r) => sum + r.jumlah, 0);
+        const newTgl    = remaining && remaining.length ? remaining[0].tgl : null;
+        const newPoint  = (c.point || 0) + jumlah;
+
+        await sbApp.from('crm_customers').update({
+            point: newPoint,
+            total_point_diredeem: newTotal,
+            tgl_redeem: newTgl,
+        }).eq('id', pointModalId);
+
+        // Update local
+        c.point = newPoint;
+        c.total_point_diredeem = newTotal;
+        c.tgl_redeem = newTgl;
+        const o = allOrders.find(x => x.id === pointModalId);
+        if (o) { o.point = newPoint; o.total_point_diredeem = newTotal; o.tgl_redeem = newTgl; }
+
+        // Refresh modal display
+        document.getElementById('pointModalPoint').textContent = newPoint;
+        renderPelangganTable();
+        loadPointHistory(pointModalId);
+    }
+
     function openPointModal(id) {
         const c = crmCustomers.find(x => x.id === id) || allOrders.find(x => x.id === id);
         if (!c) return;
@@ -2624,10 +2690,9 @@
         document.getElementById('pointModalPoint').textContent   = sisaPoint;
         document.getElementById('pointModalJumlahRedeem').value  = '';
         document.getElementById('pointModalTglInput').value      = new Date().toISOString().slice(0, 10);
-        document.getElementById('pointModalTotalDisplay').textContent = c.total_point_diredeem != null ? c.total_point_diredeem : '—';
-        document.getElementById('pointModalTglDisplay').textContent   = c.tgl_redeem ? fmtDate(c.tgl_redeem) : '—';
         document.getElementById('pointPreviewWrap').style.display = 'none';
         document.getElementById('pointModal').style.display      = 'flex';
+        loadPointHistory(id);
     }
 
     function updatePointPreview() {
@@ -2671,6 +2736,14 @@
         btn.disabled = true;
         btn.textContent = 'Menyimpan...';
 
+        // Insert ke history dulu
+        const { error: histErr } = await sbApp.from('crm_point_history').insert({
+            customer_id: pointModalId,
+            tgl:         today,
+            jumlah:      jumlahRedeem,
+        });
+        if (histErr) { btn.disabled = false; btn.textContent = 'Redeem Point'; alert('Gagal simpan history: ' + histErr.message); return; }
+
         const { error } = await sbApp.from('crm_customers').update({
             point:                newPoint,
             tgl_redeem:           today,
@@ -2692,7 +2765,12 @@
             }
         });
 
-        closePointModal();
+        // Reset input & refresh tampilan modal (modal tetap terbuka)
+        document.getElementById('pointModalJumlahRedeem').value = '';
+        document.getElementById('pointPreviewWrap').style.display = 'none';
+        document.getElementById('pointModalPoint').textContent = newPoint;
+        loadPointHistory(pointModalId);
+        renderPelangganTable();
         renderMemberTierPage();
     }
 
@@ -3278,10 +3356,16 @@
         grd.addColorStop(0, cfg.grad[0]);
         grd.addColorStop(0.5, cfg.grad[1]);
         grd.addColorStop(1, cfg.grad[2]);
-        ctx.fillStyle = grd;
         ctx.beginPath();
         ctx.roundRect(0, 0, W, H, 36);
+        ctx.fillStyle = grd;
         ctx.fill();
+
+        // Clip semua drawing berikutnya ke dalam batas card (supaya tidak bleed ke luar rounded corner)
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(0, 0, W, H, 36);
+        ctx.clip();
 
         // Decorative circles
         ctx.globalAlpha = 0.08;
@@ -3289,6 +3373,8 @@
         ctx.beginPath(); ctx.arc(W - 80, -60, 220, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(-60, H + 40, 180, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
+
+        ctx.restore();
 
         // Brand
         ctx.font = 'bold 28px "Segoe UI", sans-serif';
@@ -5780,7 +5866,7 @@
 
 <!-- ═══ POINT MODAL ═══ -->
 <div id="pointModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;" onclick="if(event.target===this)closePointModal()">
-    <div style="background:white;border-radius:20px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <div style="background:white;border-radius:20px;padding:32px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
             <div>
                 <div style="font-size:18px;font-weight:800;color:#1e293b;" id="pointModalName">—</div>
@@ -5813,23 +5899,19 @@
             <div id="pointPreviewWrap" style="display:none;padding:10px 14px;background:#fef3c7;border-radius:10px;font-size:13px;color:#92400e;">
                 Sisa setelah redeem: <strong id="pointPreviewVal">—</strong>
             </div>
-
-            <!-- Info section (read-only, ditampilkan) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div style="padding:10px 12px;background:#f8fafc;border-radius:10px;">
-                    <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Total Diredeem</div>
-                    <div style="font-size:15px;font-weight:700;color:#374151;" id="pointModalTotalDisplay">—</div>
-                </div>
-                <div style="padding:10px 12px;background:#f8fafc;border-radius:10px;">
-                    <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Redeem Terakhir</div>
-                    <div style="font-size:13px;font-weight:600;color:#374151;" id="pointModalTglDisplay">—</div>
-                </div>
-            </div>
         </div>
 
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button onclick="closePointModal()" class="crm-btn crm-btn-secondary" style="flex:1;padding:10px;">Batal</button>
             <button onclick="savePointModal()" id="pointModalSaveBtn" class="crm-btn crm-btn-primary" style="flex:2;padding:10px;">Redeem Point</button>
+        </div>
+
+        <!-- Riwayat Redeem -->
+        <div style="margin-top:24px;border-top:1px solid #f1f5f9;padding-top:20px;">
+            <div style="font-size:12px;font-weight:700;color:#475569;letter-spacing:0.05em;margin-bottom:12px;">📋 RIWAYAT REDEEM</div>
+            <div id="pointHistoryWrap">
+                <div style="text-align:center;padding:16px;color:#94a3b8;font-size:13px;">Memuat...</div>
+            </div>
         </div>
     </div>
 </div>
