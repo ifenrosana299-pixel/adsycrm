@@ -5601,9 +5601,12 @@
 
         await loadAssignments();
         ordersReady = loadOrders();
-        await ordersReady;
 
+        // Switch section dari hash SEBELUM await ordersReady
+        // → section langsung tampil, tidak ada flash dashboard
         initFromHash();
+
+        await ordersReady;
     };
 
     // ════════════════════════════════════════
