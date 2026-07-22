@@ -1672,8 +1672,6 @@
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
         if (name === 'ultah') loadUltah();
-
-        location.hash = name;
     }
 
     function crmToggleGroup(name) {
@@ -2152,7 +2150,6 @@
         // Pastikan group pengelompokan terbuka
         const grp = document.getElementById('crmGroup-pengelompokan');
         if (grp && grp.classList.contains('hidden')) crmToggleGroup('pengelompokan');
-        location.hash = 'tier-' + tier;
         await loadMemberTier();
     }
 
@@ -2173,7 +2170,6 @@
         const iconEl  = document.getElementById('memberTierIcon');
         if (titleEl) titleEl.textContent = 'Gagal Repeat';
         if (iconEl)  iconEl.textContent  = '❌';
-        location.hash = 'tier-gagalRepeat';
         await loadGagalRepeat();
     }
 
@@ -5566,25 +5562,6 @@
     // ── INIT ──
     let ordersReady = null; // promise — biar loadPelanggan/loadMemberTier tinggal tunggu
 
-    function initFromHash() {
-        const hash = location.hash.replace('#', '').trim();
-        if (!hash || hash === 'dashboard') return; // default sudah dashboard
-
-        if (hash.startsWith('tier-')) {
-            const tier = hash.replace('tier-', '');
-            if (tier === 'gagalRepeat') {
-                const el = document.getElementById('crmNavItem-gagalRepeat');
-                crmShowGagalRepeat(el);
-            } else {
-                const el = document.getElementById('crmNavItem-tier-' + tier);
-                crmShowTier(tier, el);
-            }
-        } else {
-            const el = document.getElementById('crmNavItem-' + hash);
-            crmShow(hash, el);
-        }
-    }
-
     window.onload = async function() {
         await initSupabase();
         await loadSkuList();
@@ -5601,11 +5578,6 @@
 
         await loadAssignments();
         ordersReady = loadOrders();
-
-        // Switch section dari hash SEBELUM await ordersReady
-        // → section langsung tampil, tidak ada flash dashboard
-        initFromHash();
-
         await ordersReady;
     };
 
