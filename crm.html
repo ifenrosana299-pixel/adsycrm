@@ -2093,7 +2093,8 @@
     let filteredCustomers = [];
     let pelangganPage = 1;
     let pelangganPageSize = 10;
-    let gagalRepeatMap = {}; // customer_id → count (for pelanggan table column)
+    let gagalRepeatMap = {};      // customer_id → count gagal repeat
+    let onProcessRepeatMap = {};  // customer_id → count on-process repeat
 
     // ── GAGAL REPEAT PENGELOMPOKAN ──
     let gagalRepeatList = [];
@@ -2160,10 +2161,14 @@
             }
         }
 
-        // Load gagal repeat counts untuk kolom Repeat di tabel
-        const { data: gagalCountData } = await sbApp.from('crm_repeats').select('customer_id').eq('status', 'Gagal');
+        // Load repeat counts untuk kolom Repeat di tabel
+        const { data: allRepeatCountData } = await sbApp.from('crm_repeats').select('customer_id,status');
         gagalRepeatMap = {};
-        (gagalCountData || []).forEach(r => { gagalRepeatMap[r.customer_id] = (gagalRepeatMap[r.customer_id] || 0) + 1; });
+        onProcessRepeatMap = {};
+        (allRepeatCountData || []).forEach(r => {
+            if (r.status === 'Gagal') gagalRepeatMap[r.customer_id] = (gagalRepeatMap[r.customer_id] || 0) + 1;
+            else if (r.status !== 'Berhasil') onProcessRepeatMap[r.customer_id] = (onProcessRepeatMap[r.customer_id] || 0) + 1;
+        });
 
         const csSet = [...new Set(crmCustomers.map(c => c.nama_cs).filter(Boolean))].sort();
         document.getElementById('pelangganCSFilter').innerHTML =
@@ -2309,11 +2314,13 @@
                 <td style="font-size:12px;white-space:nowrap;color:#10B981;">${tglDelivered}</td>
                 <td>${potensiRepeatHtml}</td>
                 <td>${(() => {
-                    const rc = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
-                    const gc = gagalRepeatMap[c.id] || 0;
-                    if (!rc && !gc) return '<span style="color:#9CA3AF;font-size:12px;">Belum</span>';
-                    return (rc > 0 ? `<div><span style="font-size:11px;background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:8px;font-weight:600;">🔁 Repeat ke-${rc}</span></div>` : '')
-                         + (gc > 0 ? `<div style="margin-top:${rc>0?'3':'0'}px;"><span style="font-size:11px;background:#FEE2E2;color:#EF4444;padding:2px 8px;border-radius:8px;font-weight:600;">❌ Gagal ${gc}x</span></div>` : '');
+                    const rc  = Array.isArray(c.repeat_orders) ? c.repeat_orders.length : 0;
+                    const gc  = gagalRepeatMap[c.id] || 0;
+                    const opc = onProcessRepeatMap[c.id] || 0;
+                    if (!rc && !gc && !opc) return '<span style="color:#9CA3AF;font-size:12px;">Belum</span>';
+                    return (rc  > 0 ? `<div><span style="font-size:11px;background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:8px;font-weight:600;">🔁 Repeat ke-${rc}</span></div>` : '')
+                         + (opc > 0 ? `<div style="margin-top:${rc>0?'3':'0'}px;"><span style="font-size:11px;background:#FEF3C7;color:#D97706;padding:2px 8px;border-radius:8px;font-weight:600;">🔄 RO ${opc} On Process</span></div>` : '')
+                         + (gc  > 0 ? `<div style="margin-top:${rc>0||opc>0?'3':'0'}px;"><span style="font-size:11px;background:#FEE2E2;color:#EF4444;padding:2px 8px;border-radius:8px;font-weight:600;">❌ Gagal ${gc}x</span></div>` : '');
                 })()}</td>
                 <td style="font-size:12px;">${escapeHtml(c.kabupaten||c.kab||'-')}</td>
                 <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(c.penyakit||c.keluhan||'')}">${escapeHtml(c.penyakit||c.keluhan||'-')}</td>
@@ -3618,8 +3625,9 @@
         await sbApp.from('crm_customers').update(customerUpdate).eq('id', editPelangganId);
         if (c) c.repeat_orders = repeats;
         if (o) o.repeat_orders = repeats;
-        // Update gagal count
-        gagalRepeatMap[editPelangganId] = (data || []).filter(r => r.status === 'Gagal').length;
+        // Update repeat counts
+        gagalRepeatMap[editPelangganId]     = (data || []).filter(r => r.status === 'Gagal').length;
+        onProcessRepeatMap[editPelangganId] = (data || []).filter(r => r.status !== 'Gagal' && r.status !== 'Berhasil').length;
         renderPelangganTable();
 
         loadRepeats(editPelangganId);
