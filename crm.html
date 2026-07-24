@@ -6235,6 +6235,7 @@
                 const parts = val.split('|');
                 result.alamat = parts[0].trim();
                 if (parts[1]) result.instruksi_pengiriman = parts[1].trim();
+                if (parts.length > 2) result.rincian_pembayaran = parts.slice(2).join('|');
             }
             else if (/^Jumlah\s*pesanan\s*:/i.test(l)) {
                 result.jumlah_pesanan = l.replace(/^Jumlah\s*pesanan\s*:\s*/i, '').trim();
