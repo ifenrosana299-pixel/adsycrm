@@ -1027,7 +1027,7 @@
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Qty</label>
-                            <input class="uo-f-input" id="uoQty" type="number" min="1">
+                            <input class="uo-f-input" id="uoQty" type="number" min="1" oninput="uoValidateSKU()">
                         </div>
                     </div>
 
@@ -1048,7 +1048,8 @@
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Keterangan</label>
-                            <input class="uo-f-input" id="uoKeterangan" type="text" placeholder="Catatan">
+                            <input class="uo-f-input" id="uoKeterangan" type="text" placeholder="Catatan" oninput="uoValidateSKU()">
+                            <div id="uoKetHint" class="uo-val-hint"></div>
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Keluhan</label>
@@ -6377,7 +6378,7 @@
         });
         const pay = document.getElementById('uoPembayaran');
         if (pay) pay.value = '';
-        ['uoNoHint','uoNamaHint','uoJumlahHint','uoRincianHint','uoOngkirHint'].forEach(id => {
+        ['uoNoHint','uoNamaHint','uoJumlahHint','uoRincianHint','uoOngkirHint','uoKetHint'].forEach(id => {
             const el = document.getElementById(id);
             if (el) { el.className = 'uo-val-hint'; el.textContent = ''; }
         });
@@ -6587,28 +6588,80 @@
         } catch(e) { /* silent */ }
     }
 
-    // 4. Validate SKU / Produk
+    // 4. Validate SKU / Produk (sama persis logika CS Order)
+    function uoParseSKUFromNama(nama) {
+        if (!nama || !nama.includes('|')) return null;
+        const skuRaw = (nama.split('|')[1] || '').trim().toUpperCase();
+        if (!skuRaw) return null;
+        const match = skuRaw.match(/^([A-Z]+)\s*(\d*)$/);
+        if (!match) return null;
+        return { kode: match[1], qty: parseInt(match[2] || '1', 10) || 1 };
+    }
+
     async function uoValidateSKU() {
-        const namaVal  = (document.getElementById('uoNama')?.value   || '').trim();
-        const jumlahVal = (document.getElementById('uoJumlah')?.value || '').trim();
-        uoValSet('uoNamaHint', '', '');
-        uoValSet('uoJumlahHint', '', '');
-        const kode = parseSKUKode(namaVal); // from shared.js
-        if (!kode) return;
+        const namaVal   = (document.getElementById('uoNama')?.value        || '').trim();
+        const jumlahVal = (document.getElementById('uoJumlah')?.value      || '').trim();
+        const ketVal    = (document.getElementById('uoKeterangan')?.value   || '').trim();
+        const qtyField  = parseInt((document.getElementById('uoQty')?.value || '').trim(), 10);
+
+        uoValSet('uoNamaHint',     '', '');
+        uoValSet('uoJumlahHint',   '', '');
+        uoValSet('uoKetHint',      '', '');
+
+        const parsed = uoParseSKUFromNama(namaVal);
+        if (!parsed) return;
+
         if (!skuList.length) await loadSkuList();
-        const skuRecord = skuList.find(s => s.kode.toUpperCase() === kode);
+        const skuRecord = skuList.find(s => s.kode.toUpperCase() === parsed.kode);
         if (!skuRecord) {
-            uoValSet('uoNamaHint', 'err', `⚠ SKU "${kode}" tidak dikenali`);
+            uoValSet('uoNamaHint', 'err', `⚠ SKU "${parsed.kode}" tidak dikenali`);
             return;
         }
-        uoValSet('uoNamaHint', 'ok', `✓ ${skuRecord.nama_produk}`);
+
+        uoValSet('uoNamaHint', 'ok', `✓ ${skuRecord.nama_produk} × ${parsed.qty}`);
+
+        // Cek qty SKU vs field QTY
+        if (qtyField && qtyField !== parsed.qty) {
+            uoValSet('uoNamaHint', 'warn', `⚠ SKU qty ${parsed.qty} tapi QTY field ${qtyField} — pastikan yang benar`);
+        }
+
+        const keywords = skuRecord.nama_produk.toUpperCase().split(/\s+/).filter(w => w.length >= 3);
+
+        // Cek jumlah pesanan — nama produk + qty di awal
         if (jumlahVal) {
-            const keywords = skuRecord.nama_produk.toUpperCase().split(/\s+/).filter(w => w.length >= 3);
-            const match    = keywords.some(w => jumlahVal.toUpperCase().includes(w));
-            if (match) {
+            const jumlahUp   = jumlahVal.toUpperCase();
+            const prodMatch  = keywords.some(w => jumlahUp.includes(w));
+            const qtyJumlah  = parseInt(jumlahVal.match(/^\d+/)?.[0] || '0', 10);
+            const qtyOk      = !qtyJumlah || qtyJumlah === parsed.qty;
+            if (prodMatch && qtyOk) {
                 uoValSet('uoJumlahHint', 'ok', '');
+            } else if (!prodMatch) {
+                uoValSet('uoJumlahHint', 'err', `⚠ Produk "${skuRecord.nama_produk}" tidak ditemukan`);
             } else {
-                uoValSet('uoJumlahHint', 'err', `⚠ Produk "${skuRecord.nama_produk}" tidak ditemukan di jumlah pesanan`);
+                uoValSet('uoJumlahHint', 'warn', `⚠ Qty di jumlah pesanan (${qtyJumlah}) tidak cocok dengan SKU (${parsed.qty})`);
+            }
+        }
+
+        // Cek keterangan — nama produk + qty setelah keyword
+        if (ketVal) {
+            const ketUp     = ketVal.toUpperCase();
+            const prodMatch = keywords.some(w => ketUp.includes(w));
+            if (!prodMatch) {
+                uoValSet('uoKetHint', 'err', `⚠ Produk "${skuRecord.nama_produk}" tidak ditemukan di keterangan`);
+            } else {
+                let qtyKet = null;
+                for (const kw of keywords) {
+                    const idx = ketUp.indexOf(kw);
+                    if (idx === -1) continue;
+                    const after = ketUp.slice(idx + kw.length).trim();
+                    const m = after.match(/^[\s\w]*?(\d+)/);
+                    if (m) { qtyKet = parseInt(m[1], 10); break; }
+                }
+                if (qtyKet !== null && qtyKet !== parsed.qty) {
+                    uoValSet('uoKetHint', 'warn', `⚠ Qty di keterangan (${qtyKet}) tidak cocok dengan SKU (${parsed.qty})`);
+                } else {
+                    uoValSet('uoKetHint', 'ok', '');
+                }
             }
         }
     }
