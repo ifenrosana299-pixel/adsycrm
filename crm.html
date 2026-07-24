@@ -4077,6 +4077,7 @@
             });
 
             // 3. Build map: `hp|cs_lower|tgl` → resi dari all_orderan
+            const normHp = hp => (hp || '').trim().replace(/^(\+?62|0)/, '');
             const hpResiMap = {};
             for (const [csKey, rows] of Object.entries(byCS)) {
                 const csName = rows[0].nama_cs;
@@ -4093,7 +4094,7 @@
                 (aoData || []).forEach(o => {
                     if (!o.resi) return;
                     const tglWIB = (o.tanggal || '').slice(0, 10);
-                    const mapKey = (o.hp || '').trim() + '|' + csKey + '|' + tglWIB;
+                    const mapKey = normHp(o.hp) + '|' + csKey + '|' + tglWIB;
                     if (!hpResiMap[mapKey]) hpResiMap[mapKey] = o.resi;
                 });
             }
@@ -4102,7 +4103,7 @@
             const toUpdate = [];
             nullRows.forEach(r => {
                 const csKey  = (r.nama_cs || '').trim().toLowerCase();
-                const mapKey = (r.no_hp   || '').trim() + '|' + csKey + '|' + r.tgl;
+                const mapKey = normHp(r.no_hp) + '|' + csKey + '|' + r.tgl;
                 const resi   = hpResiMap[mapKey];
                 if (resi) toUpdate.push({ id: r.id, resi });
             });
