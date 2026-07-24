@@ -21,6 +21,7 @@ export default async function handler(req, res) {
 
 Format JSON yang harus diisi:
 {
+  "no": "",
   "nama": "",
   "hp": "",
   "alamat": "",
@@ -33,15 +34,18 @@ Format JSON yang harus diisi:
   "quantity": "",
   "pembayaran": "",
   "total_pembayaran": "",
+  "rincian_pembayaran": "",
   "instruksi_pengiriman": "",
   "keterangan": "",
   "keluhan": ""
 }
 
 Catatan:
+- no: nomor order (baris pertama, contoh "No. 13. JNE-MENG" atau "13. JNE")
 - hp: nomor HP customer (format 08xxx atau 628xxx)
 - quantity: hanya angka (misal "2")
 - total_pembayaran: hanya angka tanpa titik/koma (misal "150000")
+- rincian_pembayaran: format ongkir|pot.ongkir|admin|pot.admin|harga (misal "13000|0|5000|0|120000"), kosongkan jika tidak ada
 - pembayaran: "COD" atau "Transfer"
 - jumlah_pesanan: isi lengkap termasuk nama produk (misal "2 Botol HerbaMax")
 - kodepos: 5 digit angka saja
