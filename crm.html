@@ -516,6 +516,10 @@
         .uo-btn-submit:hover { background:#059669; }
         .uo-btn-submit:disabled { opacity:.45;cursor:not-allowed; }
         @media(max-width:640px) { .uo-form-grid,.uo-form-grid.uo-cols-3 { grid-template-columns:1fr; } .uo-btn-parse,.uo-btn-submit { width:100%; } }
+        .uo-val-hint { font-size:11px;min-height:14px;margin-top:2px; }
+        .uo-val-ok   { color:#059669; }
+        .uo-val-warn { color:#D97706; }
+        .uo-val-err  { color:#DC2626; }
     </style>
 </head>
 <body>
@@ -942,11 +946,21 @@
                     <div class="uo-card-title">2. Periksa & Edit Hasil</div>
                     <div class="uo-card-desc">Pastikan semua data sudah benar. Kamu bisa edit langsung.</div>
 
+                    <!-- No Order -->
+                    <div class="uo-form-grid uo-cols-1" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">No Order</label>
+                            <input class="uo-f-input" id="uoNo" type="text" placeholder="No. 13. JNE-MENG" oninput="uoValidateNo()">
+                            <div id="uoNoHint" class="uo-val-hint"></div>
+                        </div>
+                    </div>
+
                     <!-- Nama & HP -->
                     <div class="uo-form-grid" style="margin-bottom:10px;">
                         <div class="uo-f-group">
                             <label class="uo-f-label">Nama Customer *</label>
-                            <input class="uo-f-input" id="uoNama" type="text" placeholder="Nama lengkap">
+                            <input class="uo-f-input" id="uoNama" type="text" placeholder="Nama lengkap (contoh: BUDI|HRB1)" oninput="uoValidateSKU()">
+                            <div id="uoNamaHint" class="uo-val-hint"></div>
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">No HP *</label>
@@ -967,7 +981,17 @@
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Total Pembayaran</label>
-                            <input class="uo-f-input" id="uoTotal" type="number" placeholder="150000">
+                            <input class="uo-f-input" id="uoTotal" type="number" placeholder="150000" oninput="uoValidateRincian()">
+                        </div>
+                    </div>
+
+                    <!-- Rincian Pembayaran -->
+                    <div class="uo-form-grid uo-cols-1" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Rincian Pembayaran</label>
+                            <input class="uo-f-input" id="uoRincian" type="text" placeholder="ongkir|pot.ongkir|admin|pot.admin|harga — contoh: 13000|0|5000|0|120000" oninput="uoValidateRincian()">
+                            <div id="uoRincianHint" class="uo-val-hint"></div>
+                            <div id="uoOngkirHint" class="uo-val-hint"></div>
                         </div>
                     </div>
 
@@ -987,11 +1011,11 @@
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Kecamatan</label>
-                            <input class="uo-f-input" id="uoKecamatan" type="text">
+                            <input class="uo-f-input" id="uoKecamatan" type="text" oninput="scheduleUoOngkirCheck()">
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Kabupaten/Kota</label>
-                            <input class="uo-f-input" id="uoKabupaten" type="text">
+                            <input class="uo-f-input" id="uoKabupaten" type="text" oninput="scheduleUoOngkirCheck()">
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Provinsi</label>
@@ -999,7 +1023,7 @@
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Kode Pos</label>
-                            <input class="uo-f-input" id="uoKodepos" type="text" inputmode="numeric" maxlength="5">
+                            <input class="uo-f-input" id="uoKodepos" type="text" inputmode="numeric" maxlength="5" oninput="scheduleUoOngkirCheck(); uoValidateNo()">
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Qty</label>
@@ -1011,7 +1035,12 @@
                     <div class="uo-form-grid" style="margin-bottom:10px;">
                         <div class="uo-f-group">
                             <label class="uo-f-label">Jumlah Pesanan *</label>
-                            <input class="uo-f-input" id="uoJumlah" type="text" placeholder="2 Botol HerbaMax">
+                            <input class="uo-f-input" id="uoJumlah" type="text" placeholder="2 Botol HerbaMax" oninput="uoValidateSKU()">
+                            <div id="uoJumlahHint" class="uo-val-hint"></div>
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Ekspedisi</label>
+                            <input class="uo-f-input" id="uoEkspedisi" type="text" placeholder="JNE / J&T / SiCepat..." oninput="scheduleUoOngkirCheck()">
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Instruksi Pengiriman</label>
@@ -6187,9 +6216,9 @@
     function uoParseRegex(text) {
         const lines = text.split('\n').map(l => l.trim()).filter(l => l);
         const result = {
-            nama: '', hp: '', alamat: '', kelurahan: '', kecamatan: '',
+            no: '', nama: '', hp: '', alamat: '', kelurahan: '', kecamatan: '',
             kabupaten: '', provinsi: '', kodepos: '', jumlah_pesanan: '',
-            quantity: '', pembayaran: '', total_pembayaran: '',
+            quantity: '', pembayaran: '', total_pembayaran: '', rincian_pembayaran: '',
             instruksi_pengiriman: '', keterangan: '', keluhan: ''
         };
         result.no = lines[0] || '';
@@ -6219,6 +6248,13 @@
                 const eqMatch = val.match(/=\s*(\d+)/);
                 result.total_pembayaran = eqMatch ? eqMatch[1] : val.replace(/\D/g, '');
             }
+            else if (/^Rincian\s*(pembayaran)?\s*:/i.test(l)) {
+                result.rincian_pembayaran = l.replace(/^Rincian\s*(pembayaran)?\s*:\s*/i, '').trim();
+            }
+            else if (/^\d+\|\d+\|\d+\|\d+\|\d+$/.test(l)) {
+                // Format rincian langsung tanpa label
+                result.rincian_pembayaran = l;
+            }
             else if (/^KELUHAN\s*:/i.test(l)) result.keluhan = l.replace(/^KELUHAN\s*:\s*/i, '').trim();
         }
         const kpIdx = lines.findIndex(l => /^\d{5}$/.test(l));
@@ -6245,6 +6281,7 @@
 
     function uoFillForm(d) {
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        set('uoNo', d.no);
         set('uoNama', d.nama);
         set('uoHp', d.hp);
         set('uoAlamat', d.alamat);
@@ -6256,6 +6293,8 @@
         set('uoJumlah', d.jumlah_pesanan);
         set('uoQty', d.quantity);
         set('uoTotal', d.total_pembayaran);
+        set('uoRincian', d.rincian_pembayaran);
+        set('uoEkspedisi', d.ekspedisi);
         set('uoInstruksi', d.instruksi_pengiriman);
         set('uoKeterangan', d.keterangan);
         set('uoKeluhan', d.keluhan);
@@ -6266,6 +6305,9 @@
         }
         document.getElementById('uoFormWrap').style.display = 'block';
         uoCheckCustomer(d.hp);
+        uoValidateNo();
+        uoValidateRincian();
+        uoValidateSKU();
     }
 
     async function uoCheckCustomer(hp) {
@@ -6326,14 +6368,18 @@
         document.getElementById('uoFormWrap').style.display = 'none';
         document.getElementById('uoCustomerInfo').style.display = 'none';
         document.getElementById('uoSubmitMsg').textContent = '';
-        ['uoNama','uoHp','uoAlamat','uoKelurahan','uoKecamatan','uoKabupaten',
-         'uoProvinsi','uoKodepos','uoJumlah','uoQty','uoTotal',
-         'uoInstruksi','uoKeterangan','uoKeluhan'].forEach(id => {
+        ['uoNo','uoNama','uoHp','uoAlamat','uoKelurahan','uoKecamatan','uoKabupaten',
+         'uoProvinsi','uoKodepos','uoJumlah','uoQty','uoTotal','uoRincian',
+         'uoEkspedisi','uoInstruksi','uoKeterangan','uoKeluhan'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
         const pay = document.getElementById('uoPembayaran');
         if (pay) pay.value = '';
+        ['uoNoHint','uoNamaHint','uoJumlahHint','uoRincianHint','uoOngkirHint'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.className = 'uo-val-hint'; el.textContent = ''; }
+        });
     }
 
     async function uoSubmit() {
@@ -6360,6 +6406,7 @@
                 crm_id:               currentUser.id,
                 crm_nama:             currentUser.nama || currentUser.username,
                 tanggal:              today,
+                no:                   get('uoNo') || null,
                 nama,
                 no_hp:                hp,
                 alamat,
@@ -6372,6 +6419,8 @@
                 quantity:             parseInt(get('uoQty')) || null,
                 pembayaran:           get('uoPembayaran') || null,
                 total_pembayaran:     parseInt(get('uoTotal')) || null,
+                rincian_pembayaran:   get('uoRincian') || null,
+                ekspedisi:            get('uoEkspedisi') || null,
                 instruksi_pengiriman: get('uoInstruksi') || null,
                 keterangan:           get('uoKeterangan') || null,
                 keluhan:              get('uoKeluhan') || null,
@@ -6400,6 +6449,167 @@
         const { error } = await sbApp.from('crm_orderan').delete().eq('id', id);
         if (error) { alert('Gagal hapus: ' + error.message); return; }
         await loadUploadOrder();
+    }
+
+    // ══ VALIDASI UPLOAD ORDER ══════════════════════════════════════════════
+
+    const UO_EKSPEDISI_LIST = [
+        { key: 'JNE',       pattern: /\bJNE\b/i },
+        { key: 'JNT',       pattern: /\bJNT\b|\bJ[&+]?T\b|JALUR\s*NUGRAHA/i },
+        { key: 'SICEPAT',   pattern: /\bSICEPAT\b|\bSICE\b/i },
+        { key: 'ANTERAJA',  pattern: /\bANTERAJA\b|\bANTER\b/i },
+        { key: 'NINJA',     pattern: /\bNINJA\b/i },
+        { key: 'SAP',       pattern: /\bSAP\b/i },
+        { key: 'LION',      pattern: /\bLION\b/i },
+        { key: 'POS',       pattern: /\bPOS\b/i },
+        { key: 'IDEXPRESS', pattern: /\bID\s*EXPRESS\b|\bIDEX\b/i },
+        { key: 'SICEPAT',   pattern: /\bSICEPAT\b/i },
+    ];
+
+    function uoExtractEksFromNo(text) {
+        if (!text) return null;
+        for (const e of UO_EKSPEDISI_LIST) {
+            if (e.pattern.test(text)) return e.key;
+        }
+        return null;
+    }
+
+    function uoValSet(id, status, msg) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'uo-val-hint' + (status ? ' uo-val-' + status : '');
+        el.textContent = msg || '';
+    }
+
+    // 1. Validate NO ORDER → extract ekspedisi → cek rekomendasi ekspedisi_rekomendasi
+    async function uoValidateNo() {
+        const noVal = (document.getElementById('uoNo')?.value || '').trim();
+        uoValSet('uoNoHint', '', '');
+        const eks = uoExtractEksFromNo(noVal);
+        if (eks) {
+            const eksEl = document.getElementById('uoEkspedisi');
+            if (eksEl && !eksEl.value) eksEl.value = eks;
+            uoValSet('uoNoHint', 'ok', '✓ ' + eks);
+            // Cek rekomendasi berdasarkan kodepos
+            const kodepos = (document.getElementById('uoKodepos')?.value || '').trim();
+            if (kodepos) {
+                const { data } = await sbData.from('ekspedisi_rekomendasi')
+                    .select('kodepos,jne_del,jnt_del,ninja_del,lion_del')
+                    .eq('kodepos', kodepos).single();
+                if (data) {
+                    const candidates = [
+                        { name: 'JNE',   del: data.jne_del   || 0 },
+                        { name: 'JNT',   del: data.jnt_del   || 0 },
+                        { name: 'NINJA', del: data.ninja_del || 0 },
+                        { name: 'LION',  del: data.lion_del  || 0 },
+                    ].filter(e => e.del > 0).sort((a, b) => b.del - a.del);
+                    if (candidates.length) {
+                        const rek    = candidates.slice(0, 3).map(e => e.name + '(' + Math.round(e.del) + '%)').join(' > ');
+                        const rekList = candidates.map(e => e.name.toLowerCase());
+                        const topRek  = candidates[0].name.toLowerCase();
+                        if (!rekList.includes(eks.toLowerCase())) {
+                            uoValSet('uoNoHint', 'err', `⚠ ${eks} tidak direkomendasikan — rek: ${rek}`);
+                        } else if (topRek !== eks.toLowerCase()) {
+                            uoValSet('uoNoHint', 'warn', `⚠ ${eks} bukan terbaik — rek: ${rek}`);
+                        } else {
+                            uoValSet('uoNoHint', 'ok', `✓ ${eks} · rek: ${rek}`);
+                        }
+                    }
+                }
+            }
+        }
+        scheduleUoOngkirCheck();
+    }
+
+    // 2. Validate RINCIAN PEMBAYARAN → format + total hitung vs total_pembayaran
+    function uoValidateRincian() {
+        const rincianVal = (document.getElementById('uoRincian')?.value || '').trim();
+        const totalVal   = parseInt((document.getElementById('uoTotal')?.value || '').trim()) || 0;
+        uoValSet('uoRincianHint', '', '');
+        if (!rincianVal) { scheduleUoOngkirCheck(); return; }
+        const parts = rincianVal.split('|').map(s => parseInt(s.trim(), 10));
+        if (parts.length !== 5 || parts.some(isNaN)) {
+            uoValSet('uoRincianHint', 'err', '⚠ Format: ongkir|pot.ongkir|admin|pot.admin|harga');
+            return;
+        }
+        const [ongkir, potOngkir, admin, potAdmin, harga] = parts;
+        const totalHitung = harga + ongkir - potOngkir + admin - potAdmin;
+        const fmt = n => n.toLocaleString('id-ID');
+        if (totalVal && totalHitung !== totalVal) {
+            uoValSet('uoRincianHint', 'err', `⚠ Total hitung ${fmt(totalHitung)} ≠ ${fmt(totalVal)}`);
+        } else {
+            uoValSet('uoRincianHint', 'ok', `✓ ${fmt(harga)} + ${fmt(ongkir - potOngkir)} ongkir + ${fmt(admin - potAdmin)} admin = ${fmt(totalHitung)}`);
+        }
+        scheduleUoOngkirCheck();
+    }
+
+    // 3. Validate ONGKIR via Mengantar API
+    let _uoOngkirTimer = null;
+    function scheduleUoOngkirCheck() {
+        clearTimeout(_uoOngkirTimer);
+        _uoOngkirTimer = setTimeout(uoValidateOngkir, 800);
+    }
+
+    async function uoValidateOngkir() {
+        const kec      = (document.getElementById('uoKecamatan')?.value || '').trim();
+        const kab      = (document.getElementById('uoKabupaten')?.value || '').trim();
+        const kodepos  = (document.getElementById('uoKodepos')?.value || '').trim();
+        const noVal    = (document.getElementById('uoNo')?.value || '').trim();
+        const rincianVal = (document.getElementById('uoRincian')?.value || '').trim();
+        uoValSet('uoOngkirHint', '', '');
+        if (!kec || !kab || !rincianVal) return;
+        const eks = uoExtractEksFromNo(noVal) || (document.getElementById('uoEkspedisi')?.value || '').trim();
+        if (!eks) return;
+        const parts = rincianVal.split('|').map(s => parseInt(s.trim(), 10));
+        if (parts.length !== 5 || parts.some(isNaN)) return;
+        const [ongkir] = parts;
+        if (!ongkir) return;
+        try {
+            const keyword = kodepos || (kec + ' ' + kab);
+            const params = new URLSearchParams({ keyword, weight: 1, kecamatan: kec, kabupaten: kab });
+            const r = await fetch('/api/ongkir?' + params);
+            const json = await r.json();
+            if (!json?.ok) return;
+            const match = json.couriers.find(c => c.key.toUpperCase() === eks.toUpperCase());
+            if (!match || match.unsupported || !match.price) return;
+            const fmt = n => n.toLocaleString('id-ID');
+            const pct = (match.price - ongkir) / match.price * 100;
+            if (ongkir >= match.price) {
+                uoValSet('uoOngkirHint', 'ok', `✓ Ongkir sesuai estimasi (Rp${fmt(match.price)})`);
+            } else if (pct > 15) {
+                uoValSet('uoOngkirHint', 'err', `⚠ Ongkir Rp${fmt(ongkir)}, estimasi ${eks} ke ${kec}: Rp${fmt(match.price)} (kurang ${pct.toFixed(0)}%)`);
+            } else if (pct > 5) {
+                uoValSet('uoOngkirHint', 'warn', `⚠ Ongkir Rp${fmt(ongkir)}, estimasi ${eks}: Rp${fmt(match.price)} (kurang ${pct.toFixed(0)}%)`);
+            } else {
+                uoValSet('uoOngkirHint', 'ok', `✓ Ongkir sesuai estimasi (Rp${fmt(match.price)})`);
+            }
+        } catch(e) { /* silent */ }
+    }
+
+    // 4. Validate SKU / Produk
+    async function uoValidateSKU() {
+        const namaVal  = (document.getElementById('uoNama')?.value   || '').trim();
+        const jumlahVal = (document.getElementById('uoJumlah')?.value || '').trim();
+        uoValSet('uoNamaHint', '', '');
+        uoValSet('uoJumlahHint', '', '');
+        const kode = parseSKUKode(namaVal); // from shared.js
+        if (!kode) return;
+        if (!skuList.length) await loadSkuList();
+        const skuRecord = skuList.find(s => s.kode.toUpperCase() === kode);
+        if (!skuRecord) {
+            uoValSet('uoNamaHint', 'err', `⚠ SKU "${kode}" tidak dikenali`);
+            return;
+        }
+        uoValSet('uoNamaHint', 'ok', `✓ ${skuRecord.nama_produk}`);
+        if (jumlahVal) {
+            const keywords = skuRecord.nama_produk.toUpperCase().split(/\s+/).filter(w => w.length >= 3);
+            const match    = keywords.some(w => jumlahVal.toUpperCase().includes(w));
+            if (match) {
+                uoValSet('uoJumlahHint', 'ok', '');
+            } else {
+                uoValSet('uoJumlahHint', 'err', `⚠ Produk "${skuRecord.nama_produk}" tidak ditemukan di jumlah pesanan`);
+            }
+        }
     }
 </script>
 
