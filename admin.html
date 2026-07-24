@@ -388,11 +388,21 @@
             if (activeSection) activeSection.style.display = 'block';
             if (activeNav)     activeNav.classList.add('nav-active');
 
-            if (section === 'dashboard')   loadDashboard();
-            if (section === 'riwayat')     loadRiwayat();
-            if (section === 'orderan')     loadAllOrderan();
-            if (section === 'rekap')       initRekap();
+            if (section === 'dashboard')    loadDashboard();
+            if (section === 'riwayat')      loadRiwayat();
+            if (section === 'orderan')      loadAllOrderan();
+            if (section === 'rekap')        initRekap();
             if (section === 'produkConfig') loadProdukConfig();
+
+            location.hash = section;
+        }
+
+        function adminInitFromHash() {
+            const hash = location.hash.replace('#', '').trim();
+            const valid = ['dashboard', 'assignment', 'riwayat', 'orderan', 'rekap', 'produkConfig'];
+            if (hash && valid.includes(hash)) {
+                adminShowSection(hash);
+            }
         }
 
         // ===== DASHBOARD =====
@@ -1298,15 +1308,12 @@
                 for (const { dateFrom, dateTo, items } of periodGroups) {
                     const csNames = [...new Set(items.map(a => a.csName))];
                     const csFilter = csNames.map(cs => `cs.ilike.${cs.replace(/[,().%]/g, '')}`).join(',');
-                    const dateFromUTC = new Date(dateFrom + 'T00:00:00+07:00').toISOString();
-                    const dateToUTC   = new Date(dateTo   + 'T23:59:59+07:00').toISOString();
-
                     const { data: orderData, error: fetchErr } = await fetchAll((from, to) =>
                         sbData.from('all_orderan')
                             .select('*')
                             .or(csFilter)
-                            .gte('created_at', dateFromUTC)
-                            .lte('created_at', dateToUTC)
+                            .gte('tanggal', dateFrom)
+                            .lte('tanggal', dateTo)
                             .range(from, to)
                     );
 
@@ -1337,8 +1344,8 @@
                     // Group by no_hp + cs → 1 row per pelanggan per CS
                     const grouped = {};
                     filteredOrderData.forEach(o => {
-                        const tglWIB = o.created_at
-                            ? new Date(new Date(o.created_at).getTime()+7*3600*1000).toISOString().slice(0,10)
+                        const tglWIB = o.tanggal
+                            ? o.tanggal.slice(0, 10)
                             : dateFrom;
                         const csKey = (o.cs||'').trim().toLowerCase();
                         const key = (o.hp||'').trim() + '|' + csKey;
@@ -2010,7 +2017,10 @@
                 console.error('Error loading data:', e);
             }
 
-            adminShowSection('dashboard');
+            // Buka section dari hash, fallback ke dashboard
+            const hash = location.hash.replace('#', '').trim();
+            const valid = ['dashboard', 'assignment', 'riwayat', 'orderan', 'rekap', 'produkConfig'];
+            adminShowSection(valid.includes(hash) ? hash : 'dashboard');
         };
 
         // ══════════════════════════════════════════

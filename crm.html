@@ -3806,21 +3806,18 @@
             for (const [csKey, rows] of Object.entries(byCS)) {
                 const csName = rows[0].nama_cs;
                 const tglsSorted = [...new Set(rows.map(r => r.tgl))].sort();
-                const dateFrom = new Date(tglsSorted[0] + 'T00:00:00+07:00').toISOString();
-                const dateTo   = new Date(tglsSorted[tglsSorted.length - 1] + 'T23:59:59+07:00').toISOString();
-
                 const { data: aoData } = await sbData
                     .from('all_orderan')
-                    .select('hp, resi, created_at')
+                    .select('hp, resi, tanggal')
                     .ilike('cs', csName)
-                    .gte('created_at', dateFrom)
-                    .lte('created_at', dateTo)
+                    .gte('tanggal', tglsSorted[0])
+                    .lte('tanggal', tglsSorted[tglsSorted.length - 1])
                     .not('resi', 'is', null)
                     .neq('resi', '');
 
                 (aoData || []).forEach(o => {
                     if (!o.resi) return;
-                    const tglWIB = new Date(new Date(o.created_at).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+                    const tglWIB = (o.tanggal || '').slice(0, 10);
                     const mapKey = (o.hp || '').trim() + '|' + csKey + '|' + tglWIB;
                     if (!hpResiMap[mapKey]) hpResiMap[mapKey] = o.resi;
                 });
