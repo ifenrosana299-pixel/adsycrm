@@ -519,6 +519,9 @@
             <div class="crm-nav-item" id="crmNavItem-pesanan" onclick="crmShow('pesanan', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span> Pesanan
             </div>
+            <div class="crm-nav-item" id="crmNavItem-uploadOrder" onclick="crmShow('uploadOrder', this)">
+                <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/><line x1="5" y1="21" x2="19" y2="21"/></svg></span> Upload Order
+            </div>
             <div class="crm-nav-item" id="crmNavItem-trackingResi" onclick="crmShow('trackingResi', this)">
                 <span class="crm-nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> Tracking Resi
             </div>
@@ -848,6 +851,194 @@
                 </div>
 
                 <div class="crm-pagination" id="crmPagination"></div>
+            </section>
+
+            <!-- ═══ UPLOAD ORDER ═══ -->
+            <section id="crmSec-uploadOrder" class="crm-section">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                    <div class="crm-page-title" style="margin-bottom:0;">
+                        <div class="crm-page-title-icon">📦</div>
+                        <h2>Upload Order</h2>
+                    </div>
+                    <button onclick="loadUploadOrder()" class="crm-btn crm-btn-secondary crm-btn-sm">🔄 Refresh</button>
+                </div>
+
+                <!-- Stats -->
+                <div class="crm-stats-row">
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Menunggu Validasi</div>
+                            <div class="crm-stat-value" id="uoStatMenunggu" style="color:#D97706;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#FEF3C7;">⏳</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">ACC</div>
+                            <div class="crm-stat-value" id="uoStatAcc" style="color:#6366F1;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#EEF2FF;">✅</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Menunggu Resi</div>
+                            <div class="crm-stat-value" id="uoStatMenungguResi" style="color:#0EA5E9;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#E0F2FE;">📬</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">On Proses</div>
+                            <div class="crm-stat-value" id="uoStatOnProses" style="color:#8B5CF6;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#EDE9FE;">🚚</div>
+                    </div>
+                    <div class="crm-stat">
+                        <div>
+                            <div class="crm-stat-label">Terkirim</div>
+                            <div class="crm-stat-value" id="uoStatTerkirim" style="color:#10B981;">0</div>
+                        </div>
+                        <div class="crm-stat-icon" style="background:#D1FAE5;">📦</div>
+                    </div>
+                </div>
+
+                <!-- Form Input Order -->
+                <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:24px;">
+                    <div style="font-weight:700;font-size:15px;color:#374151;margin-bottom:14px;">➕ Input Order Baru</div>
+
+                    <!-- Paste Area -->
+                    <div class="crm-form-group" style="margin-bottom:10px;">
+                        <label class="crm-form-label">Paste Chat WA Customer</label>
+                        <textarea id="uoPasteInput" class="crm-input" rows="5"
+                            style="width:100%;resize:vertical;font-family:monospace;font-size:13px;"
+                            placeholder="Paste teks order dari WhatsApp di sini..."></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:16px;">
+                        <button onclick="uoParse()" class="crm-btn crm-btn-primary crm-btn-sm" id="uoBtnParse">🤖 Parse Otomatis</button>
+                        <button onclick="uoClearForm()" class="crm-btn crm-btn-secondary crm-btn-sm">✖ Clear</button>
+                    </div>
+
+                    <!-- Form Fields -->
+                    <div id="uoFormWrap" style="display:none;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Nama <span style="color:#EF4444;">*</span></label>
+                                <input type="text" id="uoNama" class="crm-input" placeholder="Nama customer">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">No HP <span style="color:#EF4444;">*</span></label>
+                                <input type="text" id="uoHp" class="crm-input" placeholder="08xxx">
+                                <div id="uoHpHint" style="font-size:11px;margin-top:3px;"></div>
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Pembayaran</label>
+                                <select id="uoPembayaran" class="crm-select">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="COD">COD</option>
+                                    <option value="Transfer">Transfer</option>
+                                </select>
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Total Pembayaran</label>
+                                <input type="number" id="uoTotal" class="crm-input" placeholder="150000">
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
+                            <div class="crm-form-group" style="grid-column:span 2;">
+                                <label class="crm-form-label">Alamat <span style="color:#EF4444;">*</span></label>
+                                <input type="text" id="uoAlamat" class="crm-input" placeholder="Jl. xxx No. xxx">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Kelurahan</label>
+                                <input type="text" id="uoKelurahan" class="crm-input">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Kecamatan</label>
+                                <input type="text" id="uoKecamatan" class="crm-input">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Kabupaten/Kota</label>
+                                <input type="text" id="uoKabupaten" class="crm-input">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Provinsi</label>
+                                <input type="text" id="uoProvinsi" class="crm-input">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Kodepos</label>
+                                <input type="text" id="uoKodepos" class="crm-input" maxlength="5">
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;">
+                            <div class="crm-form-group" style="grid-column:span 2;">
+                                <label class="crm-form-label">Jumlah Pesanan <span style="color:#EF4444;">*</span></label>
+                                <input type="text" id="uoJumlah" class="crm-input" placeholder="2 Botol HerbaMax">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Qty</label>
+                                <input type="number" id="uoQty" class="crm-input" placeholder="2" min="1">
+                            </div>
+                            <div class="crm-form-group">
+                                <label class="crm-form-label">Instruksi Pengiriman</label>
+                                <input type="text" id="uoInstruksi" class="crm-input" placeholder="Jangan dilipat">
+                            </div>
+                            <div class="crm-form-group" style="grid-column:span 2;">
+                                <label class="crm-form-label">Keterangan</label>
+                                <textarea id="uoKeterangan" class="crm-input" rows="2" style="width:100%;resize:vertical;"></textarea>
+                            </div>
+                            <div class="crm-form-group" style="grid-column:span 2;">
+                                <label class="crm-form-label">Keluhan</label>
+                                <input type="text" id="uoKeluhan" class="crm-input" placeholder="Keluhan customer (opsional)">
+                            </div>
+                        </div>
+
+                        <!-- Customer link info -->
+                        <div id="uoCustomerInfo" style="display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#3730A3;">
+                        </div>
+
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <button onclick="uoSubmit()" class="crm-btn crm-btn-primary" id="uoBtnSubmit">📤 Submit Order</button>
+                            <span id="uoSubmitMsg" style="font-size:13px;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabel Order -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <div style="font-weight:700;font-size:15px;color:#374151;">Riwayat Order Saya</div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <select id="uoFilterStatus" class="crm-select" style="width:auto;" onchange="uoRender()">
+                            <option value="">Semua Status</option>
+                            <option value="Menunggu Validasi">Menunggu Validasi</option>
+                            <option value="ACC">ACC</option>
+                            <option value="HOLD">HOLD</option>
+                            <option value="CANCEL">CANCEL</option>
+                        </select>
+                        <input type="text" id="uoSearch" class="crm-input" style="width:200px;" placeholder="🔍 Nama / HP..." oninput="uoRender()">
+                    </div>
+                </div>
+                <div class="crm-table-wrap">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th>Tgl</th>
+                                <th>Nama</th>
+                                <th>No HP</th>
+                                <th>Produk</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th>Pembayaran</th>
+                                <th>Kabupaten</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="uoTbody">
+                            <tr><td colspan="10" style="text-align:center;padding:40px;color:#9CA3AF;">Belum ada order</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="crm-pagination" id="uoPagination"></div>
             </section>
 
             <!-- ═══ TRACKING RESI ═══ -->
@@ -1644,7 +1835,7 @@
 
 <script src="js/shared.js"></script>
 <script>
-    const CRM_SECTIONS = ['dashboard','pesanan','trackingResi','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
+    const CRM_SECTIONS = ['dashboard','pesanan','uploadOrder','trackingResi','produk','pelangganList','pengelompokan','segmentasi','grup','ultah','kalender','kirimPesan','task','testimoni','assignment'];
 
     // norm() dan normEq() sudah tersedia dari js/shared.js
 
@@ -1667,6 +1858,7 @@
 
         if (name === 'pesanan' && !allOrders.length) loadOrders();
         if (name === 'dashboard' && !allOrders.length) loadOrders(); else if (name === 'dashboard') renderDashboard();
+        if (name === 'uploadOrder') loadUploadOrder();
         if (name === 'trackingResi') renderTrackingResi();
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
@@ -5854,6 +6046,325 @@
         }
 
         loadTestimoni();
+    }
+
+    // ════════════════════════════════════════
+    // UPLOAD ORDER
+    // ════════════════════════════════════════
+
+    let uoOrders = [];
+    let uoPage = 1;
+    const uoPageSize = 20;
+
+    function todayWIB() {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+    }
+
+    async function loadUploadOrder() {
+        if (!currentUser) return;
+        const { data, error } = await sbApp
+            .from('crm_orderan')
+            .select('*')
+            .eq('crm_id', currentUser.id)
+            .order('created_at', { ascending: false });
+        if (error) { console.error(error); return; }
+        uoOrders = data || [];
+        uoUpdateStats();
+        uoRender();
+    }
+
+    function uoUpdateStats() {
+        const cnt = s => uoOrders.filter(o => o.status === s).length;
+        document.getElementById('uoStatMenunggu').textContent    = cnt('Menunggu Validasi');
+        document.getElementById('uoStatAcc').textContent         = cnt('ACC');
+        document.getElementById('uoStatMenungguResi').textContent = cnt('Menunggu Resi');
+        document.getElementById('uoStatOnProses').textContent    = cnt('On Proses');
+        document.getElementById('uoStatTerkirim').textContent    = cnt('Terkirim/Berhasil');
+    }
+
+    function uoStatusBadge(status) {
+        const map = {
+            'Menunggu Validasi': 'background:#FEF3C7;color:#92400E;',
+            'ACC':               'background:#EEF2FF;color:#3730A3;',
+            'HOLD':              'background:#FEE2E2;color:#991B1B;',
+            'CANCEL':            'background:#F3F4F6;color:#6B7280;',
+            'Menunggu Resi':     'background:#E0F2FE;color:#0369A1;',
+            'On Proses':         'background:#EDE9FE;color:#5B21B6;',
+            'Terkirim/Berhasil': 'background:#D1FAE5;color:#065F46;',
+        };
+        const style = map[status] || 'background:#F3F4F6;color:#6B7280;';
+        return `<span style="${style}padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;">${status}</span>`;
+    }
+
+    function uoRender() {
+        const filterStatus = document.getElementById('uoFilterStatus')?.value || '';
+        const search = (document.getElementById('uoSearch')?.value || '').toLowerCase();
+
+        let rows = uoOrders.filter(o => {
+            if (filterStatus && o.status !== filterStatus) return false;
+            if (search && !((o.nama||'').toLowerCase().includes(search) || (o.no_hp||'').includes(search))) return false;
+            return true;
+        });
+
+        const total = rows.length;
+        const totalPages = Math.max(1, Math.ceil(total / uoPageSize));
+        if (uoPage > totalPages) uoPage = 1;
+
+        const slice = rows.slice((uoPage - 1) * uoPageSize, uoPage * uoPageSize);
+        const tbody = document.getElementById('uoTbody');
+
+        if (!slice.length) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:#9CA3AF;">Belum ada order</td></tr>`;
+        } else {
+            tbody.innerHTML = slice.map(o => `
+                <tr>
+                    <td style="white-space:nowrap;font-size:12px;">${o.tanggal || '—'}</td>
+                    <td>${o.nama || '—'}</td>
+                    <td style="font-family:monospace;font-size:12px;">${o.no_hp || '—'}</td>
+                    <td style="max-width:180px;">${o.jumlah_pesanan || '—'}</td>
+                    <td style="text-align:center;">${o.quantity || '—'}</td>
+                    <td style="white-space:nowrap;">Rp${Number(o.total_pembayaran||0).toLocaleString('id-ID')}</td>
+                    <td>${o.pembayaran || '—'}</td>
+                    <td>${o.kabupaten || '—'}</td>
+                    <td>${uoStatusBadge(o.status || 'Menunggu Validasi')}</td>
+                    <td>
+                        ${(o.status === 'Menunggu Validasi') ?
+                            `<button onclick="uoDelete(${o.id})" class="crm-btn crm-btn-secondary crm-btn-sm" style="color:#EF4444;">🗑</button>` : ''}
+                    </td>
+                </tr>`).join('');
+        }
+
+        // Pagination
+        let pgHtml = '';
+        if (totalPages > 1) {
+            pgHtml += `<button onclick="uoPage=${Math.max(1,uoPage-1)};uoRender()" ${uoPage===1?'disabled':''} class="crm-btn crm-btn-secondary crm-btn-sm">‹</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || Math.abs(i - uoPage) <= 2)
+                    pgHtml += `<button onclick="uoPage=${i};uoRender()" class="crm-btn crm-btn-sm ${i===uoPage?'crm-btn-primary':'crm-btn-secondary'}">${i}</button>`;
+                else if (Math.abs(i - uoPage) === 3)
+                    pgHtml += `<span style="padding:0 4px;">…</span>`;
+            }
+            pgHtml += `<button onclick="uoPage=${Math.min(totalPages,uoPage+1)};uoRender()" ${uoPage===totalPages?'disabled':''} class="crm-btn crm-btn-secondary crm-btn-sm">›</button>`;
+        }
+        document.getElementById('uoPagination').innerHTML = pgHtml;
+    }
+
+    // ── REGEX PARSER (client-side, instant) ──
+    function uoParseRegex(text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const result = {
+            nama: '', hp: '', alamat: '', kelurahan: '', kecamatan: '',
+            kabupaten: '', provinsi: '', kodepos: '', jumlah_pesanan: '',
+            quantity: '', pembayaran: '', total_pembayaran: '',
+            instruksi_pengiriman: '', keterangan: '', keluhan: ''
+        };
+        result.no = lines[0] || '';
+        for (let i = 0; i < lines.length; i++) {
+            const l = lines[i];
+            if (/^Nama\s*:/i.test(l))             result.nama            = l.replace(/^Nama\s*:\s*/i, '').trim();
+            else if (/^No\.?\s*HP\s*:/i.test(l)) {
+                const rawHp = l.replace(/^No\.?\s*HP\s*:\s*/i, '').trim();
+                const hpMatch = rawHp.match(/(\+?62|0)[0-9]{7,13}/);
+                result.hp = hpMatch ? hpMatch[0] : rawHp;
+            }
+            else if (/^Alamat\s*:/i.test(l)) {
+                const val = l.replace(/^Alamat\s*:\s*/i, '').trim();
+                const parts = val.split('|');
+                result.alamat = parts[0].trim();
+                if (parts[1]) result.instruksi_pengiriman = parts[1].trim();
+            }
+            else if (/^Jumlah\s*pesanan\s*:/i.test(l)) {
+                result.jumlah_pesanan = l.replace(/^Jumlah\s*pesanan\s*:\s*/i, '').trim();
+                const qm = result.jumlah_pesanan.match(/^(\d+)/);
+                if (qm) result.quantity = qm[1];
+            }
+            else if (/^Pembayaran\s*:/i.test(l)) result.pembayaran = l.replace(/^Pembayaran\s*:\s*/i, '').trim();
+            else if (/^Total\s*pembayaran\s*:/i.test(l)) {
+                let val = l.replace(/^Total\s*pembayaran\s*:\s*/i, '').trim();
+                if (!val && lines[i + 1]) val = lines[i + 1];
+                const eqMatch = val.match(/=\s*(\d+)/);
+                result.total_pembayaran = eqMatch ? eqMatch[1] : val.replace(/\D/g, '');
+            }
+            else if (/^KELUHAN\s*:/i.test(l)) result.keluhan = l.replace(/^KELUHAN\s*:\s*/i, '').trim();
+        }
+        const kpIdx = lines.findIndex(l => /^\d{5}$/.test(l));
+        if (kpIdx >= 4) {
+            result.kodepos   = lines[kpIdx];
+            result.provinsi  = lines[kpIdx - 1];
+            result.kabupaten = lines[kpIdx - 2];
+            result.kecamatan = lines[kpIdx - 3];
+            result.kelurahan = lines[kpIdx - 4];
+        }
+        const totalIdx   = lines.findIndex(l => /^Total\s*pembayaran\s*:/i.test(l));
+        const keluhanIdx = lines.findIndex(l => /^KELUHAN\s*:/i.test(l));
+        if (totalIdx >= 0 && keluhanIdx > totalIdx) {
+            const between = lines.slice(totalIdx + 1, keluhanIdx)
+                .filter(l => !/^[\d\s+\-=]+$/.test(l) && l.length > 2);
+            result.keterangan = between.join('\n').trim();
+        }
+        return result;
+    }
+
+    function uoIsRegexValid(d) {
+        return !!(d.nama && d.hp && d.alamat && d.kodepos && d.jumlah_pesanan);
+    }
+
+    function uoFillForm(d) {
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        set('uoNama', d.nama);
+        set('uoHp', d.hp);
+        set('uoAlamat', d.alamat);
+        set('uoKelurahan', d.kelurahan);
+        set('uoKecamatan', d.kecamatan);
+        set('uoKabupaten', d.kabupaten);
+        set('uoProvinsi', d.provinsi);
+        set('uoKodepos', d.kodepos);
+        set('uoJumlah', d.jumlah_pesanan);
+        set('uoQty', d.quantity);
+        set('uoTotal', d.total_pembayaran);
+        set('uoInstruksi', d.instruksi_pengiriman);
+        set('uoKeterangan', d.keterangan);
+        set('uoKeluhan', d.keluhan);
+        const payEl = document.getElementById('uoPembayaran');
+        if (payEl && d.pembayaran) {
+            const val = d.pembayaran.toLowerCase().includes('transfer') ? 'Transfer' : 'COD';
+            payEl.value = val;
+        }
+        document.getElementById('uoFormWrap').style.display = 'block';
+        uoCheckCustomer(d.hp);
+    }
+
+    async function uoCheckCustomer(hp) {
+        if (!hp) return;
+        const hpClean = hp.replace(/\D/g, '').replace(/^62/, '0');
+        const hp8 = hpClean.replace(/^0/, '');
+        const { data } = await sbApp
+            .from('crm_customers')
+            .select('id, nama, repeat_orders')
+            .or(`no_hp.eq.${hpClean},no_hp.eq.${hp8}`)
+            .limit(1);
+        const info = document.getElementById('uoCustomerInfo');
+        if (data && data.length > 0) {
+            const c = data[0];
+            const repeatCount = (c.repeat_orders || []).filter(r => r.status !== 'Gagal').length;
+            info.innerHTML = `🔗 Customer ditemukan di CRM — <strong>${c.nama}</strong> · Repeat ke-${repeatCount + 1}`;
+            info.style.display = 'block';
+        } else {
+            info.innerHTML = `ℹ️ HP ini belum ada di data pelanggan CRM — akan dicatat sebagai order baru`;
+            info.style.display = 'block';
+        }
+    }
+
+    async function uoParse() {
+        const text = document.getElementById('uoPasteInput').value.trim();
+        if (!text) { alert('Paste teks order dulu!'); return; }
+
+        const btn = document.getElementById('uoBtnParse');
+        btn.disabled = true;
+        btn.textContent = '⏳ Parsing...';
+
+        try {
+            // Coba regex dulu
+            const regexResult = uoParseRegex(text);
+            if (uoIsRegexValid(regexResult)) {
+                uoFillForm(regexResult);
+            } else {
+                // Fallback ke Claude API
+                const res = await fetch('/api/parse-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const parsed = await res.json();
+                uoFillForm(parsed);
+            }
+        } catch (err) {
+            alert('Gagal parse: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🤖 Parse Otomatis';
+        }
+    }
+
+    function uoClearForm() {
+        document.getElementById('uoPasteInput').value = '';
+        document.getElementById('uoFormWrap').style.display = 'none';
+        document.getElementById('uoCustomerInfo').style.display = 'none';
+        document.getElementById('uoSubmitMsg').textContent = '';
+        ['uoNama','uoHp','uoAlamat','uoKelurahan','uoKecamatan','uoKabupaten',
+         'uoProvinsi','uoKodepos','uoJumlah','uoQty','uoTotal',
+         'uoInstruksi','uoKeterangan','uoKeluhan'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const pay = document.getElementById('uoPembayaran');
+        if (pay) pay.value = '';
+    }
+
+    async function uoSubmit() {
+        const get = id => (document.getElementById(id)?.value || '').trim();
+        const nama    = get('uoNama');
+        const hp      = get('uoHp');
+        const alamat  = get('uoAlamat');
+        const jumlah  = get('uoJumlah');
+
+        if (!nama || !hp || !alamat || !jumlah) {
+            alert('Nama, No HP, Alamat, dan Jumlah Pesanan wajib diisi!');
+            return;
+        }
+
+        const btn = document.getElementById('uoBtnSubmit');
+        const msg = document.getElementById('uoSubmitMsg');
+        btn.disabled = true;
+        btn.textContent = '⏳ Menyimpan...';
+        msg.textContent = '';
+
+        try {
+            const today = todayWIB();
+            const row = {
+                crm_id:               currentUser.id,
+                crm_nama:             currentUser.nama || currentUser.username,
+                tanggal:              today,
+                nama,
+                no_hp:                hp,
+                alamat,
+                kelurahan:            get('uoKelurahan'),
+                kecamatan:            get('uoKecamatan'),
+                kabupaten:            get('uoKabupaten'),
+                provinsi:             get('uoProvinsi'),
+                kodepos:              get('uoKodepos'),
+                jumlah_pesanan:       jumlah,
+                quantity:             parseInt(get('uoQty')) || null,
+                pembayaran:           get('uoPembayaran') || null,
+                total_pembayaran:     parseInt(get('uoTotal')) || null,
+                instruksi_pengiriman: get('uoInstruksi') || null,
+                keterangan:           get('uoKeterangan') || null,
+                keluhan:              get('uoKeluhan') || null,
+                raw_input:            document.getElementById('uoPasteInput').value.trim() || null,
+                status:               'Menunggu Validasi',
+            };
+
+            const { error } = await sbApp.from('crm_orderan').insert(row);
+            if (error) throw error;
+
+            msg.style.color = '#10B981';
+            msg.textContent = '✅ Order berhasil disimpan!';
+            uoClearForm();
+            await loadUploadOrder();
+        } catch (err) {
+            msg.style.color = '#EF4444';
+            msg.textContent = '❌ Gagal: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📤 Submit Order';
+        }
+    }
+
+    async function uoDelete(id) {
+        if (!confirm('Hapus order ini?')) return;
+        const { error } = await sbApp.from('crm_orderan').delete().eq('id', id);
+        if (error) { alert('Gagal hapus: ' + error.message); return; }
+        await loadUploadOrder();
     }
 </script>
 
