@@ -493,6 +493,29 @@
         .rp-toggle { display:flex;gap:0;background:#F3F4F6;border-radius:10px;padding:3px;margin-bottom:16px; }
         .rp-toggle-btn { flex:1;padding:7px 0;border:none;background:none;border-radius:8px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;transition:all .15s; }
         .rp-toggle-btn.active { background:white;color:#4F46E5;box-shadow:0 1px 4px rgba(0,0,0,0.10); }
+
+        /* ── UPLOAD ORDER FORM (mirip CS Order) ── */
+        .uo-card { background:white;border:1px solid #E5E7EB;border-radius:14px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:16px; }
+        .uo-card-title { font-size:13px;font-weight:700;color:#111827;margin-bottom:4px; }
+        .uo-card-desc { font-size:12px;color:#6B7280;line-height:1.5;margin-bottom:14px; }
+        .uo-paste-area { width:100%;min-height:160px;padding:12px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:13px;font-family:monospace;background:#F9FAFB;color:#111827;resize:vertical;outline:none;transition:border-color .15s;line-height:1.7;box-sizing:border-box; }
+        .uo-paste-area:focus { border-color:#6366F1; }
+        .uo-parse-actions { display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap; }
+        .uo-btn-parse { flex:1;min-width:140px;padding:11px 20px;background:#6366F1;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s; }
+        .uo-btn-parse:hover { background:#4F46E5; }
+        .uo-btn-parse:disabled { opacity:.45;cursor:not-allowed; }
+        .uo-form-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+        .uo-form-grid.uo-cols-1 { grid-template-columns:1fr; }
+        .uo-form-grid.uo-cols-3 { grid-template-columns:1fr 1fr 1fr; }
+        .uo-f-group { display:flex;flex-direction:column;gap:4px; }
+        .uo-f-label { font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.4px;font-family:monospace; }
+        .uo-f-input { padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:13px;background:#F9FAFB;color:#111827;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;width:100%;box-sizing:border-box; }
+        .uo-f-input:focus { border-color:#6366F1;background:white; }
+        .uo-submit-row { display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap; }
+        .uo-btn-submit { flex:1;min-width:160px;padding:13px 24px;background:#10B981;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s; }
+        .uo-btn-submit:hover { background:#059669; }
+        .uo-btn-submit:disabled { opacity:.45;cursor:not-allowed; }
+        @media(max-width:640px) { .uo-form-grid,.uo-form-grid.uo-cols-3 { grid-template-columns:1fr; } .uo-btn-parse,.uo-btn-submit { width:100%; } }
     </style>
 </head>
 <body>
@@ -902,104 +925,115 @@
                     </div>
                 </div>
 
-                <!-- Form Input Order -->
-                <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:20px;margin-bottom:24px;">
-                    <div style="font-weight:700;font-size:15px;color:#374151;margin-bottom:14px;">➕ Input Order Baru</div>
-
-                    <!-- Paste Area -->
-                    <div class="crm-form-group" style="margin-bottom:10px;">
-                        <label class="crm-form-label">Paste Chat WA Customer</label>
-                        <textarea id="uoPasteInput" class="crm-input" rows="5"
-                            style="width:100%;resize:vertical;font-family:monospace;font-size:13px;"
-                            placeholder="Paste teks order dari WhatsApp di sini..."></textarea>
+                <!-- Step 1: Paste -->
+                <div class="uo-card">
+                    <div class="uo-card-title">1. Paste Teks Orderan</div>
+                    <div class="uo-card-desc">Copy dari WA lalu paste di sini. AI akan otomatis ekstrak semua field.</div>
+                    <textarea class="uo-paste-area" id="uoPasteInput" placeholder="Paste teks order dari WhatsApp di sini..."></textarea>
+                    <div class="uo-parse-actions">
+                        <button class="uo-btn-parse" id="uoBtnParse" onclick="uoParse()">✨ Parse dengan AI</button>
+                        <button class="crm-btn crm-btn-secondary crm-btn-sm" onclick="uoClearForm()">↩ Bersihkan</button>
+                        <span id="uoParseLoading" style="font-size:12px;color:#6B7280;display:none;">AI sedang memproses...</span>
                     </div>
-                    <div style="display:flex;gap:8px;margin-bottom:16px;">
-                        <button onclick="uoParse()" class="crm-btn crm-btn-primary crm-btn-sm" id="uoBtnParse">🤖 Parse Otomatis</button>
-                        <button onclick="uoClearForm()" class="crm-btn crm-btn-secondary crm-btn-sm">✖ Clear</button>
+                </div>
+
+                <!-- Step 2: Form -->
+                <div class="uo-card" id="uoFormWrap" style="display:none;">
+                    <div class="uo-card-title">2. Periksa & Edit Hasil</div>
+                    <div class="uo-card-desc">Pastikan semua data sudah benar. Kamu bisa edit langsung.</div>
+
+                    <!-- Nama & HP -->
+                    <div class="uo-form-grid" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Nama Customer *</label>
+                            <input class="uo-f-input" id="uoNama" type="text" placeholder="Nama lengkap">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">No HP *</label>
+                            <input class="uo-f-input" id="uoHp" type="tel" placeholder="08xxxxxxxxxx">
+                            <div id="uoHpHint" style="font-size:11px;margin-top:3px;"></div>
+                        </div>
                     </div>
 
-                    <!-- Form Fields -->
-                    <div id="uoFormWrap" style="display:none;">
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Nama <span style="color:#EF4444;">*</span></label>
-                                <input type="text" id="uoNama" class="crm-input" placeholder="Nama customer">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">No HP <span style="color:#EF4444;">*</span></label>
-                                <input type="text" id="uoHp" class="crm-input" placeholder="08xxx">
-                                <div id="uoHpHint" style="font-size:11px;margin-top:3px;"></div>
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Pembayaran</label>
-                                <select id="uoPembayaran" class="crm-select">
-                                    <option value="">-- Pilih --</option>
-                                    <option value="COD">COD</option>
-                                    <option value="Transfer">Transfer</option>
-                                </select>
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Total Pembayaran</label>
-                                <input type="number" id="uoTotal" class="crm-input" placeholder="150000">
-                            </div>
+                    <!-- Pembayaran & Total -->
+                    <div class="uo-form-grid" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Pembayaran</label>
+                            <select id="uoPembayaran" class="uo-f-input" style="cursor:pointer;">
+                                <option value="">-- Pilih --</option>
+                                <option value="COD">COD</option>
+                                <option value="Transfer">Transfer</option>
+                            </select>
                         </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
-                            <div class="crm-form-group" style="grid-column:span 2;">
-                                <label class="crm-form-label">Alamat <span style="color:#EF4444;">*</span></label>
-                                <input type="text" id="uoAlamat" class="crm-input" placeholder="Jl. xxx No. xxx">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Kelurahan</label>
-                                <input type="text" id="uoKelurahan" class="crm-input">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Kecamatan</label>
-                                <input type="text" id="uoKecamatan" class="crm-input">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Kabupaten/Kota</label>
-                                <input type="text" id="uoKabupaten" class="crm-input">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Provinsi</label>
-                                <input type="text" id="uoProvinsi" class="crm-input">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Kodepos</label>
-                                <input type="text" id="uoKodepos" class="crm-input" maxlength="5">
-                            </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Total Pembayaran</label>
+                            <input class="uo-f-input" id="uoTotal" type="number" placeholder="150000">
                         </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;">
-                            <div class="crm-form-group" style="grid-column:span 2;">
-                                <label class="crm-form-label">Jumlah Pesanan <span style="color:#EF4444;">*</span></label>
-                                <input type="text" id="uoJumlah" class="crm-input" placeholder="2 Botol HerbaMax">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Qty</label>
-                                <input type="number" id="uoQty" class="crm-input" placeholder="2" min="1">
-                            </div>
-                            <div class="crm-form-group">
-                                <label class="crm-form-label">Instruksi Pengiriman</label>
-                                <input type="text" id="uoInstruksi" class="crm-input" placeholder="Jangan dilipat">
-                            </div>
-                            <div class="crm-form-group" style="grid-column:span 2;">
-                                <label class="crm-form-label">Keterangan</label>
-                                <textarea id="uoKeterangan" class="crm-input" rows="2" style="width:100%;resize:vertical;"></textarea>
-                            </div>
-                            <div class="crm-form-group" style="grid-column:span 2;">
-                                <label class="crm-form-label">Keluhan</label>
-                                <input type="text" id="uoKeluhan" class="crm-input" placeholder="Keluhan customer (opsional)">
-                            </div>
-                        </div>
+                    </div>
 
-                        <!-- Customer link info -->
-                        <div id="uoCustomerInfo" style="display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#3730A3;">
+                    <!-- Alamat -->
+                    <div class="uo-form-grid uo-cols-1" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Alamat *</label>
+                            <input class="uo-f-input" id="uoAlamat" type="text" placeholder="Alamat lengkap">
                         </div>
+                    </div>
 
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <button onclick="uoSubmit()" class="crm-btn crm-btn-primary" id="uoBtnSubmit">📤 Submit Order</button>
-                            <span id="uoSubmitMsg" style="font-size:13px;"></span>
+                    <!-- Wilayah -->
+                    <div class="uo-form-grid uo-cols-3" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Kelurahan</label>
+                            <input class="uo-f-input" id="uoKelurahan" type="text">
                         </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Kecamatan</label>
+                            <input class="uo-f-input" id="uoKecamatan" type="text">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Kabupaten/Kota</label>
+                            <input class="uo-f-input" id="uoKabupaten" type="text">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Provinsi</label>
+                            <input class="uo-f-input" id="uoProvinsi" type="text">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Kode Pos</label>
+                            <input class="uo-f-input" id="uoKodepos" type="text" inputmode="numeric" maxlength="5">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Qty</label>
+                            <input class="uo-f-input" id="uoQty" type="number" min="1">
+                        </div>
+                    </div>
+
+                    <!-- Detail Order -->
+                    <div class="uo-form-grid" style="margin-bottom:10px;">
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Jumlah Pesanan *</label>
+                            <input class="uo-f-input" id="uoJumlah" type="text" placeholder="2 Botol HerbaMax">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Instruksi Pengiriman</label>
+                            <input class="uo-f-input" id="uoInstruksi" type="text" placeholder="Pengirim CS...">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Keterangan</label>
+                            <input class="uo-f-input" id="uoKeterangan" type="text" placeholder="Catatan">
+                        </div>
+                        <div class="uo-f-group">
+                            <label class="uo-f-label">Keluhan</label>
+                            <input class="uo-f-input" id="uoKeluhan" type="text" placeholder="Keluhan customer (opsional)">
+                        </div>
+                    </div>
+
+                    <!-- Customer link info -->
+                    <div id="uoCustomerInfo" style="display:none;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#3730A3;"></div>
+
+                    <div class="uo-submit-row">
+                        <button class="uo-btn-submit" id="uoBtnSubmit" onclick="uoSubmit()">📤 Submit Order</button>
+                        <button class="crm-btn crm-btn-secondary" onclick="uoClearForm()">↩ Ulangi</button>
+                        <span id="uoSubmitMsg" style="font-size:13px;"></span>
                     </div>
                 </div>
 
@@ -6260,8 +6294,9 @@
         if (!text) { alert('Paste teks order dulu!'); return; }
 
         const btn = document.getElementById('uoBtnParse');
+        const loadTxt = document.getElementById('uoParseLoading');
         btn.disabled = true;
-        btn.textContent = '⏳ Parsing...';
+        loadTxt.style.display = 'inline';
 
         try {
             // Coba regex dulu
@@ -6282,7 +6317,7 @@
             alert('Gagal parse: ' + err.message);
         } finally {
             btn.disabled = false;
-            btn.textContent = '🤖 Parse Otomatis';
+            loadTxt.style.display = 'none';
         }
     }
 
