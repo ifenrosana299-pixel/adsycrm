@@ -1930,7 +1930,10 @@
         if (name === 'pesanan' && !allOrders.length) loadOrders();
         if (name === 'dashboard' && !allOrders.length) loadOrders(); else if (name === 'dashboard') renderDashboard();
         if (name === 'uploadOrder') loadUploadOrder();
-        if (name === 'trackingResi') renderTrackingResi();
+        if (name === 'trackingResi') {
+            if (ordersReady) ordersReady.then(() => loadRepeatOrders().then(renderTrackingResi));
+            else loadRepeatOrders().then(renderTrackingResi);
+        }
         if (name === 'produk') renderProdukGrid();
         if (name === 'pelangganList') loadPelanggan();
         if (name === 'testimoni') loadTestimoni();
@@ -4428,6 +4431,7 @@
     const TR_STAT_CARD_FILTER = { SEMUA:'SEMUA', ON_PROSES:'ON_PROSES_GROUP', UNDEL:'BERMASALAH', RETUR:'RETUR', DELIVERY:'SAMPAI' };
     const TR_ON_PROSES_STAGES = ['MENUNGGU_RESI','BELUM_DICEK','DIKIRIM','KOTA_TUJUAN','OTW'];
     let trFilterStage  = 'SEMUA';
+    let repeatOrders   = [];
     let trModalOrderId = null;
 
     function trAvatarColor(name) {
@@ -4454,20 +4458,60 @@
         trApplyFilter();
     }
 
-    // Order yang jatuh dalam rentang tanggal trDrp aktif (created_at, sudah WIB-correct)
-    function trOrdersInRange() {
-        if (!trFilterStart || !trFilterEnd) return orders;
-        return orders.filter(o => {
+    // Load repeat orders dari crm_repeats untuk customer milik CRM ini
+    async function loadRepeatOrders() {
+        repeatOrders = [];
+        if (!allOrders.length) return;
+        const custIds = allOrders.map(o => o.id);
+        const custMap = {};
+        allOrders.forEach(o => { custMap[o.id] = o; });
+        const batchSize = 100;
+        let allData = [];
+        for (let i = 0; i < custIds.length; i += batchSize) {
+            const { data } = await sbApp.from('crm_repeats')
+                .select('id, customer_id, no_repeat, tgl, resi, ekspedisi, produk, qty, status, created_at')
+                .in('customer_id', custIds.slice(i, i + batchSize))
+                .order('tgl', { ascending: false });
+            if (data) allData = allData.concat(data);
+        }
+        repeatOrders = allData.map(r => ({
+            ...r,
+            _isRepeat: true,
+            nama: custMap[r.customer_id]?.nama || '-',
+            no_hp:  custMap[r.customer_id]?.no_hp  || '-',
+        }));
+    }
+
+    function trEffectiveStageRepeat(r) {
+        if (!r.resi) return 'MENUNGGU_RESI';
+        if (r.status === 'Berhasil') return 'SAMPAI';
+        if (r.status === 'Gagal')    return 'RETUR';
+        return 'BELUM_DICEK';
+    }
+
+    // Semua item tracking (orders + repeatOrders) dalam rentang tanggal
+    function trAllInRange() {
+        const main = orders.filter(o => {
+            if (!trFilterStart || !trFilterEnd) return true;
             const d = o.created_at ? new Date(o.created_at) : null;
             return d && d >= trFilterStart && d <= trFilterEnd;
         });
+        const reps = repeatOrders.filter(r => {
+            if (!trFilterStart || !trFilterEnd) return true;
+            const d = r.tgl ? new Date(r.tgl + 'T00:00:00') : null;
+            return d && d >= trFilterStart && d <= trFilterEnd;
+        });
+        return [...main, ...reps];
     }
 
-    // Rekap jumlah per cardstate — dari data dalam rentang tanggal trDrp aktif
+    // Rekap jumlah per cardstate
     function trUpdateStats() {
-        const inRange = trOrdersInRange();
+        const inRange = trAllInRange();
         const counts = { ON_PROSES:0, UNDEL:0, RETUR:0, DELIVERY:0 };
-        inRange.forEach(o => { counts[trCardState(trEffectiveStage(o))]++; });
+        inRange.forEach(o => {
+            const stage = o._isRepeat ? trEffectiveStageRepeat(o) : trEffectiveStage(o);
+            counts[trCardState(stage)]++;
+        });
         const total = inRange.length;
         const pct = (n) => total > 0 ? (n / total * 100).toFixed(1) + '%' : '—';
         document.getElementById('trStatTotal').textContent       = total;
@@ -4484,8 +4528,8 @@
 
     function trApplyFilter() {
         const q = (document.getElementById('trSearch').value || '').toLowerCase();
-        const list = trOrdersInRange().filter(o => {
-            const stage = trEffectiveStage(o);
+        const list = trAllInRange().filter(o => {
+            const stage = o._isRepeat ? trEffectiveStageRepeat(o) : trEffectiveStage(o);
             if (trFilterStage === 'ON_PROSES_GROUP') {
                 if (!TR_ON_PROSES_STAGES.includes(stage)) return false;
             } else if (trFilterStage !== 'SEMUA' && stage !== trFilterStage) {
@@ -4496,7 +4540,7 @@
         });
         document.getElementById('trCount').textContent = `${list.length} pesanan`;
         document.getElementById('trList').innerHTML = list.length
-            ? list.map(o => trCardHtml(o)).join('')
+            ? list.map(o => o._isRepeat ? trRepeatCardHtml(o) : trCardHtml(o)).join('')
             : '<div class="tr-card" style="grid-column:1/-1;text-align:center;color:#9CA3AF;cursor:default;">Tidak ada data.</div>';
     }
 
@@ -4562,6 +4606,68 @@
                 <button onclick="trManualStatus(${o.id},'RETUR')"  style="flex:1;padding:6px 0;border:1.5px solid #EF4444;background:#FFF1F2;color:#DC2626;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">↩️ RTS</button>
             </div>` : ''}
         </div>`;
+    }
+
+    function trRepeatCardHtml(r) {
+        const stage   = trEffectiveStageRepeat(r);
+        const meta    = TR_STAGE_META[stage] || TR_STAGE_META.BELUM_DICEK;
+        const initial = (r.nama || '?').trim().charAt(0).toUpperCase();
+        const isFinished = stage === 'SAMPAI' || stage === 'RETUR';
+        return `<div class="tr-card tr-card-repeat" style="cursor:default;">
+            <div class="tr-card-top">
+                <div class="tr-card-left">
+                    <div class="tr-avatar" style="background:${trAvatarColor(r.nama)};">${escapeHtml(initial)}</div>
+                    <div>
+                        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                            <div class="tr-name">${escapeHtml(r.nama||'-')}</div>
+                            <span class="tr-repeat-badge">🔁 Repeat ${r.no_repeat||''}</span>
+                        </div>
+                        <div class="tr-phone">${escapeHtml(r.no_hp||'-')}</div>
+                        <div class="tr-meta" style="display:flex;align-items:center;gap:6px;">
+                            <span class="crm-badge" style="background:${meta.bg};color:${meta.color};">${meta.label}</span>
+                            <span class="crm-badge" style="background:#F3F4F6;color:#6B7280;">${escapeHtml(r.ekspedisi||'—')}</span>
+                        </div>
+                        <div class="tr-produk">${escapeHtml(r.produk||'-')} × ${r.qty||'-'}</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="tr-date">${r.tgl||'-'}</div>
+                    ${r.resi
+                        ? `<div class="tr-resi">${escapeHtml(r.resi)}${r.ekspedisi ? ' · '+escapeHtml(r.ekspedisi) : ''}</div>`
+                        : `<div class="tr-resi" style="color:#9CA3AF;">Menunggu Resi</div>`}
+                </div>
+            </div>
+            ${trStepperHtml(stage)}
+            <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F3F4F6;">
+                ${!r.resi ? `<button onclick="trInputResiRepeat(${r.id})" style="flex:1;padding:6px 0;border:1.5px solid #6366F1;background:#EEF2FF;color:#4F46E5;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📦 Input Resi</button>` : ''}
+                ${!isFinished ? `
+                <button onclick="trManualRepeatStatus(${r.id},'SAMPAI')" style="flex:1;padding:6px 0;border:1.5px solid #10B981;background:#F0FDF4;color:#059669;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ Delivered</button>
+                <button onclick="trManualRepeatStatus(${r.id},'RETUR')"  style="flex:1;padding:6px 0;border:1.5px solid #EF4444;background:#FFF1F2;color:#DC2626;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">↩️ RTS</button>
+                ` : ''}
+            </div>
+        </div>`;
+    }
+
+    async function trInputResiRepeat(id) {
+        const resi = prompt('Masukkan nomor resi:');
+        if (!resi || !resi.trim()) return;
+        const { error } = await sbApp.from('crm_repeats').update({ resi: resi.trim() }).eq('id', id);
+        if (error) { alert('Gagal simpan resi: ' + error.message); return; }
+        const r = repeatOrders.find(x => x.id === id);
+        if (r) r.resi = resi.trim();
+        renderTrackingResi();
+        trUpdateStats();
+    }
+
+    async function trManualRepeatStatus(id, newStatus) {
+        const label = newStatus === 'SAMPAI' ? 'Delivered' : 'RTS';
+        if (!confirm(`Tandai repeat order ini sebagai ${label}?`)) return;
+        const { error } = await sbApp.from('crm_repeats').update({ status: newStatus === 'SAMPAI' ? 'Berhasil' : 'Gagal' }).eq('id', id);
+        if (error) { alert('Gagal update: ' + error.message); return; }
+        const r = repeatOrders.find(x => x.id === id);
+        if (r) r.status = newStatus === 'SAMPAI' ? 'Berhasil' : 'Gagal';
+        renderTrackingResi();
+        trUpdateStats();
     }
 
     let eksModalId = null;
