@@ -973,11 +973,7 @@
                     <div class="uo-form-grid" style="margin-bottom:10px;">
                         <div class="uo-f-group">
                             <label class="uo-f-label">Pembayaran</label>
-                            <select id="uoPembayaran" class="uo-f-input" style="cursor:pointer;">
-                                <option value="">-- Pilih --</option>
-                                <option value="COD">COD</option>
-                                <option value="Transfer">Transfer</option>
-                            </select>
+                            <input class="uo-f-input" id="uoPembayaran" type="text" placeholder="COD JNE / TRANSFER J&T">
                         </div>
                         <div class="uo-f-group">
                             <label class="uo-f-label">Total Pembayaran</label>
@@ -6300,11 +6296,7 @@
         set('uoInstruksi', d.instruksi_pengiriman);
         set('uoKeterangan', d.keterangan);
         set('uoKeluhan', d.keluhan);
-        const payEl = document.getElementById('uoPembayaran');
-        if (payEl && d.pembayaran) {
-            const val = d.pembayaran.toLowerCase().includes('transfer') ? 'Transfer' : 'COD';
-            payEl.value = val;
-        }
+        set('uoPembayaran', d.pembayaran);
         document.getElementById('uoFormWrap').style.display = 'block';
         uoCheckCustomer(d.hp);
         uoValidateNo();
@@ -6419,7 +6411,7 @@
                 kodepos:              get('uoKodepos'),
                 jumlah_pesanan:       jumlah,
                 quantity:             parseInt(get('uoQty')) || null,
-                pembayaran:           get('uoPembayaran') || null,
+                pembayaran:           get('uoPembayaran')  || null,
                 total_pembayaran:     parseInt(get('uoTotal')) || null,
                 rincian_pembayaran:   get('uoRincian') || null,
                 ekspedisi:            get('uoEkspedisi') || null,
